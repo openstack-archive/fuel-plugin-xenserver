@@ -20,13 +20,13 @@ Deployment
 ----------
 
 	fpb --build .
-	scp xenserver-fuel-plugin-$BUILD_VERSERION.noarch.rpm root@$FUELMASTER:$PLUGIN_PATH
-	ssh root@$FUELMASTER fuel plugins --install $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSERION.noarch.rpm
+	scp xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm root@$FUELMASTER:$PLUGIN_PATH
+	ssh root@$FUELMASTER fuel plugins --install $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm
 	#or
-	ssh root@$FUELMASTER fuel plugins --update $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSERION.noarch.rpm
+	ssh root@$FUELMASTER fuel plugins --update $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm
 	ssh root@$FUELMASTER fuel plugins --list
 
-Check out on Fuel web UI
+Check out on Fuel Web UI
 ------------------------
 
 	Open Fuel Web UI, go the Setting Tab of a new/existing Environment.
