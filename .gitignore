@@ -1,0 +1,6 @@
+.tox
+.build
+*.pyc
+*.rpm
+localrc
+

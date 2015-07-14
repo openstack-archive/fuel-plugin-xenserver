@@ -1,0 +1,14 @@
+attributes:
+  username_text:
+    value: ''
+    label: 'Username'
+    description: 'Description for Username'
+    weight: 25
+    type: "text"
+  password_text:
+    value: ''
+    label: 'Password'
+    description: 'Description for Password'
+    weight: 25
+    type: "text"
+
