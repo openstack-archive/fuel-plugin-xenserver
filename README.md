@@ -14,17 +14,11 @@ Environment Setup
 	cd xenserver-fuel-plugin
 	cp localrc.sample localrc
 	vi localrc #configure your local environment
-	source localrc
 
 Deployment
 ----------
 
-	fpb --build .
-	scp xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm root@$FUELMASTER:$PLUGIN_PATH
-	ssh root@$FUELMASTER fuel plugins --install $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm
-	#or
-	ssh root@$FUELMASTER fuel plugins --update $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm
-	ssh root@$FUELMASTER fuel plugins --list
+	./deploy.sh
 
 Check out on Fuel Web UI
 ------------------------

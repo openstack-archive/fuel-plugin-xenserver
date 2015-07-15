@@ -1,4 +1,4 @@
 #!/bin/bash
 
-# It's a script which deploys your plugin
-echo xenserver-fuel-plugin > /tmp/xenserver-fuel-plugin
+dockerctl copy newrelease.yaml nailgun:/tmp/newrelease.yaml
+dockerctl shell nailgun manage.py loaddata /tmp/newrelease.yaml
