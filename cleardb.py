@@ -4,9 +4,17 @@ import os
 import yaml
 
 settings = yaml.load(open('/etc/nailgun/settings.yaml'))
-os.environ["PGPASSWORD"] = settings['DATABASE']['passwd']
-cmd = ('psql -h {host} -p {port} -U {user} -w -d {name} '
-	'-c "delete from releases where name like \'%Xen%\';" '
-	).format(**settings['DATABASE'])
+db_settings = settings['DATABASE']
+os.environ["PGPASSWORD"] = db_settings['passwd']
 
-os.system(cmd)
+def execute_sql(sql):
+	paras = dict(db_settings.items() + {'sql':sql}.items())
+	print paras
+	cmd = ('psql -h {host} -p {port} -U {user} -w -d {name} '
+		'-c "{sql}" '
+		).format(**paras)
+	os.system(cmd)
+
+if __name__ == '__main__':
+	execute_sql('delete from releases where name like \'%Xen%\';')
+
