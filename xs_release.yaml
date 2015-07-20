@@ -204,7 +204,7 @@
           bind: "settings:common.libvirt_type.value"
           values:
             - data: "xen"
-              label: "XenServer"
+              label: "dialog.create_cluster_wizard.compute.kvm"
               description: "dialog.create_cluster_wizard.compute.kvm_description"
               bind:
                 - "wizard:Network.manager": "nova-network"
@@ -232,7 +232,7 @@
                 - "settings:storage.ephemeral_ceph.value": false
                 - "settings:storage.images_ceph.value": false
               restrictions:
-                - condition: "'XenServer' in cluster:name"
+                - condition: "true"
                   action: disable
             - data: "enable"
               label: "dialog.create_cluster_wizard.storage.ceph_enable"
@@ -243,11 +243,8 @@
                 - "settings:storage.images_ceph.value": true
                 - "settings:storage.volumes_lvm.value": false
               restrictions:
-                - condition: "'XenServer' in cluster:name"
+                - condition: "true"
                   action: disable
-          restrictions:
-            - condition: "'XenServer' in cluster:name"
-              action: disable
       AdditionalServices:
         sahara:
           type: "checkbox"
@@ -256,7 +253,7 @@
           bind: "settings:additional_components.sahara.value"
           weight: 10
           restrictions:
-            - condition: "'XenServer' in cluster:name"
+            - condition: "true"
               action: disable
         murano:
           type: "checkbox"
@@ -265,7 +262,7 @@
           bind: "settings:additional_components.murano.value"
           weight: 20
           restrictions:
-            - condition: "'XenServer' in cluster:name"
+            - condition: "true"
               action: disable
         ceilometer:
           type: "checkbox"
@@ -274,9 +271,6 @@
           bind: "settings:additional_components.ceilometer.value"
           weight: 30
           restrictions:
-            - condition: "'XenServer' in cluster:name"
+            - condition: "true"
               action: disable
-        restrictions:
-          - condition: "'XenServer' in cluster:name"
-            action: disable
       Ready: {}
