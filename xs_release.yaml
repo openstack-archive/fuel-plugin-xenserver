@@ -207,18 +207,76 @@
               label: "dialog.create_cluster_wizard.compute.kvm"
               description: "dialog.create_cluster_wizard.compute.kvm_description"
               bind:
-                - "wizard:Network.manager": "nova-network"
                 - "wizard:Storage.ceph": "disable"
+                - "wizard:Network.manager": "nova-network"
+              restrictions:
+                - condition: "true"
+                  action: disable
+                - condition: "true"
+                  message: "MESSAGE"
+            - data: "kvm"
+              label: "dialog.create_cluster_wizard.compute.kvm"
+              description: "dialog.create_cluster_wizard.compute.kvm_description"
+              bind:
+                - "wizard:Storage.ceph": "disable"
+                - "wizard:Network.manager": "neutron-vlan"
+              restrictions:
+                - condition: "true"
+                  action: disable
+            - data: "qemu"
+              label: "dialog.create_cluster_wizard.compute.qemu"
+              description: "dialog.create_cluster_wizard.compute.qemu_description"
+              bind:
+                - "wizard:Storage.ceph": "disable"
+                - "wizard:Network.manager": "neutron-vlan"
+              restrictions:
+                - condition: "true"
+                  action: disable
+        vcenter:
+          type: "checkbox"
+          weight: 10
+          label: "dialog.create_cluster_wizard.compute.vcenter"
+          description: "dialog.create_cluster_wizard.compute.vcenter_description"
+          bind:
+            - "wizard:Storage.ceph": "disable"
+            - "wizard:Network.manager": "nova-network"
+            - "settings:common.use_vcenter.value"
+          restrictions:
+            - condition: "true"
+              action: disable
       Network:
         manager:
           type: "radio"
           value: "nova-network"
           values:
+            - data: "neutron-vlan"
+              label: "dialog.create_cluster_wizard.network.neutr_vlan"
+              description: "dialog.create_cluster_wizard.network.neutr_vlan_description"
+              restrictions:
+                - condition: "true"
+                  action: disable
+                - condition: "true"
+                  message: "MESSAGE"
+              bind:
+                - "cluster:net_provider": "neutron"
+                - "cluster:net_segment_type": "vlan"
+            - data: "neutron-gre"
+              label: "dialog.create_cluster_wizard.network.neutr_gre"
+              description: "dialog.create_cluster_wizard.network.neutr_gre_description"
+              restrictions:
+                - condition: "true"
+                  action: disable
+              bind:
+                - "cluster:net_provider": "neutron"
+                - "cluster:net_segment_type": "gre"
             - data: "nova-network"
               label: "dialog.create_cluster_wizard.network.nova_network"
               description: "dialog.create_cluster_wizard.network.nova_network_description"
               bind:
                 - "cluster:net_provider": "nova_network"
+              restrictions:
+                - condition: "true"
+                  action: disable
       Storage:
         ceph:
           type: "radio"
@@ -234,6 +292,8 @@
               restrictions:
                 - condition: "true"
                   action: disable
+                - condition: "true"
+                  message: "MESSAGE"
             - data: "enable"
               label: "dialog.create_cluster_wizard.storage.ceph_enable"
               bind:
@@ -255,6 +315,8 @@
           restrictions:
             - condition: "true"
               action: disable
+            - condition: "true"
+              message: "MESSAGE"
         murano:
           type: "checkbox"
           label: "dialog.create_cluster_wizard.additional.install_murano"

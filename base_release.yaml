@@ -938,6 +938,15 @@
               bind:
                 - "wizard:Storage.ceph": "disable"
                 - "wizard:Network.manager": "neutron-vlan"
+        vcenter:
+          type: "checkbox"
+          weight: 10
+          label: "dialog.create_cluster_wizard.compute.vcenter"
+          description: "dialog.create_cluster_wizard.compute.vcenter_description"
+          bind:
+            - "wizard:Storage.ceph": "disable"
+            - "wizard:Network.manager": "nova-network"
+            - "settings:common.use_vcenter.value"
       Network:
         manager:
           type: "radio"
