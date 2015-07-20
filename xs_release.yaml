@@ -1,5 +1,3 @@
-- pk: 10
-  extend: *base_release
   fields:
     name: "Juno+Citrix XenServer on Ubuntu 14.04.1"
     version: "2014.2.2-6.1"
@@ -233,6 +231,9 @@
                 - "settings:storage.objects_ceph.value": false
                 - "settings:storage.ephemeral_ceph.value": false
                 - "settings:storage.images_ceph.value": false
+              restrictions:
+                - condition: "'XenServer' in cluster:name"
+                  action: disable
             - data: "enable"
               label: "dialog.create_cluster_wizard.storage.ceph_enable"
               bind:
@@ -241,9 +242,12 @@
                 - "settings:storage.ephemeral_ceph.value": true
                 - "settings:storage.images_ceph.value": true
                 - "settings:storage.volumes_lvm.value": false
-        restrictions:
-          - condition: "settings:common.libvirt_type.value == 'xen'"
-            action: disable
+              restrictions:
+                - condition: "'XenServer' in cluster:name"
+                  action: disable
+          restrictions:
+            - condition: "'XenServer' in cluster:name"
+              action: disable
       AdditionalServices:
         sahara:
           type: "checkbox"
@@ -251,19 +255,28 @@
           description: "dialog.create_cluster_wizard.additional.install_sahara_description"
           bind: "settings:additional_components.sahara.value"
           weight: 10
+          restrictions:
+            - condition: "'XenServer' in cluster:name"
+              action: disable
         murano:
           type: "checkbox"
           label: "dialog.create_cluster_wizard.additional.install_murano"
           description: "dialog.create_cluster_wizard.additional.install_murano_description"
           bind: "settings:additional_components.murano.value"
           weight: 20
+          restrictions:
+            - condition: "'XenServer' in cluster:name"
+              action: disable
         ceilometer:
           type: "checkbox"
           label: "dialog.create_cluster_wizard.additional.install_ceilometer"
           description: "dialog.create_cluster_wizard.additional.install_ceilometer_description"
           bind: "settings:additional_components.ceilometer.value"
           weight: 30
+          restrictions:
+            - condition: "'XenServer' in cluster:name"
+              action: disable
         restrictions:
-          - condition: "settings:common.libvirt_type.value == 'xen'"
+          - condition: "'XenServer' in cluster:name"
             action: disable
       Ready: {}

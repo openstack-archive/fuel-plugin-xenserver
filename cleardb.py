@@ -9,10 +9,10 @@ os.environ["PGPASSWORD"] = db_settings['passwd']
 
 def execute_sql(sql):
 	paras = dict(db_settings.items() + {'sql':sql}.items())
-	print paras
 	cmd = ('psql -h {host} -p {port} -U {user} -w -d {name} '
 		'-c "{sql}" '
 		).format(**paras)
+	print cmd
 	os.system(cmd)
 
 if __name__ == '__main__':
