@@ -5,5 +5,5 @@
 localrc
 newrelease.yaml
 models/
-
+prepare_cluster.sh
 

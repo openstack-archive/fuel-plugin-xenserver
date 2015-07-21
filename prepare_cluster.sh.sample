@@ -1,0 +1,10 @@
+#!/bin/bash
+
+
+./prepare_xs.sh "XenServer-1" "Controller" "fuel_network" "trunk_network" 2048 40
+
+./prepare_xs.sh "XenServer-1" "Compute-1" "fuel_network" "trunk_network" 2048 40
+./prepare_xs.sh "XenServer-2" "Compute-2" "fuel_network" "trunk_network" 2048 40
+./prepare_xs.sh "XenServer-3" "Compute-3" "fuel_network" "trunk_network" 2048 40
+
+./prepare_xs.sh "XenServer-4" "Compute-Storage" "vlan_19" "trunk_network" 2048 40
