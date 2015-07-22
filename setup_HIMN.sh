@@ -1,23 +1,31 @@
 #!/bin/sh
 
 
-function add_interface {
+function add_himn {
+	local vm_name
+	vm_name="$1"
+
 	local vm_uuid
-	vm_uuid="$1"
+	vm_uuid=$(xe vm-list name-label="$vm_name")
 
 	local device_number
 	device_number=$2
 
-	local himn_uuid
-	himn_uuid=`xe network-list bridge=xenapi minimal=true`
+	local net_uuid
+	net_uuid=`xe network-list bridge=xenapi minimal=true`
 
-	xe vif-create network-uuid=$himn_uuid vm-uuid=$vm_uuid device=$device_number
+	local eth2_uuid
+	eth2_uuid=$(xe vif-create network-uuid=$net_uuid vm-uuid=$vm_uuid device=$device_number)
+	xe vif-plug uuid=$eth2_uuid
+
+	#make eth2 visible
+	xe network-param-remove param-name=other-config \
+		param-key=is_guest_installer_network uuid=$net_uuid
 }
 
-vm_uuids="$@"
+VM_NAMES="$@"
 
-for vm_uuid in $vm_uuids
+for VM_NAME in $VM_NAMES
 do
-	eth2_uuid=$(add_interface "$vm_uuid" 2)
-	xe vif-plug uuid=$eth2_uuid
+	add_himn "$VM_NAME" 2
 done
