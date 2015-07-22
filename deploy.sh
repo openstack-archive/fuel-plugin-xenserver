@@ -11,6 +11,7 @@ cat xs_release.yaml >> newrelease.yaml
 scp newrelease.yaml root@$FUELMASTER:$PLUGIN_PATH
 ssh root@$FUELMASTER dockerctl copy newrelease.yaml nailgun:/tmp/newrelease.yaml
 ssh root@$FUELMASTER dockerctl shell nailgun manage.py loaddata /tmp/newrelease.yaml
+ssh root@$FUELMASTER fuel rel --sync-deployment-tasks --dir /etc/puppet/
 rm newrelease.yaml
 
 fpb --check xenserver-fuel-plugin
