@@ -204,8 +204,8 @@
           bind: "settings:common.libvirt_type.value"
           values:
             - data: "xen"
-              label: "Xen
-              description: "XenServer
+              label: "Xen"
+              description: "XenServer"
               bind:
                 - "wizard:Storage.ceph": "disable"
                 - "wizard:Network.manager": "nova-network"

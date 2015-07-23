@@ -17,9 +17,10 @@ rm newrelease.yaml
 fpb --check xenserver-fuel-plugin
 fpb --build xenserver-fuel-plugin
 
-scp xenserver-fuel-plugin/xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm root@$FUELMASTER:$PLUGIN_PATH
+scp xenserver-fuel-plugin/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm root@$FUELMASTER:$PLUGIN_PATH
 
-ssh root@$FUELMASTER fuel plugins --install $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm ||
-ssh root@$FUELMASTER fuel plugins --update $PLUGIN_PATH/xenserver-fuel-plugin-$BUILD_VERSION.noarch.rpm
+
+ssh root@$FUELMASTER fuel plugins --remove xenserver-fuel-plugin==$VERSION
+ssh root@$FUELMASTER fuel plugins --install $PLUGIN_PATH/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm
 
 ssh root@$FUELMASTER fuel plugins --list
