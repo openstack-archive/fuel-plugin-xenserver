@@ -100,6 +100,22 @@
         kernel_params:
           kernel:
             value: "console=ttyS0,9600 console=tty0 net.ifnames=0 biosdevname=0 rootdelay=90 nomodeset"
+        xenserver_access:
+          metadata:
+            label: "Xenserver Access"
+            weight: 10
+          user:
+            value: "root"
+            label: "Username"
+            description: "Username for Xenserver"
+            weight: 10
+            type: "text"
+          password:
+            value: ""
+            label: "Password"
+            description: "Password for Xenserver"
+            weight: 20
+            type: "password"
         repo_setup:
           metadata:
             label: "Repositories"
@@ -162,6 +178,142 @@
                 suite: "auxiliary"
                 section: "main restricted"
                 priority: 1150
+        additional_components:
+          metadata:
+            label: "Additional Components"
+            weight: 20
+          sahara:
+            value: false
+            label: "Install Sahara"
+            description: "If selected, Sahara component will be installed"
+            weight: 10
+            type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: disable
+          murano:
+            value: false
+            label: "Install Murano"
+            description: "If selected, Murano component will be installed"
+            weight: 20
+            type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: disable
+          heat:
+            value: true
+            label: ""
+            description: ""
+            weight: 30
+            type: "hidden"
+          ceilometer:
+            value: false
+            label: "Install Ceilometer"
+            description: "If selected, Ceilometer component will be installed"
+            weight: 40
+            type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: disable
+          mongo:
+            value: false
+            label: "Use external Mongo DB"
+            description: "If selected, You can use external Mongo DB as ceilometer backend"
+            weight: 40
+            type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: disable
+        common:
+          metadata:
+            label: "Common"
+            weight: 30
+          debug:
+            value: false
+            label: "OpenStack debug logging"
+            description: "Debug logging mode provides more information, but requires more disk space."
+            weight: 20
+            type: "checkbox"
+          puppet_debug:
+            value: true
+            label: "Puppet debug logging"
+            description: "Debug puppet logging mode provides more information, but requires more disk space."
+            weight: 20
+            type: "checkbox"
+          nova_quota:
+            value: false
+            label: "Nova quotas"
+            description: "Quotas are used to limit CPU and memory usage for tenants. Enabling quotas will increase load on the Nova database."
+            weight: 25
+            type: "checkbox"
+          auto_assign_floating_ip:
+            value: false
+            label: "Auto assign floating IP"
+            description: "If selected, OpenStack will automatically assign a floating IP to a new instance"
+            weight: 40
+            type: "checkbox"
+            restrictions:
+              - condition: "cluster:net_provider == 'neutron'"
+                action: "hide"
+          use_vcenter:
+            value: false
+            weight: 30
+            type: "hidden"
+          libvirt_type:
+            value: "xen"
+            values:
+              - data: "xen"
+                label: "XenServer"
+                description: "Choose this type of hypervisor if you run OpenStack on XenServers"
+                restrictions:
+                  - condition: "true"
+                    action: disable
+              - data: "kvm"
+                label: "KVM"
+                description: "Choose this type of hypervisor if you run OpenStack on hardware"
+                restrictions:
+                  - condition: "true"
+                    action: disable
+              - data: "qemu"
+                label: "QEMU"
+                description: "Choose this type of hypervisor if you run OpenStack on virtual hosts."
+                restrictions:
+                  - condition: "true"
+                    action: disable
+            label: "Hypervisor type"
+            weight: 30
+            type: "radio"
+          resume_guests_state_on_host_boot:
+            value: true
+            label: "Resume guests state on host boot"
+            description: "Whether to resume previous guests state when the host reboots. If enabled, this option causes guests assigned to the host to resume their previous state. If the guest was running a restart will be attempted when nova-compute starts. If the guest was not running previously, a restart will not be attempted."
+            weight: 60
+            type: "checkbox"
+          use_cow_images:
+            value: true
+            label: "Use qcow format for images"
+            description: "For most cases you will want qcow format. If it's disabled, raw image format will be used to run VMs. OpenStack with raw format currently does not support snapshotting."
+            weight: 50
+            type: "checkbox"
+          auth_key:
+            value: ""
+            label: "Public Key"
+            description: "Public key(s) to include in authorized_keys on deployed nodes"
+            weight: 70
+            type: "textarea"
+        external_ntp:
+          metadata:
+            label: "Host OS NTP Servers"
+            weight: 100
+          ntp_list:
+            value: "0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,3.pool.ntp.org"
+            label: "NTP server list"
+            description: "List of upstream NTP servers, separated by comma"
+            weight: 10
+            type: "text"
+            regex:
+              source: '^\s*(?:(?:\w+(?:-+\w+)*\.)+[a-z]+|\d{1,3}(?:\.\d{1,3}){3})\s*(?:,\s*(?:(?:\w+(?:-+\w+)*\.)+[a-z]+|\d{1,3}(\.\d{1,3}){3})\s*)*$'
+              error: "Invalid NTP server list"
       generated:
         repo_setup:
           installer_kernel:
