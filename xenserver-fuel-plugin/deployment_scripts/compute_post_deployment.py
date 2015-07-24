@@ -8,7 +8,7 @@ from subprocess import call
 from shutil import rmtree
 from tempfile import mkstemp, mkdtemp
 
-LOG_FILE = '/var/log/compute_post_deployment.log'
+LOG_FILE = '/tmp/compute_post_deployment.log'
 logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 
 def init_eth(dev_no):

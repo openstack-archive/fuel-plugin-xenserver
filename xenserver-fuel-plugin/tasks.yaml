@@ -6,7 +6,7 @@
   stage: post_deployment
   type: shell
   parameters:
-    cmd: ./controller_post_deployment.sh > /var/log/controller_post_deployment.log
+    cmd: ./controller_post_deployment.sh > /tmp/controller_post_deployment.log
     timeout: 42
 - role: ['compute']
   stage: post_deployment
