@@ -32,12 +32,10 @@ tar -vxf %{SOURCE0} -C %{name}-%{version}
 cd %{name}-%{version}
 mkdir -p %{buildroot}/var/www/nailgun/plugins/
 cp -r ${ name } %{buildroot}/var/www/nailgun/plugins/
+date >> /tmp/post-xenserver-fuel-plugin-installed.log
 
 %%clean
 rm -rf %{buildroot}
 
 %%files
 /var/www/nailgun/plugins/${ name }
-
-%post
-date >> /tmp/post-xenserver-fuel-plugin-installed.log
