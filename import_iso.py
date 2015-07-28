@@ -17,24 +17,24 @@ def import_raw_vdi(host, session, filename):
 		pool = session.xenapi.pool.get_all()[0]
 		default_sr = session.xenapi.pool.get_default_SR(pool)
 		sr = session.xenapi.SR.get_record(default_sr)
+
 		vdi_spec = {
 			'name_label': os.path.basename(filename),
 			'name_description': 'Nova API plugin ISO',
-			'SR': 'OpaqueRef:' + sr['uuid'],
-			'virtual_size': os.stat(filename).st_size,
+			'SR': default_sr,
+			'virtual_size': str(os.stat(filename).st_size),
 			'type': 'user',
 			'sharable': False,
 			'read_only': False,
 			'other_config': dict(),
 		}
-		vdi = session.xenapi.VDI.create_vdi(vdi_spec) 
-		#TODO: Failure: ['MESSAGE_METHOD_UNKNOWN', 'VDI.create_vdi']
+		vdi = session.xenapi.VDI.create(vdi_spec) 
 
-		task_name = 'import ' + vdi.get_uuid()
+		task_name = 'import ' + vdi
 		import_task = session.xenapi.task.create(task_name, '')
 
 		put_url = '/import_raw_vdi?session_id=%s&vdi=%s&task_id=%s' % \
-			(session._session, vdi.get_uuid(), import_task)
+			(session._session, vdi, import_task)
 
 		with open(filename, 'rb') as f:
 			content = f.read()
@@ -44,6 +44,9 @@ def import_raw_vdi(host, session, filename):
 
 		import_status = session.xenapi.task.get_status(import_task)
 		while import_status == 'pending':
+			print import_status
+			"""TODO: loop 'pending', suspiciously a bug of XenServer that 
+			could be fixed by installing SP1"""
 			time.sleep(1)
 			import_status = session.xenapi.task.get_status(import_task)
 
