@@ -6,13 +6,13 @@
   stage: post_deployment
   type: shell
   parameters:
-    cmd: ./controller_post_deployment.sh > /tmp/controller_post_deployment.log
+    cmd: controller_post_deployment.sh 
     timeout: 42
 - role: ['compute']
   stage: post_deployment
   type: shell
   parameters:
-    cmd: ./compute_post_deployment.py
+    cmd: compute_post_deployment.py
     timeout: 42
 # Task is applied for all roles
 - role: '*'
