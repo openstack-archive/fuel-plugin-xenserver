@@ -260,14 +260,8 @@
             weight: 30
             type: "hidden"
           libvirt_type:
-            value: "xen"
+            value: "qemu"
             values:
-              - data: "xen"
-                label: "XenServer"
-                description: "Choose this type of hypervisor if you run OpenStack on XenServers"
-                restrictions:
-                  - condition: "true"
-                    action: disable
               - data: "kvm"
                 label: "KVM"
                 description: "Choose this type of hypervisor if you run OpenStack on hardware"
@@ -351,21 +345,10 @@
       Compute:
         hypervisor:
           type: "radio"
-          value: "xen"
+          value: "qemu"
           weight: 5
           bind: "settings:common.libvirt_type.value"
           values:
-            - data: "xen"
-              label: "Xen"
-              description: "XenServer"
-              bind:
-                - "wizard:Storage.ceph": "disable"
-                - "wizard:Network.manager": "nova-network"
-              restrictions:
-                - condition: "true"
-                  action: disable
-                - condition: "true"
-                  message: "You have chosen XenServer for your cluster environment, therefore the hypervisor type has to be Xen."
             - data: "kvm"
               label: "dialog.create_cluster_wizard.compute.kvm"
               description: "dialog.create_cluster_wizard.compute.kvm_description"
@@ -380,10 +363,12 @@
               description: "dialog.create_cluster_wizard.compute.qemu_description"
               bind:
                 - "wizard:Storage.ceph": "disable"
-                - "wizard:Network.manager": "neutron-vlan"
+                - "wizard:Network.manager": "nova-network"
               restrictions:
                 - condition: "true"
                   action: disable
+                - condition: "true"
+                  message: "You have chosen XenServer for your cluster environment, therefore the hypervisor type has to be Xen."
         vcenter:
           type: "checkbox"
           weight: 10
