@@ -17,6 +17,7 @@ extra_vdi=$(xe vdi-create \
 	virtual-size="${disksize}GiB" \
 	sr-uuid=$localsr type=user)
 xe vbd-create vm-uuid=$vm_uuid vdi-uuid=$extra_vdi device=0
+xe vm-cd-add vm=$vm_uuid device=1 cd-name="xs-tools.iso"
 
 xe vm-memory-limits-set \
     static-min=${memory}MiB \

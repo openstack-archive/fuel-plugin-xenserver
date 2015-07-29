@@ -30,7 +30,7 @@ def import_raw_vdi(host, session, filename):
 		}
 		vdi = session.xenapi.VDI.create(vdi_spec) 
 
-		task_name = 'import ' + vdi
+		task_name = 'import ' + session.xenapi.VDI.get_uuid(vdi)
 		import_task = session.xenapi.task.create(task_name, '')
 
 		put_url = '/import_raw_vdi?session_id=%s&vdi=%s&task_id=%s' % \
@@ -43,12 +43,17 @@ def import_raw_vdi(host, session, filename):
 		response = conn.getresponse()
 
 		import_status = session.xenapi.task.get_status(import_task)
+		timeout = 30
 		while import_status == 'pending':
-			print import_status
+			print import_status, timeout
 			"""TODO: loop 'pending', suspiciously a bug of XenServer that 
 			could be fixed by installing SP1"""
 			time.sleep(1)
 			import_status = session.xenapi.task.get_status(import_task)
+			timeout -= 1
+			if timeout < 0:
+				session.xenapi.task.cancel(import_task)
+				break
 
 		if import_status != 'success':
 			error_info = session.xenapi.task.get_error_info(import_task)
