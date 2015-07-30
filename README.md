@@ -20,3 +20,9 @@ Deployment
 	./deploy.sh release
 	./deploy.sh plugin
 	./deploy.sh #both
+	./prepare_cluster.sh "eth0" "eth1" 2048 40
+	./setup_HIMN.sh
+
+Web UI
+----------
+	open http://HOST_OF_FUEL_MASTER:8000/
