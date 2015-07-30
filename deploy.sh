@@ -33,7 +33,9 @@ function deploy_plugin {
 
 	#ssh root@$FUELMASTER fuel plugins --remove xenserver-fuel-plugin==$VERSION
 	if ssh root@$FUELMASTER fuel plugins --list | grep xenserver-fuel-plugin; then
-		ssh root@$FUELMASTER fuel plugins --update "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
+		#ssh root@$FUELMASTER fuel plugins --update "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
+		ssh root@$FUELMASTER fuel plugins --remove "xenserver-fuel-plugin==$VERSION"
+		ssh root@$FUELMASTER fuel plugins --install "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
 	else
 		ssh root@$FUELMASTER fuel plugins --install "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
 	fi

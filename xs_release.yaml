@@ -368,7 +368,7 @@
                 - condition: "true"
                   action: disable
                 - condition: "true"
-                  message: "You have chosen XenServer for your cluster environment, therefore the hypervisor type has to be Xen."
+                  message: "You have chosen XenServer for your cluster environment, therefore the hypervisor type has to be qemu initially."
         vcenter:
           type: "checkbox"
           weight: 10
