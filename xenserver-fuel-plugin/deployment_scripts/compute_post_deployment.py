@@ -10,7 +10,7 @@ from tempfile import mkstemp, mkdtemp
 
 LOG_FILE = '/tmp/compute_post_deployment.log'
 ASTUTE_PATH = '/etc/astute.yaml'
-ACCESS_SECTION = 'xenserver_access'
+ACCESS_SECTION = 'xen-fuel-plugin'
 XENAPI_URL = 'https://pypi.python.org/packages/source/X/XenAPI/XenAPI-1.2.tar.gz'
 
 logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
@@ -26,7 +26,7 @@ def get_access(astute_path, access_section):
 		return None
 
 	access = astute[access_section]
-	info('username: {user}'.format(**access))
+	info('username: {username}'.format(**access))
 	info('password: {password}'.format(**access))
 	return access
 
@@ -71,7 +71,7 @@ def create_novacompute_conf(access):
 compute_driver=xenapi.XenAPIDriver
 [xenserver]
 connection_url=http://169.254.0.1
-connection_username={user}
+connection_username={username}
 connection_password={password}
 """
 	s = template.format(**access)

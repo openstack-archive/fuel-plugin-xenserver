@@ -100,22 +100,6 @@
         kernel_params:
           kernel:
             value: "console=ttyS0,9600 console=tty0 net.ifnames=0 biosdevname=0 rootdelay=90 nomodeset"
-        xenserver_access:
-          metadata:
-            label: "Xenserver Access"
-            weight: 10
-          user:
-            value: "root"
-            label: "Username"
-            description: "Username for Xenserver"
-            weight: 10
-            type: "text"
-          password:
-            value: ""
-            label: "Password"
-            description: "Password for Xenserver"
-            weight: 20
-            type: "password"
         repo_setup:
           metadata:
             label: "Repositories"

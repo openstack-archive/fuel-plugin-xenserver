@@ -1,0 +1,13 @@
+attributes:
+  username:
+    value: 'root'
+    label: 'Username'
+    description: ''
+    weight: 25
+    type: "text"
+  password:
+    value: ''
+    label: 'Password'
+    description: ''
+    weight: 25
+    type: "text"
