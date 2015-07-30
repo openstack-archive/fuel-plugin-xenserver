@@ -4,7 +4,7 @@ xenserver-fuel-plugin
 Prerequisites
 -------------
 
-	apt-get install createrepo rpm dpkg-dev python-pip -y || yum install createrepo rpm rpm-build dpkg-devel python-pip -y
+	apt-get install createrepo rpm dpkg-dev python-pip sshpass -y || yum install createrepo rpm rpm-build dpkg-devel python-pip sshpass -y
 	pip install fuel-plugin-builder
 
 Environment Setup

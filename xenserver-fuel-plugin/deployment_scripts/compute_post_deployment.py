@@ -70,7 +70,7 @@ def create_novacompute_conf(access):
 """[DEFAULT]
 compute_driver=xenapi.XenAPIDriver
 [xenserver]
-connection_url=http://10.219.10.22
+connection_url=http://169.254.0.1
 connection_username={user}
 connection_password={password}
 """
