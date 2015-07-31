@@ -10,7 +10,7 @@ from tempfile import mkstemp, mkdtemp
 
 LOG_FILE = '/tmp/compute_post_deployment.log'
 ASTUTE_PATH = '/etc/astute.yaml'
-ACCESS_SECTION = 'xen-fuel-plugin'
+ACCESS_SECTION = 'xenserver-fuel-plugin'
 XENAPI_URL = 'https://pypi.python.org/packages/source/X/XenAPI/XenAPI-1.2.tar.gz'
 
 logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
@@ -29,9 +29,6 @@ def get_access(astute_path, access_section):
 	info('username: {username}'.format(**access))
 	info('password: {password}'.format(**access))
 	return access
-
-def install_xentools():
-	os.system('mount /dev/cdrom /mnt && /mnt/Linux/install.sh')
 
 def init_eth(dev_no):
 	fname = '/etc/network/interfaces.d/ifcfg-eth%d' % (dev_no)

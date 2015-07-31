@@ -1,29 +1,23 @@
-# This tasks will be applied on controller nodes,
-# here you can also specify several roles, for example
-# ['cinder', 'compute'] will be applied only on
-# cinder and compute nodes
+- role: '*'
+  stage: pre_deployment/6000
+  type: shell
+  parameters:
+    cmd: 'mount /dev/cdrom /mnt && /mnt/Linux/install.sh -n'
+    timeout: 60
+- role: '*'
+  stage: pre_deployment/7000
+  type: reboot
+  parameters:
+    timeout: 300
 - role: ['controller']
   stage: post_deployment
   type: shell
   parameters:
     cmd: ./controller_post_deployment.sh
-    timeout: 42
+    timeout: 60
 - role: ['compute']
-  stage: post_deployment
+  stage: post_deployment/6000
   type: shell
   parameters:
     cmd: ./compute_post_deployment.py
-    timeout: 42
-# Task is applied for all roles
-- role: '*'
-  stage: pre_deployment
-  type: shell
-  parameters:
-    cmd: echo all > /tmp/plugin.all
-    timeout: 42
-# "reboot" task reboots the nodes and waits until they get back online
-# - role: '*'
-#   stage: pre_deployment
-#   type: reboot
-#   parameters:
-#     timeout: 600
+    timeout: 60

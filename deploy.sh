@@ -1,46 +1,50 @@
 source localrc
 
 ACTION=${1:-"all"}
-TMP="/tmp"
 
 [ -e "$VIRENV_PATH/bin/activate" ] ||	virtualenv "$VIRENV_PATH"
 
 source $VIRENV_PATH/bin/activate
 
 function deploy_release {
-	scp cleardb.py root@$FUELMASTER:$TMP
-	ssh root@$FUELMASTER dockerctl copy "$TMP/cleardb.py" nailgun:/tmp/cleardb.py
-	ssh root@$FUELMASTER dockerctl shell nailgun /tmp/cleardb.py
-	ssh root@$FUELMASTER rm "$TMP/cleardb.py"
-
+	sshpass -p $XEN_PASSWORD scp cleardb.py root@$FUELMASTER:/tmp
+	sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER \
+'
+dockerctl copy "/tmp/cleardb.py" nailgun:/tmp/cleardb.py
+dockerctl shell nailgun /tmp/cleardb.py
+rm "/tmp/cleardb.py"
+'
 	cat base_release.yaml > newrelease.yaml
 	echo '- pk: 9' >> newrelease.yaml
 	echo '  extend: *base_release' >> newrelease.yaml
 	cat xs_release.yaml >> newrelease.yaml
-	scp newrelease.yaml root@$FUELMASTER:$TMP
-	ssh root@$FUELMASTER dockerctl copy "$TMP/newrelease.yaml" nailgun:/tmp/newrelease.yaml
-	ssh root@$FUELMASTER dockerctl shell nailgun manage.py loaddata /tmp/newrelease.yaml
-	ssh root@$FUELMASTER fuel rel --sync-deployment-tasks --dir /etc/puppet/
+	sshpass -p $XEN_PASSWORD scp newrelease.yaml root@$FUELMASTER:/tmp
+	sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER \
+'
+dockerctl copy "/tmp/newrelease.yaml" nailgun:/tmp/newrelease.yaml
+dockerctl shell nailgun manage.py loaddata /tmp/newrelease.yaml
+fuel rel --sync-deployment-tasks --dir /etc/puppet/
+rm "/tmp/newrelease.yaml"
+'
 	rm newrelease.yaml
-	ssh root@$FUELMASTER rm "$TMP/newrelease.yaml"
 }
 
 function deploy_plugin {
 	fpb --check xenserver-fuel-plugin
 	fpb --build xenserver-fuel-plugin
 
-	scp xenserver-fuel-plugin/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm root@$FUELMASTER:$TMP
+	sshpass -p $XEN_PASSWORD scp xenserver-fuel-plugin/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm root@$FUELMASTER:/tmp
 
-	#ssh root@$FUELMASTER fuel plugins --remove xenserver-fuel-plugin==$VERSION
-	if ssh root@$FUELMASTER fuel plugins --list | grep xenserver-fuel-plugin; then
-		#ssh root@$FUELMASTER fuel plugins --update "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
-		ssh root@$FUELMASTER fuel plugins --remove "xenserver-fuel-plugin==$VERSION"
-		ssh root@$FUELMASTER fuel plugins --install "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
+	#sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER fuel plugins --remove xenserver-fuel-plugin==$VERSION
+	if sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER fuel plugins --list | grep xenserver-fuel-plugin; then
+		#sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER fuel plugins --update "/tmp/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
+		sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER fuel plugins --remove "xenserver-fuel-plugin==$VERSION"
+		sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER fuel plugins --install "/tmp/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
 	else
-		ssh root@$FUELMASTER fuel plugins --install "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
+		sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER fuel plugins --install "/tmp/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
 	fi
 
-	ssh root@$FUELMASTER rm "$TMP/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
+	sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$FUELMASTER rm "/tmp/xenserver-fuel-plugin-0.0-$VERSION-1.noarch.rpm"
 }
 case $ACTION in
 	"release") deploy_release ;;

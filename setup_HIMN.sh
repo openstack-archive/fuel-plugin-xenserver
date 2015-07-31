@@ -1,8 +1,8 @@
 source localrc
 
-ALL_NODES="$CONTROLLER_NODES,$COMPUTE_NODES,$STORAGE_NODES"
+echo "Setting up HIMN"
 
-for HOST_NODE in ${ALL_NODES//,/ }
+for HOST_NODE in ${COMPUTE_NODES//,/ }
 do
 	IFS=/ read -a _HOST_NODE <<< $HOST_NODE
 	HOST=${_HOST_NODE[0]}
@@ -16,12 +16,17 @@ if [ -n "$vm_uuid" ]; then
 	net_uuid=$(xe network-list bridge=xenapi minimal=true)
 	vif_uuid=$(xe vif-list network-uuid="$net_uuid" vm-uuid="$vm_uuid" --minimal)
 	if [ -z "$vif_uuid" ]; then
+		
 		eth2_uuid=$(xe vif-create network-uuid="$net_uuid" vm-uuid="$vm_uuid" device="$device_number")
-		xe vif-plug uuid="$eth2_uuid"
+		echo "$vm_name : HIMN created"
+
+		_vm=$(xe vif-plug uuid="$eth2_uuid")
+		echo "$vm_name : HIMN plugged"
 		#You attempted an operation on a VM which requires PV drivers to be installed but the drivers were not detected.
 	fi
 	other_config=$(xe network-param-get param-name="other-config" uuid="$net_uuid")
 	if [[ "$other_config" == "*is_guest_installer_network*" ]]; then
+		echo "$vm_name : exposing HIMN"
 		xe network-param-remove param-name="other-config" param-key="is_guest_installer_network" uuid="$net_uuid"
 	fi
 else
