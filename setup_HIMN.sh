@@ -20,9 +20,7 @@ if [ -n "$vm_uuid" ]; then
 		eth2_uuid=$(xe vif-create network-uuid="$net_uuid" vm-uuid="$vm_uuid" device="$device_number")
 		echo "$vm_name : HIMN created"
 
-		_vm=$(xe vif-plug uuid="$eth2_uuid")
-		echo "$vm_name : HIMN plugged"
-		#You attempted an operation on a VM which requires PV drivers to be installed but the drivers were not detected.
+		#_vm=$(xe vif-plug uuid="$eth2_uuid")
 	fi
 	other_config=$(xe network-param-get param-name="other-config" uuid="$net_uuid")
 	if [[ "$other_config" == "*is_guest_installer_network*" ]]; then
