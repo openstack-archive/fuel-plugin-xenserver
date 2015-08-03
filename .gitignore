@@ -5,4 +5,4 @@
 localrc
 newrelease.yaml
 models/
-
+*.sublime-workspace

@@ -39,8 +39,8 @@ def init_eth(dev_no):
 		return
 
 	info('%s found' % eth)
-	call('dhclient', eth)
-	call('ifconfig', eth)
+	call(['dhclient', eth])
+	call(['ifconfig', eth])
 	fname = '/etc/network/interfaces.d/ifcfg-' + eth
 	s = \
 """auto {eth}
@@ -49,8 +49,8 @@ iface {eth} inet dhcp
 	with open(fname, 'w') as f:
 		f.write(s)
 	info('%s created' % fname)
-	call('ifdown', eth)
-	call('ifup', eth)
+	call(['ifdown', eth])
+	call(['ifup', eth])
 	addr = netifaces.ifaddresses(eth).get(2)
 	if addr is not None:
 		ip = addr[0]['addr']
@@ -61,15 +61,29 @@ iface {eth} inet dhcp
 
 	return
 
-def set_routing():
-	eth_nova = astute['network_scheme']['roles']['novanetwork/fixed']
-	storage_ip = astute['network_scheme']['endpoints']['br-storage']['IP']
-	mgmt_ip = astute['network_scheme']['endpoints']['br-mgmt']['IP']
+def set_routing(astute_path):
+	if not os.path.exists(astute_path):
+		warning('%s not found' % astute_path)
+		return None
 
+	astute = yaml.load(open(astute_path))
+
+	eth_nova = astute['network_scheme']['roles']['novanetwork/fixed']
+
+	storage_ip = astute['network_scheme']['endpoints']['br-storage']['IP'][0]
+	mgmt_ip = astute['network_scheme']['endpoints']['br-mgmt']['IP'][0]
 	nova_ip = netifaces.ifaddresses(eth_nova).get(2)
 
-	call('route', 'add', storage_ip, 'gw', nova_ip)
-	call('route', 'add', mgmt_ip, 'gw', nova_ip)
+	info('storage network ip : %s' % storage_ip)
+	info('management network ip : %s' % mgmt_ip)
+	info('nova network ip : %s' % nova_ip)
+
+	if storage_ip and mgmt_ip and nova_ip:
+		call(['route', 'add', storage_ip, 'gw', nova_ip])
+		call(['route', 'add', mgmt_ip, 'gw', nova_ip])
+		info('storage/management network routed to nova network')
+	else:
+		info('storage/management/nova network ip missing')
 
 def install_xenapi_sdk(xenapi_url):
 	xenapi_zipball = mkstemp()[1]
@@ -102,7 +116,8 @@ connection_url=http://%s
 connection_username="%s"
 connection_password="%s"
 """
-	s = template.format(ip, access['username'],access['password'])
+	xs_ip = '.'.join(ip.split('.')[:-1] + ['1'])
+	s = template % (xs_ip, access['username'], access['password'])
 	with open('/etc/nova/nova-compute.conf','w') as f:
 		f.write(s)
 	info('nova-compute.conf created')
@@ -111,5 +126,6 @@ if __name__ == '__main__':
 	install_xenapi_sdk(XENAPI_URL)
 	access = get_access(ASTUTE_PATH, ACCESS_SECTION)
 	ip = init_eth(2)
+	set_routing(ASTUTE_PATH)
 	if access is not None and ip is not None :
 		create_novacompute_conf(access, ip)
