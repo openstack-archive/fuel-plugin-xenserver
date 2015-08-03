@@ -19,13 +19,6 @@ if [ -n "$vm_uuid" ]; then
 		
 		eth2_uuid=$(xe vif-create network-uuid="$net_uuid" vm-uuid="$vm_uuid" device="$device_number")
 		echo "$vm_name : HIMN created"
-
-		#_vm=$(xe vif-plug uuid="$eth2_uuid")
-	fi
-	other_config=$(xe network-param-get param-name="other-config" uuid="$net_uuid")
-	if [[ "$other_config" == "*is_guest_installer_network*" ]]; then
-		echo "$vm_name : exposing HIMN"
-		xe network-param-remove param-name="other-config" param-key="is_guest_installer_network" uuid="$net_uuid"
 	fi
 else
 	echo "$vm_name does not exist"
