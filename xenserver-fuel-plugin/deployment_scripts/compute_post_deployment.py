@@ -4,7 +4,7 @@ import os
 import logging
 from logging import debug, info, warning
 import yaml
-from subprocess import call
+from subprocess import call, Popen
 from shutil import rmtree
 from tempfile import mkstemp, mkdtemp
 import netifaces
@@ -33,7 +33,6 @@ def get_access(astute_path, access_section):
 
 def init_eth(dev_no):
 	eth = 'eth%s' % dev_no
-
 	if not eth in netifaces.interfaces():
 		warning('%s not found' % eth)
 		return
@@ -60,30 +59,6 @@ iface {eth} inet dhcp
 		warning('%s not found' % access_section)
 
 	return
-
-def set_routing(astute_path):
-	if not os.path.exists(astute_path):
-		warning('%s not found' % astute_path)
-		return None
-
-	astute = yaml.load(open(astute_path))
-
-	eth_nova = astute['network_scheme']['roles']['novanetwork/fixed']
-
-	storage_ip = astute['network_scheme']['endpoints']['br-storage']['IP'][0]
-	mgmt_ip = astute['network_scheme']['endpoints']['br-mgmt']['IP'][0]
-	nova_ip = netifaces.ifaddresses(eth_nova).get(2)
-
-	info('storage network ip : %s' % storage_ip)
-	info('management network ip : %s' % mgmt_ip)
-	info('nova network ip : %s' % nova_ip)
-
-	if storage_ip and mgmt_ip and nova_ip:
-		call(['route', 'add', storage_ip, 'gw', nova_ip])
-		call(['route', 'add', mgmt_ip, 'gw', nova_ip])
-		info('storage/management network routed to nova network')
-	else:
-		info('storage/management/nova network ip missing')
 
 def install_xenapi_sdk(xenapi_url):
 	xenapi_zipball = mkstemp()[1]
@@ -122,10 +97,63 @@ connection_password="%s"
 		f.write(s)
 	info('nova-compute.conf created')
 
+def restart_nova_services():
+	call(['stop', 'nova-compute'])
+	call(['start', 'nova-compute'])
+	info('nova-compute restarted')
+	call(['stop', 'nova-network'])
+	call(['start', 'nova-network'])
+	info('nova-network restarted')
+
+
+def _ssh(himn_ip, access, cmd):
+	ssh = Popen(['sshpass', '-p', access['password'], 'ssh', 
+		'%s@%s' + (access['username'], himn_ip), cmd],
+		stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	s = ssh.stdout.readlines()
+	return s
+
+def route_himn(astute_path, dev_no, access):
+	if not os.path.exists(astute_path):
+		warning('%s not found' % astute_path)
+		return None
+
+	eth = 'eth%s' % dev_no
+	if not eth in netifaces.interfaces():
+		warning('%s not found' % eth)
+		return
+
+	astute = yaml.load(open(astute_path))
+
+	storage_ip = astute['network_scheme']['endpoints']['br-storage']['IP'][0]
+	mgmt_ip = astute['network_scheme']['endpoints']['br-mgmt']['IP'][0]
+	himn_ip = netifaces.ifaddresses(eth).get(2) 
+
+	info('storage network ip : %s' % storage_ip)
+	info('management network ip : %s' % mgmt_ip)
+	info('HIMN ip : %s' % himn_ip)
+
+	if storage_ip and mgmt_ip and himn_ip:
+		info(_ssh('route add "%s" gw "%s"' % (storage_ip, himn_ip)))
+		info(_ssh('route add "%s" gw "%s"' % (mgmt_ip, himn_ip)))
+	else:
+		warning('storage_ip, mgmt_ip or himn_ip is missing')
+
+def install_suppack(himn_ip, access):
+	#TODO: scp root@HIMN novaplugins.iso 
+	info(_ssh('xe-install-supplemental-pack novaplugins.iso'))
+
+def filter_himn(himn_ip):
+	#TODO
+	return
+
 if __name__ == '__main__':
 	install_xenapi_sdk(XENAPI_URL)
 	access = get_access(ASTUTE_PATH, ACCESS_SECTION)
-	ip = init_eth(2)
-	set_routing(ASTUTE_PATH)
-	if access is not None and ip is not None :
-		create_novacompute_conf(access, ip)
+	himn_ip = init_eth(2)
+	if access and himn_ip:
+		#route_himn(ASTUTE_PATH, himn_ip, access)
+		#install_suppack(himn_ip, access)
+		#filter_himn(himn_ip)
+		create_novacompute_conf(access, himn_ip)
+		restart_nova_services()
