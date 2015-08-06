@@ -30,6 +30,15 @@ rm "/tmp/newrelease.yaml"
 }
 
 function deploy_plugin {
+	if ! [ -e xenserver-fuel-plugin/deployment_scripts/novaplugins.iso ]; then
+		if [ -e ../nova-suppack/suppack/novaplugins.iso ]; then
+			cp ../nova-suppack/suppack/novaplugins.iso \
+				xenserver-fuel-plugin/deployment_scripts/
+		else
+			sudo ./build-nova-suppack.sh
+		fi
+	fi
+
 	fpb --check xenserver-fuel-plugin
 	fpb --build xenserver-fuel-plugin
 

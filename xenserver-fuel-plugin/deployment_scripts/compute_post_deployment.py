@@ -4,7 +4,7 @@ import os
 import logging
 from logging import debug, info, warning
 import yaml
-from subprocess import call, Popen
+from subprocess import call, Popen, PIPE
 from shutil import rmtree
 from tempfile import mkstemp, mkdtemp
 import netifaces
@@ -16,12 +16,15 @@ XENAPI_URL = 'https://pypi.python.org/packages/source/X/XenAPI/XenAPI-1.2.tar.gz
 
 logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 
-def get_access(astute_path, access_section):
+def get_astute(astute_path):
 	if not os.path.exists(astute_path):
 		warning('%s not found' % astute_path)
 		return None
 
 	astute = yaml.load(open(astute_path))
+	return astute
+
+def get_access(astute, access_section):
 	if not access_section in astute:
 		warning('%s not found' % access_section)
 		return None
@@ -30,6 +33,14 @@ def get_access(astute_path, access_section):
 	info('username: {username}'.format(**access))
 	info('password: {password}'.format(**access))
 	return access
+
+def get_endpoints(astute):
+	_endpoints = astute['network_scheme']['endpoints']
+	endpoints = dict([(k,_endpoints[k]['IP'][0]) for k in _endpoints])
+
+	info('br-storage: {br-storage}'.format(**access))
+	info('br-mgmt: {br-mgmt}'.format(**access))
+	return endpoints
 
 def init_eth(dev_no):
 	eth = 'eth%s' % dev_no
@@ -58,8 +69,6 @@ iface {eth} inet dhcp
 	else:
 		warning('%s not found' % access_section)
 
-	return
-
 def install_xenapi_sdk(xenapi_url):
 	xenapi_zipball = mkstemp()[1]
 	xenapi_sources = mkdtemp()
@@ -83,8 +92,7 @@ def install_xenapi_sdk(xenapi_url):
 	rmtree(xenapi_sources)
 
 def create_novacompute_conf(access, ip):
-	template = \
-"""[DEFAULT]
+	template = """[DEFAULT]
 compute_driver=xenapi.XenAPIDriver
 [xenserver]
 connection_url=http://%s
@@ -98,62 +106,74 @@ connection_password="%s"
 	info('nova-compute.conf created')
 
 def restart_nova_services():
-	call(['stop', 'nova-compute'])
-	call(['start', 'nova-compute'])
+	_run('stop nova-compute')
+	_run('start nova-compute')
 	info('nova-compute restarted')
-	call(['stop', 'nova-network'])
-	call(['start', 'nova-network'])
+	_run('stop nova-network')
+	_run('start nova-network')
 	info('nova-network restarted')
 
 
-def _ssh(himn_ip, access, cmd):
+def _ssh(host, access, cmd):
 	ssh = Popen(['sshpass', '-p', access['password'], 'ssh', 
-		'%s@%s' + (access['username'], himn_ip), cmd],
-		stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		'%s@%s' % (access['username'], host), cmd],
+		stdout=PIPE, stderr=PIPE)
 	s = ssh.stdout.readlines()
-	return s
+	return '\n'.join(s)
 
-def route_himn(astute_path, dev_no, access):
-	if not os.path.exists(astute_path):
-		warning('%s not found' % astute_path)
-		return None
+def _scp(host, access, path, filename):
+	ssh = Popen(['sshpass', '-p', access['password'], 'scp', 
+		'%s@%s:%s' % (access['username'], host, path), filename],
+		stdout=PIPE, stderr=PIPE)
+	s = ssh.stdout.readlines()
+	return '\n'.join(s)
 
-	eth = 'eth%s' % dev_no
-	if not eth in netifaces.interfaces():
-		warning('%s not found' % eth)
-		return
+def _run(cmd):
+	ssh = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+	s = ssh.stdout.readlines()
+	return '\n'.join(s)
 
-	astute = yaml.load(open(astute_path))
-
-	storage_ip = astute['network_scheme']['endpoints']['br-storage']['IP'][0]
-	mgmt_ip = astute['network_scheme']['endpoints']['br-mgmt']['IP'][0]
-	himn_ip = netifaces.ifaddresses(eth).get(2) 
-
-	info('storage network ip : %s' % storage_ip)
-	info('management network ip : %s' % mgmt_ip)
-	info('HIMN ip : %s' % himn_ip)
-
-	if storage_ip and mgmt_ip and himn_ip:
-		info(_ssh('route add "%s" gw "%s"' % (storage_ip, himn_ip)))
-		info(_ssh('route add "%s" gw "%s"' % (mgmt_ip, himn_ip)))
+def route_to_himn(endpoints, himn_ip, access):
+	#TODO check exists
+	storage_ip = endpoints.get('br-storage')
+	if storage_ip:
+		_ssh(himn_ip, access, 'route add "%s" gw "%s"' % (storage_ip, himn_ip))
+		info('storage network %s routed to %s' % (storage_ip, himn_ip))
 	else:
-		warning('storage_ip, mgmt_ip or himn_ip is missing')
+		info('storage network ip is missing')
+
+	mgmt_ip = endpoints.get('br-mgmt')
+	if storage_ip:
+		_ssh(himn_ip, access, 'route add "%s" gw "%s"' % (mgmt_ip, himn_ip))
+		info('management network %s routed to %s' % (mgmt_ip, himn_ip))
+	else:
+		info('management network ip is missing')
 
 def install_suppack(himn_ip, access):
-	#TODO: scp root@HIMN novaplugins.iso 
-	info(_ssh('xe-install-supplemental-pack novaplugins.iso'))
+	#TODO: check exists
+	_scp(himn_ip, access, '/tmp/', 'novaplugins.iso')
+	_ssh(himn_ip, access, 'xe-install-supplemental-pack /tmp/novaplugins.iso')
+	_ssh(himn_ip, access, 'rm /tmp/novaplugins.iso')
 
-def filter_himn(himn_ip):
-	#TODO
-	return
+def forward_from_himn(endpoints, himn_ip, eth_no):
+	#TODO check exists
+	_run('iptables -A FORWARD -i eth%s -j ACCEPT' % eth_no)
+	_run("sed -i 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g' "\
+		"/etc/sysctl.conf")
+	_run('sysctl -p /etc/sysctl.conf')
+	_run('iptables -t nat -A POSTROUTING -o eth%s -j MASQUERADE' % eth_no)
 
 if __name__ == '__main__':
+	eth_no = 2
 	install_xenapi_sdk(XENAPI_URL)
-	access = get_access(ASTUTE_PATH, ACCESS_SECTION)
-	himn_ip = init_eth(2)
-	if access and himn_ip:
-		#route_himn(ASTUTE_PATH, himn_ip, access)
-		#install_suppack(himn_ip, access)
-		#filter_himn(himn_ip)
-		create_novacompute_conf(access, himn_ip)
-		restart_nova_services()
+	astute = get_astute(ASTUTE_PATH)
+	if astute:
+		access = get_access(astute, ACCESS_SECTION)
+		endpoints = get_endpoints(astute)
+		himn_ip = init_eth(eth_no)
+		if access and endpoints and himn_ip:
+			route_to_himn(endpoints, himn_ip, access)
+			install_suppack(himn_ip, access)
+			forward_from_himn(endpoints, himn_ip, eth_no)
+			create_novacompute_conf(access, himn_ip)
+			restart_nova_services()
