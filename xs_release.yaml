@@ -61,7 +61,7 @@
             configurable: true
             vips: ["haproxy", "vrouter"]
           - name: "management"
-            cidr: "192.168.0.0/24"
+            cidr: "192.168.73.0/24"
             vlan_start: 24
             use_gateway: false
             notation: "cidr"
@@ -71,7 +71,7 @@
             configurable: true
             vips: ["haproxy", "vrouter"]
           - name: "storage"
-            cidr: "192.168.1.0/24"
+            cidr: "192.168.133.0/24"
             vlan_start: 20
             use_gateway: false
             notation: "cidr"

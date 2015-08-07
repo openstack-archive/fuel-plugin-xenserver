@@ -3,6 +3,12 @@
   type: shell
   parameters:
     cmd: 'mount /dev/cdrom /mnt && /mnt/Linux/install.sh -n'
+    timeout: 10
+- role: '*'
+  stage: pre_deployment/6001
+  type: shell
+  parameters:
+    cmd: 'apt-get install sshpass -y'
     timeout: 60
 - role: '*'
   stage: pre_deployment/7000
