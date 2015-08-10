@@ -41,8 +41,9 @@ def execute(*cmd):
 def ssh(host, username, password, *cmd):
     cmd = map(str, cmd)
 
-    return execute(*(['sshpass', '-p', password, 'ssh',
-                      '%s@%s' % (username, host)] + cmd))
+    return execute('sshpass', '-p', password, 'ssh', '-o',
+                   'StrictHostKeyChecking=no',
+                   '%s@%s' % (username, host), *cmd)
 
 
 def scp(host, username, password, target_path, filename):
@@ -98,10 +99,10 @@ def init_eth(eth):
     execute('ifup', eth)
     addr = netifaces.ifaddresses(eth).get(2)
     if addr:
-        local_ip = addr[0]['addr']
-        xs_ip = '.'.join(local_ip.split('.')[:-1] + ['1'])
-        info('HIMN on %s : %s' % (eth, xs_ip))
-        return xs_ip
+        himn_local = addr[0]['addr']
+        himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
+        info('HIMN on %s : %s' % (eth, himn_xs))
+        return himn_local, himn_xs
     else:
         warning('HIMN failed to get IP address from XenServer')
         return None
@@ -151,29 +152,31 @@ def restart_nova_services():
     execute('start', 'nova-network')
 
 
-def route_to_himn(endpoints, himn, username, password):
-    (out, err, cmd) = ssh(himn, username, password, 'route -n')
-    _netmask = lambda cidr: inet_ntoa(pack(
+def route_to_compute(endpoints, himn_xs, himn_local, username, password):
+    (out, err, cmd) = ssh(himn_xs, username, password, 'route -n')
+    _net = lambda ip: '.'.join(ip.split('.')[:-1] + ['0'])
+    _mask = lambda cidr: inet_ntoa(pack(
         '>I', 0xffffffff ^ (1 << 32 - int(cidr)) - 1))
-    _routed = lambda ip, mask, gw: re.search(r'%s\s+%s\s+%s\s+' % (
-        ip.replace('.', r'\.'),
+    _routed = lambda net, mask, gw: re.search(r'%s\s+%s\s+%s\s+' % (
+        net.replace('.', r'\.'),
         gw.replace('.', r'\.'),
         mask
     ), out)
-    _route = lambda ip, mask, gw: ssh(
-        himn, username, password, 'route', 'add', '-net', ip, 'netmask',
+    _route = lambda net, mask, gw: ssh(
+        himn_xs, username, password, 'route', 'add', '-net', net, 'netmask',
         mask, 'gw', gw)
 
-    nets = ['storage', 'mgmt']
-    for net in nets:
-        endpoint = endpoints.get(net)
+    endpoint_names = ['storage', 'mgmt']
+    for endpoint_name in endpoint_names:
+        endpoint = endpoints.get(endpoint_name)
         if endpoint:
             ip, cidr = endpoint.split('/')
-            netmask = _netmask(cidr)
-            if not _routed(ip, netmask, himn):
-                _route(ip, netmask, himn)
+            net = _net(ip)
+            mask = _mask(cidr)
+            if not _routed(net, mask, himn_local):
+                _route(net, mask, himn_local)
         else:
-            info('%s network ip is missing' % net)
+            info('%s network ip is missing' % endpoint_name)
 
 
 def install_suppack(himn, username, password):
@@ -186,7 +189,7 @@ def install_suppack(himn, username, password):
 
 def forward_from_himn(eth):
     (out, err, cmd) = execute('iptables', '-S')
-    if eth in out:
+    if not ('-A FORWARD -i %s -j ACCEPT') % eth in out:
         execute('iptables', '-A', 'FORWARD', '-i', eth, '-j', 'ACCEPT')
         execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
                 '/etc/sysctl.conf')
@@ -202,10 +205,11 @@ if __name__ == '__main__':
     if astute:
         username, password = get_access(astute, ACCESS_SECTION)
         endpoints = get_endpoints(astute)
-        himn = init_eth(eth)
-        if username and password and endpoints and himn:
-            route_to_himn(endpoints, himn, username, password)
-            install_suppack(himn, username, password)
+        himn_local, himn_xs = init_eth(eth)
+        if username and password and endpoints and himn_local and himn_xs:
+            route_to_compute(
+                endpoints, himn_xs, himn_local, username, password)
+            install_suppack(himn_xs, username, password)
             forward_from_himn(eth)
-            create_novacompute_conf(himn, username, password)
+            create_novacompute_conf(himn_xs, username, password)
             restart_nova_services()
