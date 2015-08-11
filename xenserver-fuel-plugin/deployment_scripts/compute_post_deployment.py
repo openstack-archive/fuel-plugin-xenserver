@@ -20,14 +20,19 @@ XENAPI_URL = \
 basicConfig(filename=LOG_FILE, level=DEBUG)
 
 
-def execute(*cmd):
+def execute(*cmd, **kwargs):
     cmd = map(str, cmd)
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
-    out = proc.stdout.readlines()
-    err = proc.stderr.readlines()
-
-    (out, err, cmd) = map(' '.join, [out, err, cmd])
+    if 'prompt' in kwargs:
+        prompt = kwargs.get('prompt')
+        proc.stdout.flush()
+        (out, err) = proc.communicate(prompt)
+        cmd = ' '.join(cmd)
+    else:
+        out = proc.stdout.readlines()
+        err = proc.stderr.readlines()
+        (out, err, cmd) = map(' '.join, [out, err, cmd])
 
     info(cmd)
     if out:
@@ -35,19 +40,21 @@ def execute(*cmd):
     if err:
         warning(err)
 
-    return (out, err, cmd)
+    return (out, err, cmd, proc)
 
 
-def ssh(host, username, password, *cmd):
+def ssh(host, username, password, *cmd, **kwargs):
     cmd = map(str, cmd)
 
-    return execute('sshpass', '-p', password, 'ssh', '-o',
-                   'StrictHostKeyChecking=no',
-                   '%s@%s' % (username, host), *cmd)
+    return execute('sshpass', '-p', password, 'ssh',
+                   '-o', 'StrictHostKeyChecking=no',
+                   '%s@%s' % (username, host), *cmd,
+                   prompt=kwargs.get('prompt'))
 
 
 def scp(host, username, password, target_path, filename):
-    return execute('sshpass', '-p', '"%s"' % password, 'scp', filename,
+    return execute('sshpass', '-p', password, 'scp',
+                   '-o', 'StrictHostKeyChecking=no', filename,
                    '%s@%s:%s' % (username, host, target_path))
 
 
@@ -153,7 +160,7 @@ def restart_nova_services():
 
 
 def route_to_compute(endpoints, himn_xs, himn_local, username, password):
-    (out, err, cmd) = ssh(himn_xs, username, password, 'route -n')
+    (out, err, cmd, proc) = ssh(himn_xs, username, password, 'route -n')
     _net = lambda ip: '.'.join(ip.split('.')[:-1] + ['0'])
     _mask = lambda cidr: inet_ntoa(pack(
         '>I', 0xffffffff ^ (1 << 32 - int(cidr)) - 1))
@@ -182,21 +189,26 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
 def install_suppack(himn, username, password):
     # TODO: check exists
     scp(himn, username, password, '/tmp/', 'novaplugins.iso')
-    ssh(himn, username, password,
-        'xe-install-supplemental-pack', '/tmp/novaplugins.iso')
+    (out, err, cmd, proc) = ssh(
+        himn, username, password,
+        'xe-install-supplemental-pack', '/tmp/novaplugins.iso', prompt='Y\n')
     ssh(himn, username, password, 'rm', '/tmp/novaplugins.iso')
 
 
 def forward_from_himn(eth):
-    (out, err, cmd) = execute('iptables', '-S')
-    if not ('-A FORWARD -i %s -j ACCEPT') % eth in out:
-        execute('iptables', '-A', 'FORWARD', '-i', eth, '-j', 'ACCEPT')
-        execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
-                '/etc/sysctl.conf')
-        execute('sysctl', '-p', '/etc/sysctl.conf')
-        execute('iptables', '-t', 'nat', '-A', 'POSTROUTING', '-o', eth,
-                '-j', 'MASQUERADE')
+    (out, err, cmd, proc) = execute('iptables', '-S')
+    #if not ('-A FORWARD -i %s -j ACCEPT') % eth in out:
+    execute('iptables', '-A', 'FORWARD', '-i', eth, '-j', 'ACCEPT')
+    execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
+            '/etc/sysctl.conf')
+    execute('sysctl', '-p', '/etc/sysctl.conf')
+    execute('iptables', '-t', 'nat', '-A', 'POSTROUTING', '-o', 'br-mgmt', '-j', 'MASQUERADE')
+    execute('iptables', '-A', 'FORWARD', '-i', 'br-mgmt', '-o', eth, '-m', 'state', '--state', 'RELATED,ESTABLISHED', '-j', 'ACCEPT')
+    execute('iptables', '-A', 'FORWARD', '-i', eth, '-o', 'br-mgmt', '-j', 'ACCEPT')
 
+    execute('iptables', '-t', 'nat', '-A', 'POSTROUTING', '-o', 'br-storage', '-j', 'MASQUERADE')
+    execute('iptables', '-A', 'FORWARD', '-i', 'br-storage', '-o', eth, '-m', 'state', '--state', 'RELATED,ESTABLISHED', '-j', 'ACCEPT')
+    execute('iptables', '-A', 'FORWARD', '-i', eth, '-o', 'br-storage', '-j', 'ACCEPT')
 
 if __name__ == '__main__':
     eth = 'eth2'

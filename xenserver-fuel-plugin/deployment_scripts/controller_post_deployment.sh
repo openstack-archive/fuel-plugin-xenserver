@@ -22,7 +22,7 @@ function create_image {
 	local image_file
 	image_file=$(mktemp)
 
-	wget -qO "$image_file" "$image_URL"
+	wget -q -O "$image_file" "$image_url"
 	glance image-create \
 		--name "$image_name" \
 		--container-format ovf \

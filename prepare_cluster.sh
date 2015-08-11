@@ -58,7 +58,7 @@ do
 	sshpass -p $XEN_PASSWORD ssh $XEN_ROOT@$HOST \
 '
 guest_name="'$NODE'"
-vm_uuid=$(xe vm-list name-label="$guest_name" --minimal)
+vm_uuid=$(xe vm-list name-label="$guest_name" power-state="halted" --minimal)
 xe vm-start vm=$vm_uuid
 echo "'$NODE' booted"
 '

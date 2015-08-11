@@ -10,4 +10,4 @@ attributes:
     label: 'Password'
     description: ''
     weight: 25
-    type: "text"
+    type: "password"
