@@ -38,6 +38,6 @@ function create_image {
 source /root/openrc admin
 
 clear_images
-create_image "TestVM" "xen" "http://ca.downloads.xensource.com/OpenStack/cirros-0.3.3-x86_64-disk.vhd"
+create_image "TestVM" "xen" "http://ca.downloads.xensource.com/OpenStack/cirros-0.3.4-x86_64-disk.vhd.tgz"
 create_image "F17-x86_64-cfntools" "hvm" "http://ca.downloads.xensource.com/OpenStack/F21-x86_64-cfntools.tgz"
 glance image-list >> $LOG_FILE

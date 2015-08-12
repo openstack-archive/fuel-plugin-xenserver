@@ -22,25 +22,24 @@ basicConfig(filename=LOG_FILE, level=DEBUG)
 
 def execute(*cmd, **kwargs):
     cmd = map(str, cmd)
+    info(' '.join(cmd))
     proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
     if 'prompt' in kwargs:
         prompt = kwargs.get('prompt')
         proc.stdout.flush()
         (out, err) = proc.communicate(prompt)
-        cmd = ' '.join(cmd)
     else:
         out = proc.stdout.readlines()
         err = proc.stderr.readlines()
-        (out, err, cmd) = map(' '.join, [out, err, cmd])
+        (out, err) = map(' '.join, [out, err])
 
-    info(cmd)
     if out:
         debug(out)
     if err:
         warning(err)
 
-    return (out, err, cmd, proc)
+    return (out, err)
 
 
 def ssh(host, username, password, *cmd, **kwargs):
@@ -97,6 +96,7 @@ def init_eth(eth):
 
     execute('dhclient', eth)
     execute('ifconfig', eth)
+
     fname = '/etc/network/interfaces.d/ifcfg-' + eth
     s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
     with open(fname, 'w') as f:
@@ -104,6 +104,7 @@ def init_eth(eth):
     info('%s created' % fname)
     execute('ifdown', eth)
     execute('ifup', eth)
+
     addr = netifaces.ifaddresses(eth).get(2)
     if addr:
         himn_local = addr[0]['addr']
@@ -160,7 +161,7 @@ def restart_nova_services():
 
 
 def route_to_compute(endpoints, himn_xs, himn_local, username, password):
-    (out, err, cmd, proc) = ssh(himn_xs, username, password, 'route -n')
+    (out, err) = ssh(himn_xs, username, password, 'route', '-n')
     _net = lambda ip: '.'.join(ip.split('.')[:-1] + ['0'])
     _mask = lambda cidr: inet_ntoa(pack(
         '>I', 0xffffffff ^ (1 << 32 - int(cidr)) - 1))
@@ -169,46 +170,50 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
         gw.replace('.', r'\.'),
         mask
     ), out)
-    _route = lambda net, mask, gw: ssh(
-        himn_xs, username, password, 'route', 'add', '-net', net, 'netmask',
-        mask, 'gw', gw)
 
     endpoint_names = ['storage', 'mgmt']
     for endpoint_name in endpoint_names:
         endpoint = endpoints.get(endpoint_name)
         if endpoint:
             ip, cidr = endpoint.split('/')
-            net = _net(ip)
-            mask = _mask(cidr)
+            net, mask = _net(ip), _mask(cidr)
             if not _routed(net, mask, himn_local):
-                _route(net, mask, himn_local)
+                ssh(himn_xs, username, password,
+                    'route', 'add',
+                    '-net', net, 'netmask', mask, 'gw', himn_local)
         else:
             info('%s network ip is missing' % endpoint_name)
 
 
 def install_suppack(himn, username, password):
-    # TODO: check exists
+    # TODO: check if installed
     scp(himn, username, password, '/tmp/', 'novaplugins.iso')
-    (out, err, cmd, proc) = ssh(
-        himn, username, password,
-        'xe-install-supplemental-pack', '/tmp/novaplugins.iso', prompt='Y\n')
+    (out, err) = ssh(
+        himn, username, password, 'xe-install-supplemental-pack',
+        '/tmp/novaplugins.iso', prompt='Y\n')
     ssh(himn, username, password, 'rm', '/tmp/novaplugins.iso')
 
 
 def forward_from_himn(eth):
-    (out, err, cmd, proc) = execute('iptables', '-S')
-    #if not ('-A FORWARD -i %s -j ACCEPT') % eth in out:
-    execute('iptables', '-A', 'FORWARD', '-i', eth, '-j', 'ACCEPT')
     execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
             '/etc/sysctl.conf')
     execute('sysctl', '-p', '/etc/sysctl.conf')
-    execute('iptables', '-t', 'nat', '-A', 'POSTROUTING', '-o', 'br-mgmt', '-j', 'MASQUERADE')
-    execute('iptables', '-A', 'FORWARD', '-i', 'br-mgmt', '-o', eth, '-m', 'state', '--state', 'RELATED,ESTABLISHED', '-j', 'ACCEPT')
-    execute('iptables', '-A', 'FORWARD', '-i', eth, '-o', 'br-mgmt', '-j', 'ACCEPT')
 
-    execute('iptables', '-t', 'nat', '-A', 'POSTROUTING', '-o', 'br-storage', '-j', 'MASQUERADE')
-    execute('iptables', '-A', 'FORWARD', '-i', 'br-storage', '-o', eth, '-m', 'state', '--state', 'RELATED,ESTABLISHED', '-j', 'ACCEPT')
-    execute('iptables', '-A', 'FORWARD', '-i', eth, '-o', 'br-storage', '-j', 'ACCEPT')
+    endpoint_names = ['br-storage', 'br-mgmt']
+    for endpoint_name in endpoint_names:
+        execute('iptables', '-t', 'nat', '-A', 'POSTROUTING',
+                '-o', endpoint_name, '-j', 'MASQUERADE')
+        execute('iptables', '-A', 'FORWARD',
+                '-i', endpoint_name, '-o', eth,
+                '-m', 'state', '--state', 'RELATED,ESTABLISHED',
+                '-j', 'ACCEPT')
+        execute('iptables', '-A', 'FORWARD',
+                '-i', eth, '-o', endpoint_name,
+                '-j', 'ACCEPT')
+
+    execute('iptables', '-S', 'FORWARD')
+    execute('iptables', '-t', 'nat', '-S')
+
 
 if __name__ == '__main__':
     eth = 'eth2'
