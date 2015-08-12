@@ -68,7 +68,7 @@ def get_astute(astute_path):
 
 
 def get_access(astute, access_section):
-    """Return username and password filled in plugin"""
+    """Return username and password filled in plugin."""
     if not access_section in astute:
         warning('%s not found' % access_section)
         return None, None
@@ -81,7 +81,7 @@ def get_access(astute, access_section):
 
 def get_endpoints(astute):
     """Return the IP addresses of the endpoints connected to
-    storage/mgmt network
+    storage/mgmt network.
     """
     endpoints = astute['network_scheme']['endpoints']
     endpoints = dict([(
@@ -98,7 +98,7 @@ def init_eth(eth):
     """Initialize the net interface connected to HIMN 
 
     Returns:
-        the IP addresses of local and XenServer.
+        the IP addresses of local host and XenServer.
     """
     if not eth in netifaces.interfaces():
         warning('%s not found' % eth)
