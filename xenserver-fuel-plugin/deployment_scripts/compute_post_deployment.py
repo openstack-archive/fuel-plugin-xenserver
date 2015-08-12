@@ -58,6 +58,7 @@ def scp(host, username, password, target_path, filename):
 
 
 def get_astute(astute_path):
+    """Return the root object read from astute.yaml"""
     if not os.path.exists(astute_path):
         warning('%s not found' % astute_path)
         return None
@@ -67,6 +68,7 @@ def get_astute(astute_path):
 
 
 def get_access(astute, access_section):
+    """Return username and password filled in plugin"""
     if not access_section in astute:
         warning('%s not found' % access_section)
         return None, None
@@ -78,6 +80,9 @@ def get_access(astute, access_section):
 
 
 def get_endpoints(astute):
+    """Return the IP addresses of the endpoints connected to
+    storage/mgmt network
+    """
     endpoints = astute['network_scheme']['endpoints']
     endpoints = dict([(
         k.replace('br-', ''),
@@ -90,9 +95,14 @@ def get_endpoints(astute):
 
 
 def init_eth(eth):
+    """Initialize the net interface connected to HIMN 
+
+    Returns:
+        the IP addresses of local and XenServer.
+    """
     if not eth in netifaces.interfaces():
         warning('%s not found' % eth)
-        return None
+        return None, None
 
     execute('dhclient', eth)
     execute('ifconfig', eth)
@@ -107,16 +117,17 @@ def init_eth(eth):
 
     addr = netifaces.ifaddresses(eth).get(2)
     if addr:
-        himn_local = addr[0]['addr']
-        himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
-        info('HIMN on %s : %s' % (eth, himn_xs))
-        return himn_local, himn_xs
+        addr_local = addr[0]['addr']
+        addr_remote = '.'.join(addr_local.split('.')[:-1] + ['1'])
+        info('HIMN on %s : %s' % (eth, addr_remote))
+        return addr_local, addr_remote
     else:
         warning('HIMN failed to get IP address from XenServer')
-        return None
+        return None, None
 
 
 def install_xenapi_sdk(xenapi_url):
+    """Install XenAPI Python SDK"""
     xenapi_zipball = mkstemp()[1]
     xenapi_sources = mkdtemp()
 
@@ -137,6 +148,7 @@ def install_xenapi_sdk(xenapi_url):
 
 
 def create_novacompute_conf(himn, username, password):
+    """Fill nova-compute.conf with HIMN IP and root password. """
     template = '\n'.join([
         '[DEFAULT]',
         'compute_driver=xenapi.XenAPIDriver',
@@ -154,6 +166,7 @@ def create_novacompute_conf(himn, username, password):
 
 
 def restart_nova_services():
+    """Restart nova services"""
     execute('stop', 'nova-compute')
     execute('start', 'nova-compute')
     execute('stop', 'nova-network')
@@ -161,6 +174,7 @@ def restart_nova_services():
 
 
 def route_to_compute(endpoints, himn_xs, himn_local, username, password):
+    """Route storage/mgmt requests to compute nodes. """
     (out, err) = ssh(himn_xs, username, password, 'route', '-n')
     _net = lambda ip: '.'.join(ip.split('.')[:-1] + ['0'])
     _mask = lambda cidr: inet_ntoa(pack(
@@ -186,6 +200,7 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
 
 
 def install_suppack(himn, username, password):
+    """Install xapi driver supplemental pack. """
     # TODO: check if installed
     scp(himn, username, password, '/tmp/', 'novaplugins.iso')
     (out, err) = ssh(
@@ -195,6 +210,7 @@ def install_suppack(himn, username, password):
 
 
 def forward_from_himn(eth):
+    """Forward packets from HIMN to storage/mgmt network. """
     execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
             '/etc/sysctl.conf')
     execute('sysctl', '-p', '/etc/sysctl.conf')
@@ -211,8 +227,8 @@ def forward_from_himn(eth):
                 '-i', eth, '-o', endpoint_name,
                 '-j', 'ACCEPT')
 
-    execute('iptables', '-S', 'FORWARD')
-    execute('iptables', '-t', 'nat', '-S')
+    execute('iptables', '-t', 'filter', '-S', 'FORWARD')
+    execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
 
 
 if __name__ == '__main__':
