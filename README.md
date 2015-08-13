@@ -4,7 +4,8 @@ xenserver-fuel-plugin
 Prerequisites
 -------------
 
-	[user@local tmp]# apt-get install createrepo rpm dpkg-dev python-pip sshpass -y || yum install createrepo rpm rpm-build dpkg-devel python-pip sshpass -y
+	[user@local tmp]# apt-get install createrepo rpm dpkg-dev python-pip sshpass -y \
+	|| yum install createrepo rpm rpm-build dpkg-devel python-pip sshpass -y
 
 Environment Setup
 -----------------
@@ -17,8 +18,8 @@ Environment Setup
 Deployment
 ----------
 
-	[user@local tmp]# fpb --check xenserver-fuel-plugin && \
-	fpb --build xenserver-fuel-plugin
+	[user@local tmp]# fpb --check xenserver-fuel-plugin
+	[user@local tmp]# fpb --build xenserver-fuel-plugin
 
 
 Installation
