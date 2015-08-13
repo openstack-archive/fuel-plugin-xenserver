@@ -2,8 +2,4 @@
 .build
 *.pyc
 *.rpm
-localrc
-newrelease.yaml
-models/
 *.sublime-workspace
-*.iso
