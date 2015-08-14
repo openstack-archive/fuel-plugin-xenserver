@@ -14,8 +14,6 @@ import re
 LOG_FILE = '/tmp/compute_post_deployment.log'
 ASTUTE_PATH = '/etc/astute.yaml'
 ACCESS_SECTION = 'xenserver-fuel-plugin'
-XENAPI_URL = \
-    'https://pypi.python.org/packages/source/X/XenAPI/XenAPI-1.2.tar.gz'
 
 basicConfig(filename=LOG_FILE, level=DEBUG)
 
@@ -128,23 +126,7 @@ def init_eth(eth):
 
 def install_xenapi_sdk(xenapi_url):
     """Install XenAPI Python SDK"""
-    xenapi_zipball = mkstemp()[1]
-    xenapi_sources = mkdtemp()
-
-    execute('wget', '-qO', xenapi_zipball, xenapi_url)
-
-    execute('tar', '-zxf', xenapi_zipball, '-C', xenapi_sources)
-    subdirs = os.listdir(xenapi_sources)
-    if (len(subdirs) != 1) or (not subdirs[0].startswith('XenAPI')):
-        warning('fail to extract %s' % xenapi_url)
-        return
-
-    src = os.path.join(xenapi_sources, subdirs[0], 'XenAPI.py')
-    dest = '/usr/lib/python2.7/dist-packages'
-    execute('cp', src, dest)
-
-    os.remove(xenapi_zipball)
-    rmtree(xenapi_sources)
+    execute('cp', 'XenAPI.py', '/usr/lib/python2.7/dist-packages/')
 
 
 def create_novacompute_conf(himn, username, password):
