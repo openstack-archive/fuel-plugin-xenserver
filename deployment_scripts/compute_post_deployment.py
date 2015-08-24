@@ -93,7 +93,7 @@ def get_endpoints(astute):
 
 
 def init_eth(eth):
-    """Initialize the net interface connected to HIMN 
+    """Initialize the net interface connected to HIMN
 
     Returns:
         the IP addresses of local host and XenServer.
@@ -124,7 +124,7 @@ def init_eth(eth):
         return None, None
 
 
-def install_xenapi_sdk(xenapi_url):
+def install_xenapi_sdk():
     """Install XenAPI Python SDK"""
     execute('cp', 'XenAPI.py', '/usr/lib/python2.7/dist-packages/')
 
@@ -215,7 +215,7 @@ def forward_from_himn(eth):
 
 if __name__ == '__main__':
     eth = 'eth2'
-    install_xenapi_sdk(XENAPI_URL)
+    install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
     if astute:
         username, password = get_access(astute, ACCESS_SECTION)
