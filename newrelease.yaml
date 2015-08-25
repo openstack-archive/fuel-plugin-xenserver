@@ -1525,7 +1525,7 @@
                 - condition: "true"
                   action: disable
                 - condition: "true"
-                  message: "You have chosen XenServer for your cluster environment, therefore the hypervisor type has to be qemu initially."
+                  message: "The XenServer OpenStack release has been chosen, which requires deploying on the XenServer hypervisor."
         vcenter:
           type: "checkbox"
           weight: 10
@@ -1550,7 +1550,7 @@
                 - condition: "true"
                   action: disable
                 - condition: "true"
-                  message: "You have chosen XenServer for your cluster environment, therefore the network type has to be nova-network."
+                  message: "The XenServer OpenStack Release has been chosen. Neutron is not a supported option."
               bind:
                 - "cluster:net_provider": "neutron"
                 - "cluster:net_segment_type": "vlan"
@@ -1587,7 +1587,7 @@
                 - condition: "true"
                   action: disable
                 - condition: "true"
-                  message: "You have chosen XenServer for your cluster environment, therefore the storage backends have to use default providers."
+                  message: "The XenServer OpenStack release has been chosen. Ceph is not a supported option."
             - data: "enable"
               label: "dialog.create_cluster_wizard.storage.ceph_enable"
               bind:
@@ -1610,7 +1610,7 @@
             - condition: "true"
               action: disable
             - condition: "true"
-              message: "You have chosen XenServer for your cluster environment, therefore Sahara, Murano, Ceilometer need to be disabled."
+              message: "The XenServer OpenStack release has been chosen. No additional services are supported in this combination."
         murano:
           type: "checkbox"
           label: "dialog.create_cluster_wizard.additional.install_murano"
