@@ -92,36 +92,32 @@ def get_endpoints(astute):
     return endpoints
 
 
-def init_eth(eth):
+def init_eth():
     """Initialize the net interface connected to HIMN
 
     Returns:
         the IP addresses of local host and XenServer.
     """
-    if not eth in netifaces.interfaces():
-        warning('%s not found' % eth)
-        return None, None
+    for eth in netifaces.interfaces():
+        if not os.path.exists('/var/lib/dhcp/dhclient.%s.leases' % eth):
+            execute('dhclient', eth)
+            fname = '/etc/network/interfaces.d/ifcfg-' + eth
+            s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
+            with open(fname, 'w') as f:
+                f.write(s)
+            info('%s created' % fname)
+            execute('ifdown', eth)
+            execute('ifup', eth)
 
-    execute('dhclient', eth)
-    execute('ifconfig', eth)
-
-    fname = '/etc/network/interfaces.d/ifcfg-' + eth
-    s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
-    with open(fname, 'w') as f:
-        f.write(s)
-    info('%s created' % fname)
-    execute('ifdown', eth)
-    execute('ifup', eth)
-
-    addr = netifaces.ifaddresses(eth).get(2)
-    if addr:
-        addr_local = addr[0]['addr']
-        addr_remote = '.'.join(addr_local.split('.')[:-1] + ['1'])
-        info('HIMN on %s : %s' % (eth, addr_remote))
-        return addr_local, addr_remote
-    else:
-        warning('HIMN failed to get IP address from XenServer')
-        return None, None
+        addr = netifaces.ifaddresses(eth).get(2)
+        if addr:
+            addr_local = addr[0]['addr']
+            addr_remote = '.'.join(addr_local.split('.')[:-1] + ['1'])
+            info('HIMN on %s : %s' % (eth, addr_remote))
+            if '169.254.0.1' == addr_remote:
+                return eth, addr_local, addr_remote
+    warning('HIMN failed to get IP address from XenServer')
+    return None, None, None
 
 
 def install_xenapi_sdk():
@@ -214,13 +210,12 @@ def forward_from_himn(eth):
 
 
 if __name__ == '__main__':
-    eth = 'eth2'
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
     if astute:
         username, password = get_access(astute, ACCESS_SECTION)
         endpoints = get_endpoints(astute)
-        himn_local, himn_xs = init_eth(eth)
+        eth, himn_local, himn_xs = init_eth()
         if username and password and endpoints and himn_local and himn_xs:
             route_to_compute(
                 endpoints, himn_xs, himn_local, username, password)
