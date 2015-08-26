@@ -92,31 +92,37 @@ def get_endpoints(astute):
     return endpoints
 
 
-def init_eth(eth):
+def init_eth():
     """Initialize the net interface connected to HIMN
 
     Returns:
         the IP addresses of local host and XenServer.
     """
-    if not os.path.exists('/var/lib/dhcp/dhclient.%s.leases' % eth):
-        execute('dhclient', eth)
-        fname = '/etc/network/interfaces.d/ifcfg-' + eth
-        s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
-        with open(fname, 'w') as f:
-            f.write(s)
-        info('%s created' % fname)
-        execute('ifdown', eth)
-        execute('ifup', eth)
+    for eth in netifaces.interfaces()[::-1]:
+        if not re.search(r'^eth\d+$', eth):
+            continue
 
-    addr = netifaces.ifaddresses(eth).get(2)
-    if addr:
-        addr_local = addr[0]['addr']
-        addr_remote = '.'.join(addr_local.split('.')[:-1] + ['1'])
-        if '169.254.0.1' == addr_remote:
-            info('HIMN on %s : %s' % (eth, addr_remote))
-            return addr_local, addr_remote
+        if not os.path.exists('/var/lib/dhcp/dhclient.%s.leases' % eth):
+            execute('dhclient', eth)
+            fname = '/etc/network/interfaces.d/ifcfg-' + eth
+            s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
+            with open(fname, 'w') as f:
+                f.write(s)
+            info('%s created' % fname)
+            execute('ifdown', eth)
+            execute('ifup', eth)
+
+        if eth in netifaces.interfaces():
+            addr = netifaces.ifaddresses(eth).get(2)
+            if addr:
+                addr_local = addr[0]['addr']
+                addr_remote = '.'.join(addr_local.split('.')[:-1] + ['1'])
+                if '169.254.0.1' == addr_remote:
+                    info('HIMN on %s : %s' % (eth, addr_remote))
+                    return eth, addr_local, addr_remote
+
     warning('HIMN failed to get IP address from XenServer')
-    return None, None
+    return None, None, None
 
 
 def install_xenapi_sdk():
@@ -214,8 +220,7 @@ if __name__ == '__main__':
     if astute:
         username, password = get_access(astute, ACCESS_SECTION)
         endpoints = get_endpoints(astute)
-        eth = 'eth9'
-        himn_local, himn_xs = init_eth(eth)
+        eth, himn_local, himn_xs = init_eth()
         if username and password and endpoints and himn_local and himn_xs:
             route_to_compute(
                 endpoints, himn_xs, himn_local, username, password)
