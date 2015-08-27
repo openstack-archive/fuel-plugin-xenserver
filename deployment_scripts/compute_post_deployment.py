@@ -31,6 +31,7 @@ def execute(*cmd, **kwargs):
         out = proc.stdout.readlines()
         err = proc.stderr.readlines()
         (out, err) = map(' '.join, [out, err])
+        (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
 
     if out:
         debug(out)
@@ -98,28 +99,42 @@ def init_eth():
     Returns:
         the IP addresses of local host and XenServer.
     """
-    for eth in netifaces.interfaces()[::-1]:
-        if not re.search(r'^eth\d+$', eth):
-            continue
 
-        if not os.path.exists('/var/lib/dhcp/dhclient.%s.leases' % eth):
-            execute('dhclient', eth)
-            fname = '/etc/network/interfaces.d/ifcfg-' + eth
-            s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
-            with open(fname, 'w') as f:
-                f.write(s)
-            info('%s created' % fname)
-            execute('ifdown', eth)
-            execute('ifup', eth)
+    domid, err = execute('xenstore-read', 'domid')
+    himn_mac, err = execute(
+        'xenstore-read',
+        '/local/domain/%s/vm-data/himn_mac' % domid)
+    info('himn_mac: %s' % himn_mac)
 
-        if eth in netifaces.interfaces():
-            addr = netifaces.ifaddresses(eth).get(2)
-            if addr:
-                addr_local = addr[0]['addr']
-                addr_remote = '.'.join(addr_local.split('.')[:-1] + ['1'])
-                if '169.254.0.1' == addr_remote:
-                    info('HIMN on %s : %s' % (eth, addr_remote))
-                    return eth, addr_local, addr_remote
+    _mac = lambda eth: \
+        netifaces.ifaddresses(eth).get(netifaces.AF_LINK)[0]['addr']
+    eths = [eth for eth in netifaces.interfaces() if _mac(eth) == himn_mac]
+    if len(eths) != 1:
+        warning('Cannot find eth matches himn_mac')
+        return None, None, None
+
+    eth = eths[0]
+    info('himn_eth: %s' % eth)
+
+    ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
+
+    if not ip:
+        execute('dhclient', eth)
+        fname = '/etc/network/interfaces.d/ifcfg-' + eth
+        s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
+        with open(fname, 'w') as f:
+            f.write(s)
+        info('%s created' % fname)
+        execute('ifdown', eth)
+        execute('ifup', eth)
+        ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
+
+    if ip:
+        himn_local = ip[0]['addr']
+        himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
+        if '169.254.0.1' == himn_xs:
+            info('himn_ip: %s' % himn_local)
+            return eth, himn_local, himn_xs
 
     warning('HIMN failed to get IP address from XenServer')
     return None, None, None

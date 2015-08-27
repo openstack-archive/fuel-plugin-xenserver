@@ -2,7 +2,7 @@
   stage: pre_deployment/6000
   type: shell
   parameters:
-    cmd: 'mount /dev/cdrom /mnt && /mnt/Linux/install.sh -n'
+    cmd: 'dpkg -i ./xe-guest-utilities_6.5.0-1393_amd64.deb'
     timeout: 10
 - role: '*'
   stage: pre_deployment/6001
