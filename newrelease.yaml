@@ -1345,18 +1345,12 @@
             description: "If selected, Sahara component will be installed"
             weight: 10
             type: "checkbox"
-            restrictions:
-              - condition: "true"
-                action: disable
           murano:
             value: false
             label: "Install Murano"
             description: "If selected, Murano component will be installed"
             weight: 20
             type: "checkbox"
-            restrictions:
-              - condition: "true"
-                action: disable
           heat:
             value: true
             label: ""
@@ -1369,9 +1363,6 @@
             description: "If selected, Ceilometer component will be installed"
             weight: 40
             type: "checkbox"
-            restrictions:
-              - condition: "true"
-                action: disable
           mongo:
             value: false
             label: "Use external Mongo DB"
@@ -1521,6 +1512,7 @@
               bind:
                 - "wizard:Storage.ceph": "disable"
                 - "wizard:Network.manager": "nova-network"
+                - "settings:xenserver-fuel-plugin.metadata.enabled" : "true"
               restrictions:
                 - condition: "true"
                   action: disable
@@ -1606,27 +1598,16 @@
           description: "dialog.create_cluster_wizard.additional.install_sahara_description"
           bind: "settings:additional_components.sahara.value"
           weight: 10
-          restrictions:
-            - condition: "true"
-              action: disable
-            - condition: "true"
-              message: "The XenServer OpenStack release has been chosen. No additional services are supported in this combination."
         murano:
           type: "checkbox"
           label: "dialog.create_cluster_wizard.additional.install_murano"
           description: "dialog.create_cluster_wizard.additional.install_murano_description"
           bind: "settings:additional_components.murano.value"
           weight: 20
-          restrictions:
-            - condition: "true"
-              action: disable
         ceilometer:
           type: "checkbox"
           label: "dialog.create_cluster_wizard.additional.install_ceilometer"
           description: "dialog.create_cluster_wizard.additional.install_ceilometer_description"
           bind: "settings:additional_components.ceilometer.value"
           weight: 30
-          restrictions:
-            - condition: "true"
-              action: disable
       Ready: {}

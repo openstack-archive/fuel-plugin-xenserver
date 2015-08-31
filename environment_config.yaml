@@ -11,3 +11,6 @@ attributes:
     description: ''
     weight: 25
     type: "password"
+    regex:
+      source: '\S'
+      error: "Password cannot be empty"
