@@ -12,7 +12,7 @@ Usage
 
 - Create a new environment with the Fuel UI wizard. Select "Juno+Citrix XenServer on Ubuntu 14.04.1" from OpenStack Release dropdown list. At the moment you will see most of options are disabled in the wizard.
 
-   .. image:: /raw/master/doc/images/fmwizard00.png
+   .. image:: ../images/fmwizard00.png?raw=true
       :width: 100%
 
 - Create new VMs in XenCenter for all roles and use `xencenter-himn-plugin <https://github.com/citrix-openstack/xencenter-himn-plugin>`_ to add management network to those supposed to run as Compute Nodes.
@@ -21,12 +21,12 @@ Usage
 
 - Go to Settings tab and scroll down to "XenServer Plugin" section. You need to input the common access credentials to all XenServers that previously are used to create new VMs.
 
-   .. image:: /raw/master/doc/images/fmsetting00.png
+   .. image:: ../images/fmsetting00.png?raw=true
       :width: 100%
 
 - Click "Deploy Changes" button
 
 - After deployment is done, you will see in Horizon that all hypervisors are xen.
 
-   .. image:: /raw/master/doc/images/fmhorizon00.png
+   .. image:: ../images/fmhorizon00.png?raw=true
       :width: 100%
