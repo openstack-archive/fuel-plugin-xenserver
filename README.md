@@ -1,30 +1,43 @@
-xenserver-fuel-plugin
-============
+XenServer Fuel Plugin
+=====================
 
-Prerequisites
--------------
+Intro
+=====
 
-	[user@local ~]# apt-get install createrepo rpm dpkg-dev python-pip sshpass -y \
+XenServer Fuel Plugin will help to deploy Mirantis OpenStack over XenServer hosts and make sure they work as xenapi rather than qemu.
+
+
+Usage
+=====
+
+Please look at the [install guide](doc/content/installation.rst)
+and [user guide](doc/content/user-guide.rst).
+
+
+How to build plugin
+===================
+
+
+Install prerequisites
+---------------------
+
+	apt-get install createrepo rpm dpkg-dev python-pip sshpass -y \
 	|| yum install createrepo rpm rpm-build dpkg-devel python-pip sshpass -y
 
-Environment Setup
------------------
 
-	[user@local ~]# git clone https://github.com/citrix-openstack/fuel-plugins.git
-	[user@local ~]# sudo pip install fuel-plugins/fuel_plugin_builder/
-	[user@local ~]# git clone https://github.com/citrix-openstack/xenserver-fuel-plugin.git
+Clone Citrix FPB
+------------------
 
+XenServer Fuel Plugin uses a forked Fuel Plugin Builder (FPB) to deploy a new OpenStack release as well as the fuel plugin part itself.
 
-Build
------
-
-	[user@local ~]# fpb --check xenserver-fuel-plugin
-	[user@local ~]# fpb --build xenserver-fuel-plugin
+	git clone https://github.com/citrix-openstack/fuel-plugins.git
+	sudo pip install fuel-plugins/fuel_plugin_builder/
 
 
-Installation
-------------
 
-	[user@local ~]# scp xenserver-fuel-plugin/xenserver-fuel-plugin*.noarch.rpm root@Fuel_Master_IP:/tmp
-	
-	[root@fuel tmp]# fuel plugins --install xenserver-fuel-plugin*.noarch.rpm
+Build and Check
+---------------
+
+	git clone https://github.com/citrix-openstack/xenserver-fuel-plugin.git
+	fpb --check xenserver-fuel-plugin
+	fpb --build xenserver-fuel-plugin
