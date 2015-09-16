@@ -36,5 +36,5 @@ To install the XenServer Fuel plugin:
       1  | Juno on CentOS 6.5                      | available | CentOS           | 2014.2.2-6.1
 
 
-.. _xensource download server: http://ca.downloads.xensource.com/OpenStack/Mirantis/
+.. _xensource download server: http://ca.downloads.xensource.com/OpenStack/Plugins/
 .. _Fuel CLI: https://docs.mirantis.com/openstack/fuel/fuel-6.1/user-guide.html#using-fuel-cli
