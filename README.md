@@ -28,9 +28,10 @@ Install prerequisites
 Clone Citrix FPB
 ------------------
 
-XenServer Fuel Plugin uses a forked Fuel Plugin Builder (FPB) to deploy a new OpenStack release as well as the fuel plugin part itself.
+XenServer Fuel Plugin uses a forked Fuel Plugin Builder (FPB) to deploy a new OpenStack release during the installation of the plugin.
+This is achieved by adding a post-install script option to the version 2.0 plugin.
 
-	git clone https://github.com/citrix-openstack/fuel-plugins.git
+	git clone https://git.openstack.org/openstack/fuel-plugin-xenserver
 	sudo pip install fuel-plugins/fuel_plugin_builder/
 
 
@@ -38,6 +39,6 @@ XenServer Fuel Plugin uses a forked Fuel Plugin Builder (FPB) to deploy a new Op
 Build and Check
 ---------------
 
-	git clone https://github.com/citrix-openstack/xenserver-fuel-plugin.git
+	git clone https://git.openstack.org/openstack/fuel-plugin-xenserver.git
 	fpb --check xenserver-fuel-plugin
 	fpb --build xenserver-fuel-plugin
