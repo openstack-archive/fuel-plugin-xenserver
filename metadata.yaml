@@ -13,7 +13,7 @@ licenses: ['Apache License Version 2.0']
 # Specify author or company name
 authors: ['Citrix']
 # A link to the plugin's page
-homepage: 'https://github.com/citrix-openstack/xenserver-fuel-plugin'
+homepage: 'https://git.openstack.org/cgit/openstack/fuel-plugin-xenserver'
 # Specify a group which your plugin implements, possible options:
 # network, storage, storage::cinder, storage::glance, hypervisor
 groups: ['network','hypervisor']
