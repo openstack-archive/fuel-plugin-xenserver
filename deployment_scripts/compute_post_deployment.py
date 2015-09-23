@@ -2,7 +2,7 @@
 
 import os
 from logging import debug, info, warning, DEBUG, basicConfig
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 import yaml
 from shutil import rmtree
 from tempfile import mkstemp, mkdtemp
@@ -196,6 +196,8 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
         else:
             info('%s network ip is missing' % endpoint_name)
 
+    ssh(himn, username, password, 'service', 'iptables', 'save')
+
 
 def install_suppack(himn, username, password):
     """Install xapi driver supplemental pack. """
@@ -227,6 +229,7 @@ def forward_from_himn(eth):
 
     execute('iptables', '-t', 'filter', '-S', 'FORWARD')
     execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    call("iptables-save > /etc/iptables/rules.v4", shell=True)
 
 
 if __name__ == '__main__':
