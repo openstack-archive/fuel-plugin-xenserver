@@ -3,7 +3,7 @@
 LOG_FILE="/tmp/controller_post_deployment.log"
 
 function clear_images {
-	for ID in $(glance image-list | awk 'NR>2{print $2}' | grep -v '^$');
+	for ID in $(glance image-list --name TestVM --disk-format=qcow2 | awk 'NR>2{print $2}' | grep -v '^$');
 	do
 		glance image-delete $ID &>> $LOG_FILE
 	done
@@ -39,6 +39,7 @@ function create_image {
 
 source /root/openrc admin
 
+clear_images
 create_image "TestVM" "xen" "http://ca.downloads.xensource.com/OpenStack/cirros-0.3.4-x86_64-disk.vhd.tgz"
 create_image "F17-x86_64-cfntools" "hvm" "http://ca.downloads.xensource.com/OpenStack/F21-x86_64-cfntools.tgz"
 glance image-list >> $LOG_FILE
