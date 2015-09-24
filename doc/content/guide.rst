@@ -31,6 +31,8 @@ Select Environment
    .. image:: images/fmsetting00.png
       :width: 80%
 
+#. If the XenServer host already has compatible Nova plugins installed, untick the checkbox to install the supplemental packs.  In normal cases, the XenServer host will not have compatible Nova plugins installed, so leave the checkbox enabled
+
 
 Finish environment configuration
 --------------------------------

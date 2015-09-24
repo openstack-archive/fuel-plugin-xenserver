@@ -3,14 +3,20 @@ attributes:
     value: 'root'
     label: 'Username'
     description: ''
-    weight: 25
+    weight: 10
     type: "text"
   password:
     value: ''
     label: 'Password'
     description: ''
-    weight: 25
+    weight: 20
     type: "password"
     regex:
       source: '\S'
       error: "Password cannot be empty"
+  install_xapi:
+    value: true
+    label: 'Install Nova Plugins'
+    description: ''
+    weight: 30
+    type: "checkbox"
