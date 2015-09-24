@@ -1,27 +1,22 @@
-- role: '*'
+- role: ['compute']
   stage: pre_deployment/6000
   type: shell
   parameters:
     cmd: 'dpkg -i ./xe-guest-utilities_6.5.0-1393_amd64.deb'
     timeout: 10
-- role: '*'
+- role: ['compute']
   stage: pre_deployment/6001
   type: shell
   parameters:
     cmd: 'apt-get install sshpass -y'
     timeout: 60
-- role: '*'
-  stage: pre_deployment/7000
-  type: reboot
-  parameters:
-    timeout: 300
 - role: ['compute']
   stage: post_deployment/50
   type: shell
   parameters:
     cmd: ./compute_post_deployment.py
     timeout: 300
-- role: ['primary-controller', 'controller']
+- role: ['primary-controller']
   stage: post_deployment/100
   type: shell
   parameters:

@@ -1527,7 +1527,7 @@
               bind:
                 - "wizard:Storage.ceph": "disable"
                 - "wizard:Network.manager": "nova-network"
-                - "settings:xenserver-fuel-plugin.metadata.enabled" : "true"
+                - "settings:fuel-plugin-xenserver.metadata.enabled" : "true"
               restrictions:
                 - condition: "true"
                   action: disable
