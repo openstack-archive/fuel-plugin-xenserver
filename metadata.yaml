@@ -1,5 +1,5 @@
 # Plugin name
-name: xenserver-fuel-plugin
+name: fuel-plugin-xenserver
 # Human-readable name for your plugin
 title: XenServer Plugin
 # Plugin version
