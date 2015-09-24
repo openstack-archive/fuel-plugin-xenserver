@@ -80,7 +80,7 @@ endobj
 << /Outlines 23 0 R /PageLabels 41 0 R /PageMode /UseNone /Pages 36 0 R /Type /Catalog >>
 endobj
 22 0 obj
-<< /Author () /CreationDate (D:20150924134736+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
+<< /Author () /CreationDate (D:20150924134827+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
   /Title () >>
 endobj
 23 0 obj
@@ -256,7 +256,7 @@ q
 1 0 0 1 299.6811 3 cm
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (1.0.0) Tj T* ET
+BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (1.0.1) Tj T* ET
 Q
 Q
 q
@@ -526,7 +526,7 @@ n -6 -6 522 24 re B*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@home ~]# scp xenserver-fuel-plugin-1.0-1.0.0-1.noarch.rpm root@fuel-master:/tmp) Tj T* ET
+BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@home ~]# scp fuel-plugin-xenserver-1.0-1.0.1-1.noarch.rpm root@fuel-master:/tmp) Tj T* ET
 Q
 Q
 Q
@@ -577,7 +577,7 @@ n -6 -6 576 24 re B*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins --install /tmp/xenserver-fuel-plugin-1.0-1.0.0-1.noarch.rpm) Tj T* ET
+BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins --install /tmp/fuel-plugin-xenserver-1.0-1.0.1-1.noarch.rpm) Tj T* ET
 Q
 Q
 Q
@@ -622,7 +622,7 @@ n -6 -6 445.6898 60 re B*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 38 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins) Tj T* (id | name                  | version | package_version) Tj T* (---|-----------------------|---------|----------------) Tj T* (9  | xenserver-fuel-plugin | 1.0.0   | 2.0.0) Tj T* ET
+BT 1 0 0 1 0 38 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins) Tj T* (id | name                  | version | package_version) Tj T* (---|-----------------------|---------|----------------) Tj T* (9  | fuel-plugin-xenserver | 1.0.1   | 2.0.0) Tj T* ET
 Q
 Q
 Q
@@ -1147,7 +1147,7 @@ xref
 trailer
 << /ID 
  % ReportLab generated PDF document -- digest (http://www.reportlab.com)
- [(M\003\034\016\036\006\011\371\350O\177&\356\344\244\202) (M\003\034\016\036\006\011\371\350O\177&\356\344\244\202)]
+ [(\023\224\214F\320\371\206*]n\007\245\312\\s\322) (\023\224\214F\320\371\206*]n\007\245\312\\s\322)]
  /Info 22 0 R /Root 21 0 R /Size 46 >>
 startxref
 149301
