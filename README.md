@@ -40,5 +40,5 @@ Build and Check
 ---------------
 
 	git clone https://git.openstack.org/openstack/fuel-plugin-xenserver.git
-	fpb --check xenserver-fuel-plugin
-	fpb --build xenserver-fuel-plugin
+	fpb --check fuel-plugin-xenserver
+	fpb --build fuel-plugin-xenserver

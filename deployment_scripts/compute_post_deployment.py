@@ -13,7 +13,7 @@ import re
 
 LOG_FILE = '/tmp/compute_post_deployment.log'
 ASTUTE_PATH = '/etc/astute.yaml'
-ACCESS_SECTION = 'xenserver-fuel-plugin'
+ASTUTE_SECTION = 'fuel-plugin-xenserver'
 
 basicConfig(filename=LOG_FILE, level=DEBUG)
 
