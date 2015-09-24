@@ -63,7 +63,7 @@ endobj
 << /A << /S /URI /Type /Action /URI (https://docs.mirantis.com/openstack/fuel/fuel-6.1/user-guide.html#deploy-changes) >> /Border [ 0 0 0 ] /Rect [ 114.0329 256.5972 178.5129 268.5972 ] /Subtype /Link /Type /Annot >>
 endobj
 18 0 obj
-<< /Annots [ 14 0 R 16 0 R 17 0 R ] /Contents 39 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 36 0 R /Resources << /Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ] /XObject << /FormXob.49af0aa469f423c70d1893d8d0633831 15 0 R /FormXob.b7eb6386174183ab9472b7984bc3b740 13 0 R >> >> /Rotate 0 
+<< /Annots [ 14 0 R 16 0 R 17 0 R ] /Contents 39 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 36 0 R /Resources << /Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ] /XObject << /FormXob.49af0aa469f423c70d1893d8d0633831 15 0 R /FormXob.8909a9f6b77b93d0a2fc2662d6d8986a 13 0 R >> >> /Rotate 0 
   /Trans <<  >> /Type /Page >>
 endobj
 19 0 obj
@@ -80,7 +80,7 @@ endobj
 << /Outlines 23 0 R /PageLabels 41 0 R /PageMode /UseNone /Pages 36 0 R /Type /Catalog >>
 endobj
 22 0 obj
-<< /Author () /CreationDate (D:20150918145958+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
+<< /Author () /CreationDate (D:20150924132834+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
   /Title () >>
 endobj
 23 0 obj
@@ -526,7 +526,7 @@ n -6 -6 522 24 re B*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@home ~]# scp xenserver-fuel-plugin-1.0-1.0.0-1.noarch.rpm root@fuel-master:/tmp) Tj T* ET
+BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@home ~]# scp fuel-plugin-xenserver-1.0-1.0.0-1.noarch.rpm root@fuel-master:/tmp) Tj T* ET
 Q
 Q
 Q
@@ -577,7 +577,7 @@ n -6 -6 576 24 re B*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins --install /tmp/xenserver-fuel-plugin-1.0-1.0.0-1.noarch.rpm) Tj T* ET
+BT 1 0 0 1 0 2 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins --install /tmp/fuel-plugin-xenserver-1.0-1.0.0-1.noarch.rpm) Tj T* ET
 Q
 Q
 Q
@@ -622,7 +622,7 @@ n -6 -6 445.6898 60 re B*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 38 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins) Tj T* (id | name                  | version | package_version) Tj T* (---|-----------------------|---------|----------------) Tj T* (9  | xenserver-fuel-plugin | 1.0.0   | 2.0.0) Tj T* ET
+BT 1 0 0 1 0 38 Tm /F4 10 Tf 12 TL ([root@fuel-master ~]# fuel plugins) Tj T* (id | name                  | version | package_version) Tj T* (---|-----------------------|---------|----------------) Tj T* (9  | fuel-plugin-xenserver | 1.0.0   | 2.0.0) Tj T* ET
 Q
 Q
 Q
@@ -881,7 +881,7 @@ q
 1 0 0 1 20 0 cm
 q
 341.5118 0 0 256.5273 0 0 cm
-/FormXob.b7eb6386174183ab9472b7984bc3b740 Do
+/FormXob.8909a9f6b77b93d0a2fc2662d6d8986a Do
 Q
 Q
 q
@@ -1123,7 +1123,7 @@ xref
 trailer
 << /ID 
  % ReportLab generated PDF document -- digest (http://www.reportlab.com)
- [(\026\024\212#V\3276\310l\344\3669D\262\302Y) (\026\024\212#V\3276\310l\344\3669D\262\302Y)]
+ [(Ki\252\376\204j\304\334h\262s\262\333:K\014) (Ki\252\376\204j\304\334h\262s\262\333:K\014)]
  /Info 22 0 R /Root 21 0 R /Size 46 >>
 startxref
 148706
