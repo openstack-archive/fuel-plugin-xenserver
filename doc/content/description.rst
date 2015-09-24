@@ -14,7 +14,7 @@ Requirement               Version/Comment
 ========================= ===============
 Fuel                      6.1
 XenServer                 6.5 SP1
-XenServer plugin for Fuel 1.0.0
+XenServer plugin for Fuel 1.0.1
 ========================= ===============
 
 * This plugin will not install XenServer or configure the Virtual
