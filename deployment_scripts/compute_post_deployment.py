@@ -66,16 +66,18 @@ def get_astute(astute_path):
     return astute
 
 
-def get_access(astute, access_section):
+def get_options(astute, astute_section):
     """Return username and password filled in plugin."""
-    if not access_section in astute:
-        warning('%s not found' % access_section)
+    if not astute_section in astute:
+        warning('%s not found' % astute_section)
         return None, None
 
-    access = astute[access_section]
-    info('username: {username}'.format(**access))
-    info('password: {password}'.format(**access))
-    return access['username'], access['password']
+    options = astute[astute_section]
+    info('username: {username}'.format(**options))
+    info('password: {password}'.format(**options))
+    info('install_xapi: {install_xapi}'.format(**options))
+    return options['username'], options['password'], \
+        options['install_xapi']
 
 
 def get_endpoints(astute):
@@ -233,13 +235,14 @@ if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
     if astute:
-        username, password = get_access(astute, ACCESS_SECTION)
+        username, password, install_xapi = get_options(astute, ASTUTE_SECTION)
         endpoints = get_endpoints(astute)
         eth, himn_local, himn_xs = init_eth()
         if username and password and endpoints and himn_local and himn_xs:
             route_to_compute(
                 endpoints, himn_xs, himn_local, username, password)
-            install_suppack(himn_xs, username, password)
+            if install_xapi:
+                install_suppack(himn_xs, username, password)
             forward_from_himn(eth)
             create_novacompute_conf(himn_xs, username, password)
             restart_nova_services()
