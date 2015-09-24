@@ -195,6 +195,7 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
                     '-net', net, 'netmask', mask, 'gw', himn_local)
         else:
             info('%s network ip is missing' % endpoint_name)
+    ssh(himn_xs, username, password, 'service', 'iptables', 'save')
 
 
 def install_suppack(himn, username, password):
@@ -227,6 +228,7 @@ def forward_from_himn(eth):
 
     execute('iptables', '-t', 'filter', '-S', 'FORWARD')
     execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    execute('service', 'iptables-persistent', 'save')
 
 
 if __name__ == '__main__':
