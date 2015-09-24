@@ -14,3 +14,9 @@ attributes:
     regex:
       source: '\S'
       error: "Password cannot be empty"
+  install_xapi:
+    value: true
+    label: 'Install Nova Plugins'
+    description: ''
+    weight: 20
+    type: "checkbox"
