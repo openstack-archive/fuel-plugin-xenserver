@@ -192,11 +192,15 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
             ip, cidr = endpoint.split('/')
             net, mask = _net(ip), _mask(cidr)
             if not _routed(net, mask, himn_local):
-                ssh(himn_xs, username, password,
-                    'route', 'add',
-                    '-net', net, 'netmask', mask, 'gw', himn_local)
+                params = ['route', 'add', '-net', net, 'netmask',
+                          mask, 'gw', himn_local]
+                ssh(himn_xs, username, password, *params)
+                sh = 'echo \'%s\' >> /etc/sysconfig/static-routes' \
+                    % ' '.join(params)
+                ssh(himn_xs, username, password, sh)
         else:
             info('%s network ip is missing' % endpoint_name)
+    ssh(himn_xs, username, password, 'service', 'iptables', 'save')
 
 
 def install_suppack(himn, username, password):
@@ -229,6 +233,15 @@ def forward_from_himn(eth):
 
     execute('iptables', '-t', 'filter', '-S', 'FORWARD')
     execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    execute('service', 'iptables-persistent', 'save')
+
+    # prevent HIMN become the default gateway
+    ifcfg = '/etc/network/interfaces.d/ifcfg-%s' % eth
+    ifcfg_script = open(ifcfg).read()
+    del_dev = 'post-up route del default dev $IFACE'
+    if not del_dev in ifcfg_script:
+        with open(ifcfg, 'a') as f:
+            f.write(del_dev)
 
 
 if __name__ == '__main__':
