@@ -31,7 +31,7 @@ To install the XenServer Fuel plugin:
 Add Management Network tool
 ---------------------------
 
-#. Download the HIMN tool `xencenter-himn-plugin <https://github.com/citrix-openstack/xencenter-himn-plugin>`_
+#. Download the `HIMN tool <http://ca.downloads.xensource.com/OpenStack/Plugins/>`_
 
 #. Stop XenCenter if it is running
 
