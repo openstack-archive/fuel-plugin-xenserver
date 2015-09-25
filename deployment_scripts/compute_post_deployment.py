@@ -123,7 +123,9 @@ def init_eth():
     if not ip:
         execute('dhclient', eth)
         fname = '/etc/network/interfaces.d/ifcfg-' + eth
-        s = 'auto {eth}\niface {eth} inet dhcp'.format(eth=eth)
+        s = ('auto {eth}\n'
+             'iface {eth} inet dhcp\n'
+             'post-up route del default dev {eth}').format(eth=eth)
         with open(fname, 'w') as f:
             f.write(s)
         info('%s created' % fname)
@@ -192,9 +194,12 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
             ip, cidr = endpoint.split('/')
             net, mask = _net(ip), _mask(cidr)
             if not _routed(net, mask, himn_local):
-                ssh(himn_xs, username, password,
-                    'route', 'add',
-                    '-net', net, 'netmask', mask, 'gw', himn_local)
+                params = ['route', 'add', '-net', net, 'netmask',
+                          mask, 'gw', himn_local]
+                ssh(himn_xs, username, password, *params)
+                sh = 'echo \'%s\' >> /etc/sysconfig/static-routes' \
+                    % ' '.join(params)
+                ssh(himn_xs, username, password, sh)
         else:
             info('%s network ip is missing' % endpoint_name)
 
@@ -229,6 +234,7 @@ def forward_from_himn(eth):
 
     execute('iptables', '-t', 'filter', '-S', 'FORWARD')
     execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    execute('service', 'iptables-persistent', 'save')
 
 
 if __name__ == '__main__':
