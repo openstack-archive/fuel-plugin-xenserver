@@ -5,6 +5,40 @@ Once the Fuel XenServer plugin has been installed (following
 `Installation Guide`_), you can create *OpenStack* environments that
 use XenServer as the underlying hypervisor
 
+Prepare infrastructure
+----------------------
+
+1. Everyone will have different infrastructure requirements. The additional requirements placed by XenServer are:
+
+   - Compute nodes must be run as a Virtual Machine, with one VM per XenServer hypervisor
+
+   - Ensure that the connectivity through to this virtual machine is the same as all other service nodes, as with standard Mirantis OpenStack setups
+
+   - An internal network is added by the instructions below, to provide communication between the host and the compute VM.
+
+   - Other service nodes (e.g. storage node) can also be created as virtual machines, but this is not required
+
+2. Download and install XenServer 6.5 with SP1 and HIMN tool, a XenServer plugin, as install guide mentioned. Use it for future VM creation and network configuration.
+
+3. While many networking setups are expected to work, the following setup is known to work:
+
+   - Physical machines with two ethernet devices:
+
+    - eth0 / “Access network”: Used to access the XenServer hosts and Fuel Master during setup.
+    - eth1 / “VLAN network”: Carries all traffic during setup + use of OpenStack.  Untagged packets are tagged at the switch to ensure isolation from eth0.
+
+   - Two virtual networks
+
+    - VLAN 'A' on eth1 / “PXE network”: Used for node bootstrapping.
+    - VLAN 'B' on eth1 / "br100": Used to give connectivity between VM and router. 
+
+4. To simplify the setup, the fuel master can also be installed on the XenServer hosts (so XenServer hosts can fully control the network setup), but this is not required.
+One example deployment, shown below, makes use of VLAN 19 for the "PXE network" and provides an isolated network for eth1 by tagging any untagged traffic at the switch with VLAN 237
+
+   .. image:: images/topology00.png
+      :width: 80%
+
+
 Select Environment
 ------------------
 
