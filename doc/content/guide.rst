@@ -5,6 +5,37 @@ Once the Fuel XenServer plugin has been installed (following
 `Installation Guide`_), you can create *OpenStack* environments that
 use XenServer as the underlying hypervisor
 
+Prepare infrastructure
+----------------------
+
+#. Everyone will have different infrastructure requirements. The additional requirements placed by XenServer are:
+
+   - Compute nodes must be run as a Virtual Machine, with one VM per XenServer hypervisor
+
+   - Ensure that the connectivity through to this virtual machine is the same as all other service nodes, as with standard Mirantis OpenStack setups
+
+   - An internal network is added by the instructions below, to provide communication between the host and the compute VM.
+
+   - Other service nodes (e.g. storage node) can also be created as virtual machines, but this is not required
+
+#. Download and install XenServer 6.5 with SP1 and HIMN tool, a XenServer plugin, as install guide mentioned. Use it for future VM creation and network configuration.
+
+#. While many networking setups are expected to work, the following setup is known to work:
+
+   - eth0 / “Access network”: Used to access the XenServer hosts and Fuel Master during setup.
+
+   - eth1 / “VLAN network”: Carries all traffic during setup + use of OpenStack.  Untagged packets are tagged at the switch to ensure isolation from eth0.
+
+   - vlan 19 / “PXE network”: Used for node bootstrapping.
+
+   - br100 : Used to give connectivity between VM and router.
+
+#. To simplify setup, the fuel master is also installed on the XenServer hosts (so XenServer hosts can fully control the network setup), but this is not required.
+
+   .. image:: images/topology00.png
+      :width: 80%
+
+
 Select Environment
 ------------------
 
