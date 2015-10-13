@@ -1,0 +1,28 @@
+- id: 'install-pv-tool'
+  role: ['compute']
+  required_for: ['compute-post-deployment']
+  type: shell
+  parameters:
+    cmd: 'dpkg -i ./xe-guest-utilities_6.5.0-1393_amd64.deb'
+    timeout: 10
+- id: 'install-sshpass'
+  role: ['compute']
+  required_for: ['compute-post-deployment']
+  type: shell
+  parameters:
+    cmd: 'apt-get install sshpass -y'
+    timeout: 60
+- id: 'compute-post-deployment'
+  role: ['compute']
+  required_for: ['post_deployment_end']
+  type: shell
+  parameters:
+    cmd: ./compute_post_deployment.py
+    timeout: 300
+- id: 'controller-post-deployment'
+  role: ['primary-controller']
+  required_for: ['post_deployment_end']
+  type: shell
+  parameters:
+    cmd: ./controller_post_deployment.sh
+    timeout: 300

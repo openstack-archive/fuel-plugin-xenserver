@@ -8,14 +8,6 @@
         description: "This configuration Deploys OpenStack ready for high availability (HA). Controller services are prepared for HA by setting up a base MySQL/Galera, RabbitMQ and HAProxy so that additional controllers can be deployed NOW, or scaled out LATER. 3 or more controllers are required for a true HA environment."
       multinode:
         description: "In this configuration the OpenStack controller is deployed separately from the compute and cinder nodes. This mode assumes the presence of 1 controller node and 1 or more compute/cinder nodes. You can add more nodes to scale your cloud later."
-    roles:
-      - controller
-      - compute
-      - cinder
-      - cinder-vmware
-      - ceph-osd
-      - mongo
-      - base-os
     roles_metadata:
       controller:
         name: "Controller"
@@ -1178,15 +1170,11 @@
 - pk: 9
   extend: *base_release
   fields:
-    name: "Juno+Citrix XenServer on Ubuntu 14.04.1"
-    version: "2014.2.2-6.1"
+    name: "Kilo+Citrix XenServer on Ubuntu 14.04"
+    version: "2015.1.0-7.0"
     can_update_from_versions: []
     operating_system: "Ubuntu"
-    description: "This option will install the OpenStack Juno packages using Ubuntu as a base operating system. With high availability features built in, you are getting a robust, enterprise-grade OpenStack deployment."
-    roles:
-      - controller
-      - compute
-      - cinder
+    description: "This option will install the OpenStack Kilo packages using Ubuntu as a base operating system. With high availability features built in, you are getting a robust, enterprise-grade OpenStack deployment."
     roles_metadata:
       controller:
         name: "Controller"
@@ -1314,25 +1302,25 @@
               - type: "deb"
                 name: "mos"
                 uri: "http://{settings.MASTER_IP}:8080/{cluster.release.version}/ubuntu/x86_64"
-                suite: "mos6.1"
+                suite: "mos8.0"
                 section: "main restricted"
                 priority: 1050
               - type: "deb"
                 name: "mos-updates"
-                uri: "http://mirror.fuel-infra.org/mos/ubuntu/"
-                suite: "mos6.1-updates"
+                uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/{cluster.release.environment_version}/"
+                suite: "mos8.0-updates"
                 section: "main restricted"
                 priority: 1050
               - type: "deb"
                 name: "mos-security"
-                uri: "http://mirror.fuel-infra.org/mos/ubuntu/"
-                suite: "mos6.1-security"
+                uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/{cluster.release.environment_version}/"
+                suite: "mos8.0-security"
                 section: "main restricted"
                 priority: 1050
               - type: "deb"
                 name: "mos-holdback"
-                uri: "http://mirror.fuel-infra.org/mos/ubuntu/"
-                suite: "mos6.1-holdback"
+                uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/{cluster.release.environment_version}/"
+                suite: "mos8.0-holdback"
                 section: "main restricted"
                 priority: 1100
               - type: "deb"
