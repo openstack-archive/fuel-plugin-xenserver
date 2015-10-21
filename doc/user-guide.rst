@@ -18,8 +18,9 @@ Further reading
 ===============
 
 Here are some of the resources available to learn more about Xen:
-- Citrix XenServer official documentation: http://docs.vmd.citrix.com/XenServer
-- What is Xen? by Xen.org: http://xen.org/files/Marketing/WhatisXen.pdf
-- Xen Hypervisor project: http://www.xenproject.org/developers/teams/hypervisor.html
-- Xapi project: http://www.xenproject.org/developers/teams/xapi.html
-- Further XenServer and OpenStack information: http://wiki.openstack.org/XenServer 
+
+* Citrix XenServer official documentation: http://docs.vmd.citrix.com/XenServer
+* What is Xen? by Xen.org: http://xen.org/files/Marketing/WhatisXen.pdf
+* Xen Hypervisor project: http://www.xenproject.org/developers/teams/hypervisor.html
+* Xapi project: http://www.xenproject.org/developers/teams/xapi.html
+* Further XenServer and OpenStack information: http://wiki.openstack.org/XenServer 
