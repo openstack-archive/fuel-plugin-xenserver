@@ -35,10 +35,12 @@ def execute(*cmd, **kwargs):
 
     if out:
         debug(out)
-    if err:
-        warning(err)
 
-    return (out, err)
+    if proc.returncode != 0:
+        warning(err)
+        raise Exception(err)
+
+    return out
 
 
 def ssh(host, username, password, *cmd, **kwargs):
@@ -102,8 +104,8 @@ def init_eth():
         the IP addresses of local host and XenServer.
     """
 
-    domid, err = execute('xenstore-read', 'domid')
-    himn_mac, err = execute(
+    domid = execute('xenstore-read', 'domid')
+    himn_mac = execute(
         'xenstore-read',
         '/local/domain/%s/vm-data/himn_mac' % domid)
     info('himn_mac: %s' % himn_mac)
@@ -144,6 +146,13 @@ def init_eth():
     return None, None, None
 
 
+def check_hotfix_exists(himn, username, password, hotfix):
+    out = ssh(himn_xs, username, password,
+              'xe patch-list name-label=%s' % hotfix)
+    if not out:
+        raise Exception('Hotfix %s has not been installed' % hotfix)
+
+
 def install_xenapi_sdk():
     """Install XenAPI Python SDK"""
     execute('cp', 'XenAPI.py', '/usr/lib/python2.7/dist-packages/')
@@ -177,7 +186,7 @@ def restart_nova_services():
 
 def route_to_compute(endpoints, himn_xs, himn_local, username, password):
     """Route storage/mgmt requests to compute nodes. """
-    (out, err) = ssh(himn_xs, username, password, 'route', '-n')
+    out = ssh(himn_xs, username, password, 'route', '-n')
     _net = lambda ip: '.'.join(ip.split('.')[:-1] + ['0'])
     _mask = lambda cidr: inet_ntoa(pack(
         '>I', 0xffffffff ^ (1 << 32 - int(cidr)) - 1))
@@ -208,7 +217,7 @@ def install_suppack(himn, username, password):
     """Install xapi driver supplemental pack. """
     # TODO: check if installed
     scp(himn, username, password, '/tmp/', 'novaplugins.iso')
-    (out, err) = ssh(
+    out = ssh(
         himn, username, password, 'xe-install-supplemental-pack',
         '/tmp/novaplugins.iso', prompt='Y\n')
     ssh(himn, username, password, 'rm', '/tmp/novaplugins.iso')
@@ -245,6 +254,7 @@ if __name__ == '__main__':
         endpoints = get_endpoints(astute)
         eth, himn_local, himn_xs = init_eth()
         if username and password and endpoints and himn_local and himn_xs:
+            check_hotfix_exists(himn_xs, username, password, 'XS65ESP1013')
             route_to_compute(
                 endpoints, himn_xs, himn_local, username, password)
             if install_xapi:
