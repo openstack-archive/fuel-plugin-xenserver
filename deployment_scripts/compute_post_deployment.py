@@ -237,6 +237,13 @@ def forward_from_himn(eth):
     execute('service', 'iptables-persistent', 'save')
 
 
+def check_hotfix_exists(himn, username, password, hotfix):
+    (out, err) = ssh(himn_xs, username, password,
+                     'xe patch-list name-label=%s' % hotfix)
+    if not out:
+        raise Exception('Hotfix %s has not been installed' % hotfix)
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -245,6 +252,7 @@ if __name__ == '__main__':
         endpoints = get_endpoints(astute)
         eth, himn_local, himn_xs = init_eth()
         if username and password and endpoints and himn_local and himn_xs:
+            check_hotfix_exists(himn, username, password, 'XS65ESP1013')
             route_to_compute(
                 endpoints, himn_xs, himn_local, username, password)
             if install_xapi:
