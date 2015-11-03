@@ -91,7 +91,7 @@ endobj
 << /A << /S /URI /Type /Action /URI (https://docs.mirantis.com/openstack/fuel/fuel-6.1/user-guide.html#deploy-changes) >> /Border [ 0 0 0 ] /Rect [ 114.0329 184.5972 178.5129 196.5972 ] /Subtype /Link /Type /Annot >>
 endobj
 25 0 obj
-<< /Annots [ 21 0 R 23 0 R 24 0 R ] /Contents 54 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 50 0 R /Resources << /Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ] /XObject << /FormXob.49af0aa469f423c70d1893d8d0633831 22 0 R /FormXob.8909a9f6b77b93d0a2fc2662d6d8986a 20 0 R >> >> /Rotate 0 
+<< /Annots [ 21 0 R 23 0 R 24 0 R ] /Contents 54 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 50 0 R /Resources << /Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ] /XObject << /FormXob.49af0aa469f423c70d1893d8d0633831 22 0 R /FormXob.78b02d5486e8f95760ae7996dba4cd29 20 0 R >> >> /Rotate 0 
   /Trans <<  >> /Type /Page >>
 endobj
 26 0 obj
@@ -123,7 +123,7 @@ endobj
 << /Outlines 35 0 R /PageLabels 56 0 R /PageMode /UseNone /Pages 50 0 R /Type /Catalog >>
 endobj
 34 0 obj
-<< /Author () /CreationDate (D:20151009094416+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
+<< /Author () /CreationDate (D:20151112184235-08'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
   /Title () >>
 endobj
 35 0 obj
@@ -179,7 +179,7 @@ endobj
 << /Count 5 /Kids [ 8 0 R 15 0 R 19 0 R 25 0 R 32 0 R ] /Type /Pages >>
 endobj
 51 0 obj
-<< /Length 7458 >>
+<< /Length 7479 >>
 stream
 1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
 q
@@ -259,22 +259,22 @@ q
 1 0 0 1 6 57 cm
 q
 .960784 .960784 .862745 rg
-n 0 0 281.6811 12 re f*
+n 0 0 209.6461 12 re f*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL 112.2206 0 Td (Requirement) Tj T* -112.2206 0 Td ET
+BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL 76.20306 0 Td (Requirement) Tj T* -76.20306 0 Td ET
 Q
 Q
 q
-1 0 0 1 299.6811 57 cm
+1 0 0 1 227.6461 57 cm
 q
 .960784 .960784 .862745 rg
-n 0 0 164.2087 12 re f*
+n 0 0 236.2436 12 re f*
 Q
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL 42.09433 0 Td (Version/Comment) Tj T* -42.09433 0 Td ET
+BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL 78.11182 0 Td (Version/Comment) Tj T* -78.11182 0 Td ET
 Q
 Q
 0 0 0 rg
@@ -286,7 +286,7 @@ BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (Fuel) Tj T* ET
 Q
 Q
 q
-1 0 0 1 299.6811 39 cm
+1 0 0 1 227.6461 39 cm
 q
 0 0 0 rg
 BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (6.1) Tj T* ET
@@ -300,10 +300,10 @@ BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (XenServer) Tj T* ET
 Q
 Q
 q
-1 0 0 1 299.6811 21 cm
+1 0 0 1 227.6461 21 cm
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (6.5 SP1) Tj T* ET
+BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (6.5 SP1 + Hotfix XS65ESP1013) Tj T* ET
 Q
 Q
 q
@@ -314,7 +314,7 @@ BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (XenServer plugin for Fuel) Tj T* ET
 Q
 Q
 q
-1 0 0 1 299.6811 3 cm
+1 0 0 1 227.6461 3 cm
 q
 0 0 0 rg
 BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (1.0.1) Tj T* ET
@@ -328,7 +328,7 @@ q
 n 0 54 m 469.8898 54 l S
 n 0 36 m 469.8898 36 l S
 n 0 18 m 469.8898 18 l S
-n 293.6811 0 m 293.6811 72 l S
+n 221.6461 0 m 221.6461 72 l S
 n 0 72 m 469.8898 72 l S
 n 0 0 m 469.8898 0 l S
 n 0 0 m 0 72 l S
@@ -528,7 +528,7 @@ Q
 endstream
 endobj
 52 0 obj
-<< /Length 9384 >>
+<< /Length 9404 >>
 stream
 1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
 q
@@ -959,7 +959,7 @@ q
 1 0 0 1 23 -3 cm
 q
 0 0 0 rg
-BT 1 0 0 1 0 14 Tm /F1 10 Tf 12 TL 1.113318 Tw (Download and install XenServer 6.5 with SP1 and HIMN tool, a XenServer plugin, as install guide) Tj T* 0 Tw (mentioned. Use it for future VM creation and network configuration.) Tj T* ET
+BT 1 0 0 1 0 14 Tm /F1 10 Tf 12 TL 1.326905 Tw (Download and install XenServer 6.5 with SP1, Hotfix XS65ESP1013 and HIMN tool, a XenServer) Tj T* 0 Tw (plugin, as install guide mentioned. Use it for future VM creation and network configuration.) Tj T* ET
 Q
 Q
 q
@@ -1359,7 +1359,7 @@ q
 1 0 0 1 20 0 cm
 q
 341.5118 0 0 256.5273 0 0 cm
-/FormXob.8909a9f6b77b93d0a2fc2662d6d8986a Do
+/FormXob.78b02d5486e8f95760ae7996dba4cd29 Do
 Q
 Q
 q
@@ -1765,21 +1765,21 @@ xref
 0000170133 00000 n
 0000170252 00000 n
 0000170343 00000 n
-0000177858 00000 n
-0000187299 00000 n
-0000190791 00000 n
-0000195089 00000 n
-0000197796 00000 n
-0000197876 00000 n
-0000197913 00000 n
-0000197950 00000 n
-0000197987 00000 n
-0000198024 00000 n
+0000177879 00000 n
+0000187340 00000 n
+0000190832 00000 n
+0000195130 00000 n
+0000197837 00000 n
+0000197917 00000 n
+0000197954 00000 n
+0000197991 00000 n
+0000198028 00000 n
+0000198065 00000 n
 trailer
 << /ID 
  % ReportLab generated PDF document -- digest (http://www.reportlab.com)
- [(\376\224.\177.\266\365\210\305 \351\235\030*\350\277) (\376\224.\177.\266\365\210\305 \351\235\030*\350\277)]
+ [(cA\036\342\316\300\276\326\317H8\243\272V\345D) (cA\036\342\316\300\276\326\317H8\243\272V\345D)]
  /Info 34 0 R /Root 33 0 R /Size 62 >>
 startxref
-198061
+198102
 %%EOF
