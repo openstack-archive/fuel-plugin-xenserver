@@ -144,6 +144,19 @@ def init_eth():
     return None, None, None
 
 
+def test_ssh_password(himn, username, password):
+    (out, err) = ssh(himn_xs, username, password, 'whoami')
+    if out != username + '\n':
+        raise Exception('Incorrect XenServer password')
+
+
+def check_hotfix_exists(himn, username, password, hotfix):
+    (out, err) = ssh(himn_xs, username, password,
+                     'xe patch-list name-label=%s' % hotfix)
+    if not out:
+        raise Exception('Hotfix %s has not been installed' % hotfix)
+
+
 def install_xenapi_sdk():
     """Install XenAPI Python SDK"""
     execute('cp', 'XenAPI.py', '/usr/lib/python2.7/dist-packages/')
@@ -245,6 +258,8 @@ if __name__ == '__main__':
         endpoints = get_endpoints(astute)
         eth, himn_local, himn_xs = init_eth()
         if username and password and endpoints and himn_local and himn_xs:
+            test_ssh_password(himn_xs, username, password)
+            check_hotfix_exists(himn_xs, username, password, 'XS65ESP1013')
             route_to_compute(
                 endpoints, himn_xs, himn_local, username, password)
             if install_xapi:
