@@ -1224,56 +1224,6 @@
           # NOTE: https://bugs.launchpad.net/fuel/+bug/1372914 - Prohibit possibility of adding cinder nodes to an environment with Ceph RBD
           - condition: "settings:storage.volumes_ceph.value == true"
             message: "Ceph RBD cannot be used with Cinder"
-    networks_metadata:
-      nova_network:
-        networks:
-          - name: "public"
-            cidr: "10.219.237.0/24"
-            gateway: "10.219.237.1"
-            ip_range: ["10.219.237.10", "10.219.237.100"]
-            vlan_start: null
-            use_gateway: true
-            notation: "ip_ranges"
-            render_type: null
-            render_addr_mask: "public"
-            map_priority: 1
-            configurable: true
-            vips: ["haproxy", "vrouter"]
-          - name: "management"
-            cidr: "192.168.73.0/24"
-            vlan_start: 24
-            use_gateway: false
-            notation: "cidr"
-            render_type: "cidr"
-            render_addr_mask: "internal"
-            map_priority: 2
-            configurable: true
-            vips: ["haproxy", "vrouter"]
-          - name: "storage"
-            cidr: "192.168.133.0/24"
-            vlan_start: 20
-            use_gateway: false
-            notation: "cidr"
-            render_type: "cidr"
-            render_addr_mask: "storage"
-            map_priority: 2
-            configurable: true
-          - name: "fixed"
-            vlan_start: null
-            use_gateway: false
-            notation: null
-            render_type: null
-            render_addr_mask: null
-            map_priority: 2
-            ext_net_data: ["fixed_networks_vlan_start", "fixed_networks_amount"]
-            configurable: false
-        config:
-          net_manager: "FlatDHCPManager"
-          fixed_networks_cidr: "10.0.0.0/16"
-          fixed_networks_vlan_start: 23
-          fixed_network_size: 256
-          fixed_networks_amount: 1
-          floating_ranges: [["10.219.237.150", "10.219.237.200"]]
     attributes_metadata:
       editable:
         kernel_params:
