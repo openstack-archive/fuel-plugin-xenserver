@@ -36,7 +36,7 @@ def execute(*cmd, **kwargs):
     if out:
         debug(out)
 
-    if proc.returncode != 0:
+    if proc.returncode is not None and proc.returncode != 0:
         warning(err)
         raise Exception(err)
 
@@ -216,11 +216,11 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
 def install_suppack(himn, username, password):
     """Install xapi driver supplemental pack. """
     # TODO: check if installed
-    scp(himn, username, password, '/tmp/', 'novaplugins.iso')
+    scp(himn, username, password, '/tmp/', 'novaplugins-kilo.iso')
     out = ssh(
         himn, username, password, 'xe-install-supplemental-pack',
-        '/tmp/novaplugins.iso', prompt='Y\n')
-    ssh(himn, username, password, 'rm', '/tmp/novaplugins.iso')
+        '/tmp/novaplugins-kilo.iso', prompt='Y\n')
+    ssh(himn, username, password, 'rm', '/tmp/novaplugins-kilo.iso')
 
 
 def forward_from_himn(eth):
