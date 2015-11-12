@@ -91,7 +91,7 @@ endobj
 << /A << /S /URI /Type /Action /URI (https://docs.mirantis.com/openstack/fuel/fuel-6.1/user-guide.html#deploy-changes) >> /Border [ 0 0 0 ] /Rect [ 114.0329 184.5972 178.5129 196.5972 ] /Subtype /Link /Type /Annot >>
 endobj
 25 0 obj
-<< /Annots [ 21 0 R 23 0 R 24 0 R ] /Contents 54 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 50 0 R /Resources << /Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ] /XObject << /FormXob.49af0aa469f423c70d1893d8d0633831 22 0 R /FormXob.8909a9f6b77b93d0a2fc2662d6d8986a 20 0 R >> >> /Rotate 0 
+<< /Annots [ 21 0 R 23 0 R 24 0 R ] /Contents 54 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 50 0 R /Resources << /Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ] /XObject << /FormXob.49af0aa469f423c70d1893d8d0633831 22 0 R /FormXob.78b02d5486e8f95760ae7996dba4cd29 20 0 R >> >> /Rotate 0 
   /Trans <<  >> /Type /Page >>
 endobj
 26 0 obj
@@ -123,7 +123,7 @@ endobj
 << /Outlines 35 0 R /PageLabels 56 0 R /PageMode /UseNone /Pages 50 0 R /Type /Catalog >>
 endobj
 34 0 obj
-<< /Author () /CreationDate (D:20151009094416+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
+<< /Author () /CreationDate (D:20151112180433-08'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
   /Title () >>
 endobj
 35 0 obj
@@ -1359,7 +1359,7 @@ q
 1 0 0 1 20 0 cm
 q
 341.5118 0 0 256.5273 0 0 cm
-/FormXob.8909a9f6b77b93d0a2fc2662d6d8986a Do
+/FormXob.78b02d5486e8f95760ae7996dba4cd29 Do
 Q
 Q
 q
@@ -1778,7 +1778,7 @@ xref
 trailer
 << /ID 
  % ReportLab generated PDF document -- digest (http://www.reportlab.com)
- [(\376\224.\177.\266\365\210\305 \351\235\030*\350\277) (\376\224.\177.\266\365\210\305 \351\235\030*\350\277)]
+ [(U6s\020\016\305\256ZoTc\207*\326\337&) (U6s\020\016\305\256ZoTc\207*\326\337&)]
  /Info 34 0 R /Root 33 0 R /Size 62 >>
 startxref
 198061
