@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Bob Ball <bob.ball@citrix.com>
+Workflow+1: Bob Ball <bob.ball@citrix.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 20 Nov 2015 16:51:12 +0000
+Reviewed-on: https://review.openstack.org/234111
+Project: openstack/fuel-plugin-xenserver
+Branch: refs/heads/master
