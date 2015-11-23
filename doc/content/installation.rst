@@ -11,14 +11,14 @@ To install the XenServer Fuel plugin:
 #. Copy the *rpm* file to the Fuel Master node:
    ::
 
-      [root@home ~]# scp fuel-plugin-xenserver-1.0-1.0.1-1.noarch.rpm root@fuel-master:/tmp
+      [root@home ~]# scp fuel-plugin-xenserver-2.0-2.0.0-1.noarch.rpm root@fuel-master:/tmp
 
 #. Log into Fuel Master node and install the plugin using the
    `Fuel CLI <https://docs.mirantis.com/openstack/fuel/fuel-6.1/user-guide.html#using-fuel-cli>`_:
 
    ::
 
-      [root@fuel-master ~]# fuel plugins --install /tmp/fuel-plugin-xenserver-1.0-1.0.1-1.noarch.rpm
+      [root@fuel-master ~]# fuel plugins --install /tmp/fuel-plugin-xenserver-2.0-2.0.0-1.noarch.rpm
 
 #. Verify that the plugin is installed correctly:
    ::
@@ -26,7 +26,7 @@ To install the XenServer Fuel plugin:
      [root@fuel-master ~]# fuel plugins
      id | name                  | version | package_version
      ---|-----------------------|---------|----------------
-     9  | fuel-plugin-xenserver | 1.0.1   | 2.0.0
+     9  | fuel-plugin-xenserver | 2.0.0   | 3.0.0
 
 Add Management Network tool
 ---------------------------

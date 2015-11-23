@@ -1,4 +1,4 @@
-XenServer Plugin for Fuel 6.1
+XenServer Plugin for Fuel 7.0
 =============================
 
 XenServer is an Open Source hypervisor with commercial support options
@@ -27,7 +27,7 @@ Requirement               Version/Comment
 ========================= ============================
 Fuel                      6.1
 XenServer                 6.5 SP1 + Hotfix XS65ESP1013
-XenServer plugin for Fuel 1.0.1
+XenServer plugin for Fuel 2.0.0
 ========================= ============================
 
 * This plugin will not install XenServer or configure the Virtual
