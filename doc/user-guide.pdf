@@ -35,7 +35,7 @@ endobj
 << /BaseFont /Courier /Encoding /WinAnsiEncoding /Name /F4 /Subtype /Type1 /Type /Font >>
 endobj
 12 0 obj
-<< /A << /S /URI /Type /Action /URI (https://docs.mirantis.com/openstack/fuel/fuel-6.1/user-guide.html#using-fuel-cli) >> /Border [ 0 0 0 ] /Rect [ 341.9429 699.5736 379.7329 711.5736 ] /Subtype /Link /Type /Annot >>
+<< /A << /S /URI /Type /Action /URI (https://docs.mirantis.com/openstack/fuel/fuel-7.0/user-guide.html#using-fuel-cli) >> /Border [ 0 0 0 ] /Rect [ 341.9429 699.5736 379.7329 711.5736 ] /Subtype /Link /Type /Annot >>
 endobj
 13 0 obj
 << /A << /S /URI /Type /Action /URI (https://github.com/citrix-openstack/xencenter-himn-plugin) >> /Border [ 0 0 0 ] /Rect [ 196.8429 525.1736 295.7629 537.1736 ] /Subtype /Link /Type /Annot >>
@@ -129,7 +129,7 @@ endobj
 << /Outlines 36 0 R /PageLabels 56 0 R /PageMode /UseNone /Pages 50 0 R /Type /Catalog >>
 endobj
 35 0 obj
-<< /Author () /CreationDate (D:20151123110948+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
+<< /Author () /CreationDate (D:20151123122703+00'00') /Creator (\(unspecified\)) /Keywords () /Producer (ReportLab PDF Library - www.reportlab.com) /Subject (\(unspecified\)) 
   /Title () >>
 endobj
 36 0 obj
@@ -286,7 +286,7 @@ q
 1 0 0 1 227.6461 39 cm
 q
 0 0 0 rg
-BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (6.1) Tj T* ET
+BT 1 0 0 1 0 2 Tm /F1 10 Tf 12 TL (7.0) Tj T* ET
 Q
 Q
 q
@@ -1791,7 +1791,7 @@ xref
 trailer
 << /ID 
  % ReportLab generated PDF document -- digest (http://www.reportlab.com)
- [(\227y\365\272\267\257K\325\220,\302M\377+\216J) (\227y\365\272\267\257K\325\220,\302M\377+\216J)]
+ [(F\224\007!\301\337\274\022\366\023\271\364CS\214\266) (F\224\007!\301\337\274\022\366\023\271\364CS\214\266)]
  /Info 35 0 R /Root 34 0 R /Size 62 >>
 startxref
 236583

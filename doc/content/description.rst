@@ -25,7 +25,7 @@ Requirements
 ========================= ============================
 Requirement               Version/Comment
 ========================= ============================
-Fuel                      6.1
+Fuel                      7.0
 XenServer                 6.5 SP1 + Hotfix XS65ESP1013
 XenServer plugin for Fuel 2.0.0
 ========================= ============================
