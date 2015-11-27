@@ -3,3 +3,5 @@
 *.pyc
 *.rpm
 *.sublime-workspace
+doc/build/*/*
+!doc/build/*/*.pdf
