@@ -1340,15 +1340,6 @@
           description: "dialog.create_cluster_wizard.additional.install_ceilometer_description"
           bind: "settings:additional_components.ceilometer.value"
           weight: 30
-        ironic:
-          type: "checkbox"
-          label: "dialog.create_cluster_wizard.additional.install_ironic"
-          description: "dialog.create_cluster_wizard.additional.install_ironic_description"
-          bind: "settings:additional_components.ironic.value"
-          weight: 40
-          restrictions:
-            - "Network.manager != 'neutron-vlan'": "dialog.create_cluster_wizard.additional.ironic_network_mode_alert"
-            - "Storage.ceph == 'enable'": "dialog.create_cluster_wizard.additional.ironic_storage_mode_alert"
       Ready: {}
     vmware_attributes_metadata:
       editable:
@@ -1840,8 +1831,8 @@
           value: "nova-network"
           values:
             - data: "neutron-vlan"
-              label: "dialog.create_cluster_wizard.network.neutr_vlan"
-              description: "dialog.create_cluster_wizard.network.neutr_vlan_description"
+              label: "common.network.neutron_vlan"
+              description: "dialog.create_cluster_wizard.network.neutron_vlan_description"
               restrictions:
                 - condition: "true"
                   action: disable
@@ -1850,9 +1841,9 @@
               bind:
                 - "cluster:net_provider": "neutron"
                 - "cluster:net_segment_type": "vlan"
-            - data: "neutron-gre"
-              label: "dialog.create_cluster_wizard.network.neutr_gre"
-              description: "dialog.create_cluster_wizard.network.neutr_gre_description"
+            - data: "neutron-tun"
+              label: "common.network.neutron_tun"
+              description: "dialog.create_cluster_wizard.network.neutron_tun_description"
               restrictions:
                 - condition: "true"
                   action: disable
