@@ -18,6 +18,11 @@ ASTUTE_SECTION = 'fuel-plugin-xenserver'
 basicConfig(filename=LOG_FILE, level=DEBUG)
 
 
+def reportError(err):
+    warning(err)
+    raise Exception(err)
+
+
 def execute(*cmd, **kwargs):
     cmd = map(str, cmd)
     info(' '.join(cmd))
@@ -37,8 +42,7 @@ def execute(*cmd, **kwargs):
         debug(out)
 
     if proc.returncode is not None and proc.returncode != 0:
-        warning(err)
-        raise Exception(err)
+        reportError(err)
 
     return out
 
@@ -61,8 +65,7 @@ def scp(host, username, password, target_path, filename):
 def get_astute(astute_path):
     """Return the root object read from astute.yaml"""
     if not os.path.exists(astute_path):
-        warning('%s not found' % astute_path)
-        return None
+        reportError('%s not found' % astute_path)
 
     astute = yaml.load(open(astute_path))
     return astute
@@ -71,8 +74,7 @@ def get_astute(astute_path):
 def get_options(astute, astute_section):
     """Return username and password filled in plugin."""
     if not astute_section in astute:
-        warning('%s not found' % astute_section)
-        return None, None
+        reportError('%s not found' % astute_section)
 
     options = astute[astute_section]
     info('username: {username}'.format(**options))
@@ -114,8 +116,7 @@ def init_eth():
         netifaces.ifaddresses(eth).get(netifaces.AF_LINK)[0]['addr']
     eths = [eth for eth in netifaces.interfaces() if _mac(eth) == himn_mac]
     if len(eths) != 1:
-        warning('Cannot find eth matches himn_mac')
-        return None, None, None
+        reportError('Cannot find eth matches himn_mac')
 
     eth = eths[0]
     info('himn_eth: %s' % eth)
@@ -142,15 +143,14 @@ def init_eth():
             info('himn_ip: %s' % himn_local)
             return eth, himn_local, himn_xs
 
-    warning('HIMN failed to get IP address from XenServer')
-    return None, None, None
+    reportError('HIMN failed to get IP address from XenServer')
 
 
 def check_hotfix_exists(himn, username, password, hotfix):
     out = ssh(himn_xs, username, password,
               'xe patch-list name-label=%s' % hotfix)
     if not out:
-        raise Exception('Hotfix %s has not been installed' % hotfix)
+        reportError('Hotfix %s has not been installed' % hotfix)
 
 
 def install_xenapi_sdk():
