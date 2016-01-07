@@ -50,7 +50,7 @@ Select Environment
 #. Create new VMs in XenCenter for the compute nodes
 
 #. Select all Compute virtual Machines, Right click on one of the
-   Virtual Machines and select "Add Management Network"
+   Virtual Machines and select "Manage internal management network"
 
 #. Use the dialog to add the Host Internal Management
    Network to the compute virtual machines
