@@ -11,11 +11,16 @@ from struct import pack
 import netifaces
 import re
 
-LOG_FILE = '/tmp/compute_post_deployment.log'
+
 ASTUTE_PATH = '/etc/astute.yaml'
 ASTUTE_SECTION = 'fuel-plugin-xenserver'
+LOG_ROOT = '/var/log/fuel-plugin-xenserver'
+LOG_FILE = 'compute_post_deployment.log'
 
-basicConfig(filename=LOG_FILE, level=DEBUG)
+if not os.path.exists(LOG_ROOT):
+    os.mkdir(LOG_ROOT)
+
+basicConfig(filename=os.path.join(LOG_ROOT, LOG_FILE), level=DEBUG)
 
 
 def reportError(err):

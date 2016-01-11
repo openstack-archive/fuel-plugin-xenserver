@@ -1,6 +1,8 @@
 #!/bin/bash
 
-LOG_FILE="/tmp/controller_post_deployment.log"
+LOG_ROOT="/var/log/fuel-plugin-xenserver/"
+mkdir -p LOG_ROOT
+LOG_FILE=$LOG_ROOT"controller_post_deployment.log"
 
 function clear_images {
 	for ID in $(glance image-list | awk 'NR>2{print $2}' | grep -v '^$');
