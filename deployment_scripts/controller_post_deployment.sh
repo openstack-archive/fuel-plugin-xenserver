@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOG_ROOT="/var/log/fuel-plugin-xenserver/"
-mkdir -p LOG_ROOT
+mkdir -p $LOG_ROOT
 LOG_FILE=$LOG_ROOT"controller_post_deployment.log"
 
 function clear_images {
