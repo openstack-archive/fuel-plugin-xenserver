@@ -168,6 +168,7 @@ def create_novacompute_conf(himn, username, password):
     template = '\n'.join([
         '[DEFAULT]',
         'compute_driver=xenapi.XenAPIDriver',
+        'force_config_drive=always',
         '[xenserver]',
         'connection_url=http://%s',
         'connection_username="%s"',
