@@ -16,6 +16,7 @@ ASTUTE_PATH = '/etc/astute.yaml'
 ASTUTE_SECTION = 'fuel-plugin-xenserver'
 LOG_ROOT = '/var/log/fuel-plugin-xenserver'
 LOG_FILE = 'compute_post_deployment.log'
+HIMN_IP = '169.254.0.1'
 
 if not os.path.exists(LOG_ROOT):
     os.mkdir(LOG_ROOT)
@@ -74,6 +75,16 @@ def get_astute(astute_path):
 
     astute = yaml.load(open(astute_path))
     return astute
+
+
+def safe_get(dct, *keys):
+    """A safe dictionary getter"""
+    for key in keys:
+        if key in dct:
+            dct = dct[key]
+        else:
+            return None, key
+    return dct, None
 
 
 def get_options(astute, astute_section):
@@ -144,15 +155,15 @@ def init_eth():
     if ip:
         himn_local = ip[0]['addr']
         himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
-        if '169.254.0.1' == himn_xs:
-            info('himn_ip: %s' % himn_local)
-            return eth, himn_local, himn_xs
+        if HIMN_IP == himn_xs:
+            info('himn_local: %s' % himn_local)
+            return eth, himn_local
 
     reportError('HIMN failed to get IP address from XenServer')
 
 
 def check_hotfix_exists(himn, username, password, hotfix):
-    out = ssh(himn_xs, username, password,
+    out = ssh(HIMN_IP, username, password,
               'xe patch-list name-label=%s' % hotfix)
     if not out:
         reportError('Hotfix %s has not been installed' % hotfix)
@@ -163,19 +174,28 @@ def install_xenapi_sdk():
     execute('cp', 'XenAPI.py', '/usr/lib/python2.7/dist-packages/')
 
 
-def create_novacompute_conf(himn, username, password):
+def create_novacompute_conf(himn, username, password, public_ip):
     """Fill nova-compute.conf with HIMN IP and root password. """
     template = '\n'.join([
         '[DEFAULT]',
         'compute_driver=xenapi.XenAPIDriver',
         'force_config_drive=always',
+        'novncproxy_base_url=https://%s:6080/vnc_auto.html',
+        'vncserver_proxyclient_address=%s',
         '[xenserver]',
         'connection_url=http://%s',
         'connection_username="%s"',
         'connection_password="%s"'
     ])
 
-    s = template % (himn, username, password)
+    mgmt_if = netifaces.ifaddresses('br-mgmt')
+    if mgmt_if and mgmt_if.get(netifaces.AF_INET) \
+            and mgmt_if.get(netifaces.AF_INET)[0]['addr']:
+        mgmt_ip = mgmt_if.get(netifaces.AF_INET)[0]['addr']
+    else:
+        reportError('Cannot get IP Address on Management Network')
+
+    s = template % (public_ip, mgmt_ip, himn, username, password)
     fname = '/etc/nova/nova-compute.conf'
     with open(fname, 'w') as f:
         f.write(s)
@@ -252,19 +272,48 @@ def forward_from_himn(eth):
     execute('service', 'iptables-persistent', 'save')
 
 
+def forward_port(eth_in, eth_out, target_host, target_port):
+    """Forward packets from eth_in to eth_out on target_host:target_port. """
+    execute('iptables', '-t', 'nat', '-A', 'PREROUTING',
+            '-i', eth_in, '-p', 'tcp', '--dport', target_port,
+            '-j', 'DNAT', '--to', target_host)
+    execute('iptables', '-A', 'FORWARD',
+            '-i', eth_out, '-o', eth_in,
+            '-m', 'state', '--state', 'RELATED,ESTABLISHED',
+            '-j', 'ACCEPT')
+    execute('iptables', '-A', 'FORWARD',
+            '-i', eth_in, '-o', eth_out,
+            '-j', 'ACCEPT')
+
+    execute('iptables', '-t', 'filter', '-S', 'FORWARD')
+    execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    execute('service', 'iptables-persistent', 'save')
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
     if astute:
         username, password, install_xapi = get_options(astute, ASTUTE_SECTION)
         endpoints = get_endpoints(astute)
-        eth, himn_local, himn_xs = init_eth()
-        if username and password and endpoints and himn_local and himn_xs:
-            check_hotfix_exists(himn_xs, username, password, 'XS65ESP1013')
+        himn_eth, himn_local = init_eth()
+
+        public_ip, missing_key = safe_get(
+            astute, 'network_metadata', 'vips', 'public', 'ipaddr')
+        if public_ip is None:
+            reportError(
+                'Public IP not found because "%s" is missing', missing_key)
+
+        if username and password and endpoints and himn_local:
+            check_hotfix_exists(HIMN_IP, username, password, 'XS65ESP1013')
             route_to_compute(
-                endpoints, himn_xs, himn_local, username, password)
+                endpoints, HIMN_IP, himn_local, username, password)
             if install_xapi:
-                install_suppack(himn_xs, username, password)
-            forward_from_himn(eth)
-            create_novacompute_conf(himn_xs, username, password)
+                install_suppack(HIMN_IP, username, password)
+            forward_from_himn(himn_eth)
+
+            # port forwarding for novnc
+            forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
+
+            create_novacompute_conf(HIMN_IP, username, password, public_ip)
             restart_nova_services()

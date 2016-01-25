@@ -39,9 +39,24 @@ function create_image {
 	fi
 }
 
+function mod_novnc {
+	local public_ip
+
+	public_ip = $(python -c "import sys,yaml;print yaml.load(open('/etc/astute.yaml'))['network_metadata']['vips']['public']['ipaddr']")
+	cat > /etc/nova/nova-compute.conf <<EOF
+[DEFAULT]
+novncproxy_host=0.0.0.0
+novncproxy_base_url=http://$public_ip:6080/vnc_auto.html
+EOF
+	service nova-novncproxy restart
+	service nova-consoleauth restart
+}
+
 source /root/openrc admin
 
 clear_images
 create_image "TestVM" "xen" "http://ca.downloads.xensource.com/OpenStack/cirros-0.3.4-x86_64-disk.vhd.tgz"
 create_image "F17-x86_64-cfntools" "hvm" "http://ca.downloads.xensource.com/OpenStack/F21-x86_64-cfntools.tgz"
 glance image-list >> $LOG_FILE
+
+mod_novnc
