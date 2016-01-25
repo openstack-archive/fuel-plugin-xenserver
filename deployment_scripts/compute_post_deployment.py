@@ -6,7 +6,7 @@ from subprocess import Popen, PIPE
 import yaml
 from shutil import rmtree
 from tempfile import mkstemp, mkdtemp
-from socket import inet_ntoa
+from socket import inet_ntoa, gethostbyname
 from struct import pack
 import netifaces
 import re
@@ -169,13 +169,25 @@ def create_novacompute_conf(himn, username, password):
         '[DEFAULT]',
         'compute_driver=xenapi.XenAPIDriver',
         'force_config_drive=always',
+        'novncproxy_base_url=https://%s:6080/vnc_auto.html',
+        'vncserver_proxyclient_address=%s',
         '[xenserver]',
         'connection_url=http://%s',
         'connection_username="%s"',
         'connection_password="%s"'
     ])
 
-    s = template % (himn, username, password)
+    pc_ip = gethostbyname('public.fuel.local')
+    if pc_ip is None:
+        reportError('Cannot resolve the IP Address of Primary Controller')
+    cm_if = netifaces.ifaddresses('br-mgmt')
+    if cm_if and cm_if.get(netifaces.AF_INET) \
+        and cm_if.get(netifaces.AF_INET)[0]['addr']:
+        cm_ip = cm_if.get(netifaces.AF_INET)[0]['addr']
+    else:
+        reportError('Cannot get IP Address on Management Network')
+
+    s = template % (pc_ip, cm_ip, himn, username, password)
     fname = '/etc/nova/nova-compute.conf'
     with open(fname, 'w') as f:
         f.write(s)
@@ -252,6 +264,25 @@ def forward_from_himn(eth):
     execute('service', 'iptables-persistent', 'save')
 
 
+def forward_port(eth_out, port):
+    """Forward requests from mgmt network to dom0. """
+    eth_in = 'br-mgmt'
+    execute('iptables', '-t', 'nat', '-A', 'PREROUTING',
+            '-i', eth_in, '-p', 'tcp', '--dport', port,
+            '-j', 'DNAT', '--to', '169.254.0.1')
+    execute('iptables', '-A', 'FORWARD',
+            '-i', eth_out, '-o', eth_in,
+            '-m', 'state', '--state', 'RELATED,ESTABLISHED',
+            '-j', 'ACCEPT')
+    execute('iptables', '-A', 'FORWARD',
+            '-i', eth_in, '-o', eth_out,
+            '-j', 'ACCEPT')
+
+    execute('iptables', '-t', 'filter', '-S', 'FORWARD')
+    execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    execute('service', 'iptables-persistent', 'save')
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -266,5 +297,9 @@ if __name__ == '__main__':
             if install_xapi:
                 install_suppack(himn_xs, username, password)
             forward_from_himn(eth)
+
+            # port forwarding for novnc
+            forward_port(eth, '80')
+
             create_novacompute_conf(himn_xs, username, password)
             restart_nova_services()
