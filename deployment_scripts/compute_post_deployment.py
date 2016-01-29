@@ -292,6 +292,15 @@ def forward_port(eth_in, eth_out, target_host, target_port):
     execute('service', 'iptables-persistent', 'save')
 
 
+def install_logrotate_script(himn, username, password):
+    "Install console logrotate script"
+    scp(himn, username, password, '/root/', 'rotate_xen_guest_logs.sh')
+    ssh(himn, username, password, 'mkdir -p /var/log/xen/guest')
+    ssh(himn, username, password, '''crontab - << CRONTAB
+* * * * * /root/rotate_xen_guest_logs.sh
+CRONTAB''')
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -316,3 +325,5 @@ if __name__ == '__main__':
 
             create_novacompute_conf(HIMN_IP, username, password, public_ip)
             restart_nova_services()
+
+            install_logrotate_script(himn_xs, username, password)
