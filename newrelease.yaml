@@ -1806,7 +1806,7 @@
               description: "dialog.create_cluster_wizard.compute.qemu_description"
               bind:
                 - "wizard:Storage.ceph": "disable"
-                - "wizard:Network.manager": "nova-network"
+                - "wizard:Network.manager": "neutron-vlan"
                 - "settings:fuel-plugin-xenserver.metadata.enabled" : "true"
               restrictions:
                 - condition: "true"
@@ -1828,7 +1828,7 @@
       Network:
         manager:
           type: "radio"
-          value: "nova-network"
+          value: "neutron-vlan"
           values:
             - data: "neutron-vlan"
               label: "common.network.neutron_vlan"
@@ -1837,7 +1837,7 @@
                 - condition: "true"
                   action: disable
                 - condition: "true"
-                  message: "The XenServer OpenStack Release has been chosen. Neutron is not a supported option."
+                  message: "Only Neutron VLAN is supported for XenServer OpenStack Release."
               bind:
                 - "cluster:net_provider": "neutron"
                 - "cluster:net_segment_type": "vlan"
