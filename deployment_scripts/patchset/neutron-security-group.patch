@@ -1,0 +1,417 @@
+diff --git a/nova/tests/unit/virt/xenapi/test_vif.py b/nova/tests/unit/virt/xenapi/test_vif.py
+index 65e3070..a314746 100644
+--- a/nova/tests/unit/virt/xenapi/test_vif.py
++++ b/nova/tests/unit/virt/xenapi/test_vif.py
+@@ -22,6 +22,8 @@ from nova.network import model
+ from nova.tests.unit.virt.xenapi import stubs
+ from nova.virt.xenapi import network_utils
+ from nova.virt.xenapi import vif
++from nova.virt.xenapi import vm_utils
++from oslo_serialization import jsonutils
+ 
+ fake_vif = {
+     'created_at': None,
+@@ -194,69 +196,144 @@ class XenAPIOpenVswitchDriverTestCase(XenVIFDriverTestBase):
+         self.assertEqual('fake_vif_ref', ret_vif_ref)
+         self.assertTrue(mock_create_vif_interim_network.called)
+ 
+-    @patch.object(vif.XenAPIOpenVswitchDriver, 'get_vif_interim_net_name',
+-                       return_value="fake_net_name")
+-    @patch.object(vif.XenAPIOpenVswitchDriver, '_get_patch_port_pair_names',
+-                       return_value=("fake_port_name1", "fake_port_name2"))
+-    @patch.object(network_utils, 'find_network_with_name_label',
+-                       return_value='fake_network')
++    @patch.object(vm_utils, 'lookup', return_value='fake_vm_ref')
+     @patch.object(vif.XenVIFDriver, '_get_vif_ref',
+                        return_value='fake_vif_ref')
+-    def test_unplug(self, mock_get_vif_ref,
++    @patch.object(network_utils, 'find_network_with_name_label',
++                       return_value='fake_network')
++    @patch.object(vif.XenAPIOpenVswitchDriver, '_device_exists',
++                        return_value=True)
++    def test_unplug(self, mock_lookup, mock_get_vif_ref,
+                     mock_find_network_with_name_label,
+-                    mock_get_patch_port_pair_names,
+-                    mock_get_vif_interim_net_name):
++                    mock_device_exists):
+         instance = {'name': "fake_instance"}
+         vm_ref = "fake_vm_ref"
+         self.ovs_driver.unplug(instance, fake_vif, vm_ref)
+ 
+-        del_p1 = '["ovs-vsctl", "--", "--if-exists", ' \
+-                   '"del-port", "fake_bridge", "fake_port_name1"]'
+-        del_p2 = '["ovs-vsctl", "--", "--if-exists", ' \
+-                   '"del-port", "xapi1", "fake_port_name2"]'
+-        del_br = '["ovs-vsctl", "--", "--if-exists", ' \
+-                   '"del-br", "fake_bridge"]'
++        # interim bridge
++        patch_port1 = ("vif%s" % fake_vif['id'])[:14]
++        del_p1 = {'cmd': jsonutils.dumps(
++                    ['ovs-vsctl', '--', '--if-exists', 'del-port',
++                     'fake_bridge', patch_port1])}
++        del_br = {'cmd': jsonutils.dumps(
++                    ['ovs-vsctl', '--', '--if-exists', 'del-br',
++                     'fake_bridge'])}
++
++        # linux bridge
++        qbr_name = ("qbr%s" % fake_vif['id'])[:14]
++        tap_name = ("tap%s" % fake_vif['id'])[:14]
++        qvb_name = ("qvb%s" % fake_vif['id'])[:14]
++        del_tap = {'cmd': jsonutils.dumps(
++                    ['brctl', 'delif', qbr_name, tap_name])}
++        del_link_tap = {'cmd': jsonutils.dumps(
++                        ['ip', 'link', 'delete', tap_name])}
++        del_qvb = {'cmd': jsonutils.dumps(
++                    ['brctl', 'delif', qbr_name, qvb_name])}
++        del_link_qvb = {'cmd': jsonutils.dumps(
++                        ['ip', 'link', 'delete', qvb_name])}
++        down_link_qbr = {'cmd': jsonutils.dumps(
++                         ['ip', 'link', 'set', qbr_name, 'down'])}
++        del_qbr = {'cmd': jsonutils.dumps(['brctl', 'delbr', qbr_name])}
+ 
+         expected_calls = [call.call_xenapi('VIF.destroy', 'fake_vif_ref'),
+             call.call_xenapi('network.get_VIFs', 'fake_network'),
+             call.call_xenapi('network.get_bridge', 'fake_network'),
+-            call.call_plugin('xenhost', 'network_config', {'cmd': del_p1}),
+-            call.call_plugin('xenhost', 'network_config', {'cmd': del_p2}),
++            call.call_plugin('xenhost', 'network_config', del_p1),
+             call.call_xenapi('network.destroy', 'fake_network'),
+-            call.call_plugin('xenhost', 'network_config', {'cmd': del_br})]
++            call.call_plugin('xenhost', 'network_config', del_br),
++            call.call_plugin('xenhost', 'network_config', del_tap),
++            call.call_plugin('xenhost', 'network_config', del_link_tap),
++            call.call_plugin('xenhost', 'network_config', del_qvb),
++            call.call_plugin('xenhost', 'network_config', del_link_qvb),
++            call.call_plugin('xenhost', 'network_config', down_link_qbr),
++            call.call_plugin('xenhost', 'network_config', del_qbr)]
+         self._session.assert_has_calls(expected_calls)
+ 
+-    @patch.object(vif.XenAPIOpenVswitchDriver, 'get_vif_interim_net_name',
+-                       return_value="fake_net_name")
+-    @patch.object(vif.XenAPIOpenVswitchDriver, '_get_patch_port_pair_names',
+-                       return_value=("fake_port_name1", "fake_port_name2"))
+-    def test_post_start_actions(self, mock_get_patch_port_pair_names,
+-                                mock_get_vif_interim_net_name):
++    @patch.object(vif.XenAPIOpenVswitchDriver, '_device_exists',
++                        return_value=False)
++    def test_post_start_actions(self, mock_device_exists):
+         vif_ref = "fake_vif_ref"
+         instance = {'name': 'fake_instance_name'}
+         self.ovs_driver.post_start_actions(instance, vif_ref)
+ 
+-        add_p1 = '["ovs-vsctl", "--", ' \
+-                 '"--if-exists", "del-port", "fake_port_name1", "--", ' \
+-                 '"add-port", "fake_bridge", "fake_port_name1", "--", ' \
+-                 '"set", "interface", "fake_port_name1", ' \
+-                 '"type=patch", "options:peer=fake_port_name2"]'
+-        add_p2 = '["ovs-vsctl", "--", ' \
+-                 '"--if-exists", "del-port", "fake_port_name2", "--", ' \
+-                 '"add-port", "xapi1", "fake_port_name2", "--", ' \
+-                 '"set", "interface", "fake_port_name2", ' \
+-                 '"type=patch", "options:peer=fake_port_name1"]'
+-        ext_map = '["ovs-vsctl", "set", "Interface", "fake_port_name2", ' \
+-                  '"external-ids:attached-mac=00:00:00:00:00:00", ' \
+-                  '"external-ids:iface-id=fake-nicira-iface-id", ' \
+-                  '"external-ids:iface-status=active", ' \
+-                  '"external-ids:xs-vif-uuid=fake_uuid"]'
++        # create linux bridge
++        qbr_name = ("qbr%s" % fake_vif['id'])[:14]
++        add_qbr = {'cmd': jsonutils.dumps(['brctl', 'addbr', qbr_name])}
++        set_fd = {'cmd': jsonutils.dumps(['brctl', 'setfd', qbr_name, '0'])}
++        off_stp = {'cmd': jsonutils.dumps(['brctl', 'stp', qbr_name, 'off'])}
++        up_qbr_link = {'cmd': jsonutils.dumps(
++                        ['ip', 'link', 'set', qbr_name, 'up'])}
++
++        # create veth pair, qvb/qvo
++        qvb_name = ("qvb%s" % fake_vif['id'])[:14]
++        qvo_name = ("qvo%s" % fake_vif['id'])[:14]
++        qvb_qvo_veth_pair = {'cmd': jsonutils.dumps(
++                            ['ip', 'link', 'add', qvb_name, 'type', 'veth',
++                             'peer', 'name', qvo_name])}
++        qvb_link_up = {'cmd': jsonutils.dumps(
++                       ['ip', 'link', 'set', qvb_name, 'up'])}
++        qvb_promisc_on = {'cmd': jsonutils.dumps(
++                          ['ip', 'link', 'set', qvb_name, 'promisc', 'on'])}
++        qvo_link_up = {'cmd': jsonutils.dumps(
++                       ['ip', 'link', 'set', qvo_name, 'up'])}
++        qvo_promisc_on = {'cmd': jsonutils.dumps(
++                          ['ip', 'link', 'set', qvo_name, 'promisc', 'on'])}
++
++        # add qvb/qvo port
++        add_qvb = {'cmd': jsonutils.dumps(
++                    ['brctl', 'addif', qbr_name, qvb_name])}
++        del_add_qvo = {'cmd': jsonutils.dumps(
++                        ['ovs-vsctl', '--', '--if-exists', 'del-port',
++                        qvo_name, '--', 'add-port', 'xapi1', qvo_name])}
++        ext_map = {'cmd': jsonutils.dumps(
++                    ["ovs-vsctl", "set", "Interface", qvo_name,
++                    "external-ids:attached-mac=%s" % fake_vif['address'],
++                    "external-ids:iface-id=%s" % fake_vif['id'],
++                    "external-ids:iface-status=active",
++                    "external-ids:xs-vif-uuid=%s" % fake_vif['uuid']])}
++
++        # create veth tap/patch port
++        patch_port1 = ("vif%s" % fake_vif['id'])[:14]
++        tap_port = ("tap%s" % fake_vif['id'])[:14]
++        tap_patch_veth_pair = {'cmd': jsonutils.dumps(
++                                ['ip', 'link', 'add', tap_port, 'type',
++                                'veth', 'peer', 'name', patch_port1])}
++        up_tap_link = {'cmd': jsonutils.dumps(
++                        ['ip', 'link', 'set', tap_port, 'up'])}
++        tap_promisc_on = {'cmd': jsonutils.dumps(
++                            ['ip', 'link', 'set', tap_port, 'promisc', 'on'])}
++        up_patch_link = {'cmd': jsonutils.dumps(
++                          ['ip', 'link', 'set', patch_port1, 'up'])}
++        patch_promisc_on = {'cmd': jsonutils.dumps(
++                        ['ip', 'link', 'set', patch_port1, 'promisc', 'on'])}
++        add_tap = {'cmd': jsonutils.dumps(
++                    ['brctl', 'addif', qbr_name, tap_port])}
++        add_patch = {'cmd': jsonutils.dumps(
++                        ['ovs-vsctl', '--', '--if-exists', 'del-port',
++                         patch_port1, '--', 'add-port', 'fake_bridge',
++                         patch_port1])}
+ 
+         expected_calls = [call.call_xenapi('VIF.get_record', vif_ref),
+             call.call_xenapi('network.get_bridge', 'fake_network'),
+-            call.call_plugin('xenhost', 'network_config', {'cmd': add_p1}),
+-            call.call_plugin('xenhost', 'network_config', {'cmd': add_p2}),
+-            call.call_plugin('xenhost', 'network_config', {'cmd': ext_map})]
++            call.call_plugin('xenhost', 'network_config', add_qbr),
++            call.call_plugin('xenhost', 'network_config', set_fd),
++            call.call_plugin('xenhost', 'network_config', off_stp),
++            call.call_plugin('xenhost', 'network_config', up_qbr_link),
++            call.call_plugin('xenhost', 'network_config', qvb_qvo_veth_pair),
++            call.call_plugin('xenhost', 'network_config', qvb_link_up),
++            call.call_plugin('xenhost', 'network_config', qvb_promisc_on),
++            call.call_plugin('xenhost', 'network_config', qvo_link_up),
++            call.call_plugin('xenhost', 'network_config', qvo_promisc_on),
++            call.call_plugin('xenhost', 'network_config', add_qvb),
++            call.call_plugin('xenhost', 'network_config', del_add_qvo),
++            call.call_plugin('xenhost', 'network_config', ext_map),
++            call.call_plugin('xenhost', 'network_config', tap_patch_veth_pair),
++            call.call_plugin('xenhost', 'network_config', up_tap_link),
++            call.call_plugin('xenhost', 'network_config', tap_promisc_on),
++            call.call_plugin('xenhost', 'network_config', up_patch_link),
++            call.call_plugin('xenhost', 'network_config', patch_promisc_on),
++            call.call_plugin('xenhost', 'network_config', add_tap),
++            call.call_plugin('xenhost', 'network_config', add_patch)]
+         self._session.assert_has_calls(expected_calls)
+ 
+     @patch.object(network_utils, 'find_network_with_name_label',
+diff --git a/nova/virt/xenapi/vif.py b/nova/virt/xenapi/vif.py
+index 5c1ac29..bae0a84 100644
+--- a/nova/virt/xenapi/vif.py
++++ b/nova/virt/xenapi/vif.py
+@@ -230,11 +230,11 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+ 
+     def unplug(self, instance, vif, vm_ref):
+         """unplug vif:
+-        1. unplug and destroy vif.
+-        2. delete the patch port pair between the integration bridge and
+-           the interim network.
+-        3. destroy the interim network
+-        4. delete the OVS bridge service for the interim network
++        1. delete the patch port pair between the integration bridge and
++           the qbr linux bridge(if exist) and the interim network.
++        2. destroy the interim network
++        3. delete the OVS bridge service for the interim network
++        4. delete linux bridge qbr and related ports if exist
+         """
+         try:
+             super(XenAPIOpenVswitchDriver, self).unplug(instance, vif, vm_ref)
+@@ -255,27 +255,124 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+                       {'vif_id': vif['id']})
+             bridge_name = self._session.call_xenapi('network.get_bridge',
+                                                     network)
+-            patch_port1, patch_port2 = self._get_patch_port_pair_names(
+-                                                    vif['id'])
+-            # delete the patch port pair
++            patch_port1, tap_name = self._get_patch_port_pair_names(vif['id'])
++
+             self._del_ovs_port(bridge_name, patch_port1)
+-            self._del_ovs_port(CONF.xenserver.ovs_integration_bridge,
+-                               patch_port2)
+ 
+-            LOG.debug('destroying network: network=%(network)s,'
+-                      'bridge=%(br)s',
++            LOG.debug('destroying network: network=%(network)s, bridge=%(br)s',
+                       {'network': network, 'br': bridge_name})
+             self._session.call_xenapi('network.destroy', network)
+             # delete bridge if it still exists.
+             # As there is patch port existing on this bridge when destroying
+-            # the VM vif (which happens when shutdown the VM), the bridge
+-            # won't be destroyed automatically by XAPI. So let's destroy it
+-            # at here.
++            # VM vif (which happens when shutdown the VM), the bridge won't be
++            # destroyed automatically by XAPI. So let's destroy it at here.
+             self._del_ovs_br(bridge_name)
++
++            qbr_name = self._get_qbr_name(vif['id'])
++            qvb_name, qvo_name = self._get_veth_pair_names(vif['id'])
++            if self._device_exists(qbr_name):
++                # delete tap port, qvb port and qbr
++                LOG.debug(
++                    "destroy linux bridge %(qbr)s when unplug vif %(vif)s",
++                    {'qbr': qbr_name, 'vif': vif['id']})
++                self._delete_linux_port(qbr_name, tap_name)
++                self._delete_linux_port(qbr_name, qvb_name)
++                self._delete_linux_bridge(qbr_name)
++            self._del_ovs_port(CONF.xenserver.ovs_integration_bridge, qvo_name)
+         except Exception as e:
+             LOG.debug("Fail to unplug vif %(vif)s, exception:%(exception)s",
+                       {'vif': vif, 'exception': e}, instance=instance)
+ 
++    def _get_qbr_name(self, iface_id):
++        return ("qbr" + iface_id)[:network_model.NIC_NAME_LEN]
++
++    def _get_veth_pair_names(self, iface_id):
++        return (("qvb%s" % iface_id)[:network_model.NIC_NAME_LEN],
++                ("qvo%s" % iface_id)[:network_model.NIC_NAME_LEN])
++
++    def _device_exists(self, device):
++        """Check if ethernet device exists."""
++        try:
++            self._exec_dom0_cmd(['ip', 'link', 'show', device])
++            return True
++        except Exception:
++            # Swallow exception from plugin, since this indicates the device
++            # doesn't exist
++            return False
++
++    def _delete_net_dev(self, dev):
++        """Delete a network device only if it exists."""
++        if self._device_exists(dev):
++            LOG.debug("delete network device '%s'", dev)
++            cmd_args = ['ip', 'link', 'delete', dev]
++            self._exec_dom0_cmd(cmd_args)
++
++    def _create_veth_pair(self, dev1_name, dev2_name):
++        """Create a pair of veth devices with the specified names,
++        deleting any previous devices with those names.
++        """
++        for dev in [dev1_name, dev2_name]:
++            self._delete_net_dev(dev)
++        LOG.debug("Create veth pair, port1:%(qvb)s, port2:%(qvo)s",
++                  {'qvb': dev1_name, 'qvo': dev2_name})
++        cmd_args = ['ip', 'link', 'add', dev1_name, 'type', 'veth', 'peer',
++                    'name', dev2_name]
++        self._exec_dom0_cmd(cmd_args)
++        for dev in [dev1_name, dev2_name]:
++            cmd_args = ['ip', 'link', 'set', dev, 'up']
++            self._exec_dom0_cmd(cmd_args)
++            cmd_args = ['ip', 'link', 'set', dev, 'promisc', 'on']
++            self._exec_dom0_cmd(cmd_args)
++
++    def _create_linux_bridge(self, vif_rec):
++        """create a qbr linux bridge for neutron security group
++        """
++        iface_id = vif_rec['other_config']['nicira-iface-id']
++        linux_br_name = self._get_qbr_name(iface_id)
++        if not self._device_exists(linux_br_name):
++            LOG.debug("Create linux bridge %s", linux_br_name)
++            cmd_args = ['brctl', 'addbr', linux_br_name]
++            self._exec_dom0_cmd(cmd_args)
++            cmd_args = ['brctl', 'setfd', linux_br_name, '0']
++            self._exec_dom0_cmd(cmd_args)
++            cmd_args = ['brctl', 'stp', linux_br_name, 'off']
++            self._exec_dom0_cmd(cmd_args)
++            cmd_args = ['ip', 'link', 'set', linux_br_name, 'up']
++            self._exec_dom0_cmd(cmd_args)
++
++        qvb_name, qvo_name = self._get_veth_pair_names(iface_id)
++        if not self._device_exists(qvo_name):
++            self._create_veth_pair(qvb_name, qvo_name)
++            cmd_args = ['brctl', 'addif', linux_br_name, qvb_name]
++            self._exec_dom0_cmd(cmd_args)
++            cmd_args = ['ovs-vsctl', '--', '--if-exists', 'del-port', qvo_name,
++                        '--', 'add-port',
++                        CONF.xenserver.ovs_integration_bridge, qvo_name]
++            self._exec_dom0_cmd(cmd_args)
++            self._map_external_ids_with_vif(qvo_name, vif_rec)
++        return linux_br_name
++
++    def _delete_linux_port(self, qbr_name, port_name):
++        try:
++            # delete port in linux bridge
++            cmd_args = ['brctl', 'delif', qbr_name, port_name]
++            self._exec_dom0_cmd(cmd_args)
++            self._delete_net_dev(port_name)
++        except Exception:
++            LOG.debug("Fail to delete linux port %(port_name)s on bridge"
++                      "%(qbr_name)s",
++                      {'port_name': port_name, 'qbr_name': qbr_name})
++
++    def _delete_linux_bridge(self, qbr_name):
++        try:
++            # delete linux bridge qbrxxx
++            cmd_args = ['ip', 'link', 'set', qbr_name, 'down']
++            self._exec_dom0_cmd(cmd_args)
++            cmd_args = ['brctl', 'delbr', qbr_name]
++            self._exec_dom0_cmd(cmd_args)
++        except Exception:
++            LOG.debug("Fail to delete linux bridge %s", qbr_name)
++
+     def post_start_actions(self, instance, vif_ref):
+         """Do needed actions post vif start:
+         plug the interim ovs bridge to the integration bridge;
+@@ -287,10 +384,10 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+         bridge_name = self._session.call_xenapi('network.get_bridge',
+                                                 network_ref)
+         iface_id = vif_rec['other_config']['nicira-iface-id']
+-        patch_port1, patch_port2 = self._get_patch_port_pair_names(iface_id)
++        patch_port1, tap_name = self._get_patch_port_pair_names(iface_id)
+         LOG.debug('plug_ovs_bridge: port1=%(port1)s, port2=%(port2)s,'
+                   'network_ref=%(network_ref)s, bridge_name=%(bridge_name)s',
+-                  {'port1': patch_port1, 'port2': patch_port2,
++                  {'port1': patch_port1, 'port2': tap_name,
+                    'network_ref': network_ref,
+                    'bridge_name': bridge_name})
+         if bridge_name is None:
+@@ -298,10 +395,15 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+                               "VM:%(vm_name)s"),
+                             {'vif_ref': vif_ref, 'vm_name': instance['name']})
+ 
+-        self._add_patch_port(bridge_name, patch_port1, patch_port2)
+-        self._add_patch_port(CONF.xenserver.ovs_integration_bridge,
+-                            patch_port2, patch_port1)
+-        self._map_external_ids_with_vif(patch_port2, vif_rec)
++        # Create Linux bridge qbrXXX
++        linux_br_name = self._create_linux_bridge(vif_rec)
++        LOG.debug("create veth pair for interim bridge and linux bridge")
++        self._create_veth_pair(tap_name, patch_port1)
++        cmd_args = ['brctl', 'addif', linux_br_name, tap_name]
++        self._exec_dom0_cmd(cmd_args)
++        cmd_args = ['ovs-vsctl', '--', '--if-exists', 'del-port', patch_port1,
++                    '--', 'add-port', bridge_name, patch_port1]
++        self._exec_dom0_cmd(cmd_args)
+ 
+     def get_vif_interim_net_name(self, vif):
+         return ("net-" + vif['id'])[:network_model.NIC_NAME_LEN]
+@@ -326,8 +428,8 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+         return network_ref
+ 
+     def _get_patch_port_pair_names(self, iface_id):
+-        return (("pp1-%s" % iface_id)[:network_model.NIC_NAME_LEN],
+-                ("pp2-%s" % iface_id)[:network_model.NIC_NAME_LEN])
++        return (("vif%s" % iface_id)[:network_model.NIC_NAME_LEN],
++                ("tap%s" % iface_id)[:network_model.NIC_NAME_LEN])
+ 
+     def _add_patch_port(self, bridge_name, port_name, peer_port_name):
+         cmd_args = ['ovs-vsctl', '--', '--if-exists', 'del-port', port_name,
+diff --git a/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost b/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
+index 4bf85ac..80f263f 100755
+--- a/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
++++ b/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
+@@ -214,9 +214,11 @@ def iptables_config(session, args):
+ 
+ 
+ def network_config(session, args):
+-    # function to config OVS bridge
++    # function to config OVS bridge and Linux bridge
+     ALLOWED_CMDS = [
+         'ovs-vsctl',
++        'brctl',
++        'ip'
+         ]
+     cmd = json.loads(args.get('cmd'))
+     if cmd is None or cmd == []:
