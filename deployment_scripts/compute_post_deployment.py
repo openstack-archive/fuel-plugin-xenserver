@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
+import ConfigParser
 import os
 from logging import debug, info, warning, DEBUG, basicConfig
 from subprocess import Popen, PIPE
 import yaml
-from shutil import rmtree
-from tempfile import mkstemp, mkdtemp
 from socket import inet_ntoa
 from struct import pack
 import netifaces
@@ -17,6 +16,8 @@ ASTUTE_SECTION = 'fuel-plugin-xenserver'
 LOG_ROOT = '/var/log/fuel-plugin-xenserver'
 LOG_FILE = 'compute_post_deployment.log'
 HIMN_IP = '169.254.0.1'
+INT_BRIDGE = 'br-int'
+XS_PLUGIN_ISO = 'xenserverplugins-liberty.iso'
 
 if not os.path.exists(LOG_ROOT):
     os.mkdir(LOG_ROOT)
@@ -178,18 +179,6 @@ def install_xenapi_sdk():
 
 def create_novacompute_conf(himn, username, password, public_ip):
     """Fill nova-compute.conf with HIMN IP and root password. """
-    template = '\n'.join([
-        '[DEFAULT]',
-        'compute_driver=xenapi.XenAPIDriver',
-        'force_config_drive=always',
-        'novncproxy_base_url=https://%s:6080/vnc_auto.html',
-        'vncserver_proxyclient_address=%s',
-        '[xenserver]',
-        'connection_url=http://%s',
-        'connection_username="%s"',
-        'connection_password="%s"'
-    ])
-
     mgmt_if = netifaces.ifaddresses('br-mgmt')
     if mgmt_if and mgmt_if.get(netifaces.AF_INET) \
             and mgmt_if.get(netifaces.AF_INET)[0]['addr']:
@@ -197,19 +186,26 @@ def create_novacompute_conf(himn, username, password, public_ip):
     else:
         reportError('Cannot get IP Address on Management Network')
 
-    s = template % (public_ip, mgmt_ip, himn, username, password)
-    fname = '/etc/nova/nova-compute.conf'
-    with open(fname, 'w') as f:
-        f.write(s)
-    info('%s created' % fname)
-
-
-def restart_nova_services():
-    """Restart nova services"""
-    execute('stop', 'nova-compute')
-    execute('start', 'nova-compute')
-    execute('stop', 'nova-network')
-    execute('start', 'nova-network')
+    filename = '/etc/nova/nova-compute.conf'
+    cf = ConfigParser.ConfigParser()
+    try:
+        cf.read(filename)
+        cf.set('DEFAULT', 'compute_driver', 'xenapi.XenAPIDriver')
+        cf.set('DEFAULT', 'force_config_drive', 'always')
+        cf.set('DEFAULT', 'novncproxy_base_url',
+               'https://%s:6080/vnc_auto.html' % public_ip)
+        cf.set('DEFAULT', 'vncserver_proxyclient_address', mgmt_ip)
+        cf.add_section('xenserver')
+        cf.set('xenserver', 'connection_url', 'http://%s' % himn)
+        cf.set('xenserver', 'connection_username', username)
+        cf.set('xenserver', 'connection_password', password)
+        cf.set('xenserver', 'vif_driver',
+               'nova.virt.xenapi.vif.XenAPIOpenVswitchDriver')
+        cf.set('xenserver', 'ovs_integration_bridge', INT_BRIDGE)
+        cf.write(open(filename,'w'))
+    except:
+        reportError('Cannot set configurations to %s' % filename)
+    info('%s created' % filename)
 
 
 def route_to_compute(endpoints, himn_xs, himn_local, username, password):
@@ -244,11 +240,11 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
 def install_suppack(himn, username, password):
     """Install xapi driver supplemental pack. """
     # TODO: check if installed
-    scp(himn, username, password, '/tmp/', 'novaplugins-kilo.iso')
+    scp(himn, username, password, '/tmp/', XS_PLUGIN_ISO)
     out = ssh(
         himn, username, password, 'xe-install-supplemental-pack',
-        '/tmp/novaplugins-kilo.iso', prompt='Y\n')
-    ssh(himn, username, password, 'rm', '/tmp/novaplugins-kilo.iso')
+        '/tmp/%s' % XS_PLUGIN_ISO, prompt='Y\n')
+    ssh(himn, username, password, 'rm', '/tmp/%s' % XS_PLUGIN_ISO)
 
 
 def forward_from_himn(eth):
@@ -301,6 +297,83 @@ def install_logrotate_script(himn, username, password):
 CRONTAB''')
 
 
+def modify_neutron_rootwrap_conf(himn, username, password):
+    """Set xenapi configurations"""
+    filename = '/etc/neutron/rootwrap.conf'
+    cf = ConfigParser.ConfigParser()
+    try:
+        cf.read(filename)
+        cf.set('xenapi', 'xenapi_connection_url', 'http://%s' % himn)
+        cf.set('xenapi', 'xenapi_connection_username', username)
+        cf.set('xenapi', 'xenapi_connection_password', password)
+        cf.write(open(filename,'w'))
+    except:
+        reportError("Fail to modify file %s", filename)
+    info('Modify file %s successfully', filename)
+
+
+def modify_neutron_ovs_agent_conf(int_br, br_mappings):
+    filename = '/etc/neutron/plugins/ml2/ml2_conf.ini'
+    cf = ConfigParser.ConfigParser()
+    try:
+        cf.read(filename)
+        cf.set('agent', 'root_helper',
+               'neutron-rootwrap-xen-dom0 /etc/neutron/rootwrap.conf')
+        cf.set('agent', 'root_helper_daemon', '')
+        cf.set('agent', 'minimize_polling', False)
+        cf.set('ovs', 'integration_bridge', int_br)
+        cf.set('ovs', 'bridge_mappings', br_mappings)
+        cf.write(open(filename,'w'))
+    except:
+        reportError("Fail to modify %s", filename)
+    info('Modify %s successfully', filename)
+
+
+def find_bridge_mappings(astute, himn, username, password):
+    # find out bridge which is used for private network
+    values = astute['network_scheme']['transformations']
+    for item in values:
+        if item['action'] == 'add-port' and item['bridge'] == 'br-aux':
+            ethX = item['name']
+    ethX_all = execute('ip', 'link', 'show', ethX)
+    ethX_list = ethX_all.split(' ')
+    # after split, the items in the list looks like:
+    #   '2:', 'eth0:', '<BROADCAST,MULTICAST,UP,LOWER_UP>', 'mtu', '1500',
+    #   'qdisc', 'pfifo_fast', 'state', 'UP', 'mode', 'DEFAULT', 'group',
+    #   'default', 'qlen', '1000', '', '', '', '', 'link/ether',
+    #   '0e:b9:10:c8:96:d0', 'brd', 'ff:ff:ff:ff:ff:ff'
+    mac = ethX_list[20]
+    network_uuid = ssh(himn, username, password,
+            'xe vif-list MAC=%s params=network-uuid minimal=true' % mac)
+    bridge = ssh(himn, username, password,
+            'xe network-list uuid=%s params=bridge minimal=true' %
+            network_uuid)
+
+    # find physical network name
+    phynet_setting = astute['quantum_settings']['L2']['phys_nets']
+    physnet = phynet_setting.keys()[0]
+    return physnet + ':' + bridge
+
+
+def restart_services(service_name):
+    execute('stop', service_name)
+    execute('start', service_name)
+
+
+def replace_compute_xenapi():
+    """replace folder xenapi to add patches which are not merged to upstream"""
+
+    # backup the original source code to a tarball
+    execute('tar', 'czf',
+            '/usr/lib/python2.7/dist-packages/nova/virt/xenapi-orig.tgz',
+            '/usr/lib/python2.7/dist-packages/nova/virt/xenapi')
+
+    # replace xenapi source code
+    execute('rm', '-rf', '/usr/lib/python2.7/dist-packages/nova/virt/xenapi')
+    execute('cp', '-r', 'xenapi',
+            '/usr/lib/python2.7/dist-packages/nova/virt/')
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -324,6 +397,14 @@ if __name__ == '__main__':
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
 
             create_novacompute_conf(HIMN_IP, username, password, public_ip)
-            restart_nova_services()
+            replace_compute_xenapi()
+            restart_services('nova-compute')
 
             install_logrotate_script(HIMN_IP, username, password)
+
+            # neutron-l2-agent in compute node
+            modify_neutron_rootwrap_conf(HIMN_IP, username, password)
+            br_mappings = find_bridge_mappings(astute, HIMN_IP,
+                                               username, password)
+            modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings)
+            restart_services('neutron-plugin-openvswitch-agent')
