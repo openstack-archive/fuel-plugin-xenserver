@@ -326,4 +326,4 @@ if __name__ == '__main__':
             create_novacompute_conf(HIMN_IP, username, password, public_ip)
             restart_nova_services()
 
-            install_logrotate_script(himn_xs, username, password)
+            install_logrotate_script(HIMN_IP, username, password)
