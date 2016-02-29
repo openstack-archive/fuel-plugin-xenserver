@@ -244,11 +244,11 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
 def install_suppack(himn, username, password):
     """Install xapi driver supplemental pack. """
     # TODO: check if installed
-    scp(himn, username, password, '/tmp/', 'novaplugins-kilo.iso')
+    scp(himn, username, password, '/tmp/', 'novaplugins-liberty.iso')
     out = ssh(
         himn, username, password, 'xe-install-supplemental-pack',
-        '/tmp/novaplugins-kilo.iso', prompt='Y\n')
-    ssh(himn, username, password, 'rm', '/tmp/novaplugins-kilo.iso')
+        '/tmp/novaplugins-liberty.iso', prompt='Y\n')
+    ssh(himn, username, password, 'rm', '/tmp/novaplugins-liberty.iso')
 
 
 def forward_from_himn(eth):
