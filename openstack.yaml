@@ -21,13 +21,11 @@
         public_for_dvr_required: true
         limits:
           min: 1
+          recommended: 3
           overrides:
-            - condition: "cluster:mode == 'multinode'"
-              max: 1
-              message: "Multi-node environment can not have more than one Controller node."
-            - condition: "cluster:mode == 'ha_compact'"
-              recommended: 3
-              message: "At least 3 Controller nodes are recommended for Highly Available (HA) environments. Deployments with less than 3 Controller nodes are not recommended for production environments."
+            - condition: "settings:neutron_advanced_configuration.neutron_l3_ha.value == true"
+              min: 2
+              message: "Neutron L3 HA requires at least 2 Controller nodes to function properly."
       compute:
         name: "Compute"
         description: "A Compute node creates, manages, and terminates virtual machine instances."
@@ -49,9 +47,25 @@
           # NOTE: https://bugs.launchpad.net/fuel/+bug/1372914 - Prohibit possibility of adding cinder nodes to an environment with Ceph RBD
           - condition: "settings:storage.volumes_ceph.value == true"
             message: "Ceph RBD cannot be used with Cinder"
+      cinder-block-device:
+        name: 'Storage - Cinder Block Device'
+        description: 'Host node for Cinder Block Devices'
+        has_primary: false
+        public_ip_required: false
+        weight: 35
+        conflicts:
+          - controller
+          - cinder
+          - cinder-vmware
+          - ceph-osd
+        restrictions:
+          - condition: "settings:storage.volumes_block_device.value == false"
+            message: "Cinder Block Device should be enabled in settings"
+          - condition: "settings:storage.volumes_ceph.value == true"
+            message: "Ceph RBD cannot be used with Cinder Block Device"
       cinder-vmware:
         name: "Storage - Cinder Proxy to VMware Datastore"
-        description: "Cinder-VMware provides scheduling of block storage resources delivered over VMWare vCenter. Block storage can be used for database storage, expandable file systems, or providing a server with access to raw block level devices."
+        description: "Cinder-VMware provides scheduling of block storage resources delivered over VMware vCenter. Block storage can be used for database storage, expandable file systems, or providing a server with access to raw block level devices."
         weight: 40
         limits:
           recommended: 1
@@ -110,10 +124,31 @@
         name: "Compute VMware"
         description: "A node that runs nova-compute with VCDriver, that manages ESXi computing resources via VMware vCenter."
         weight: 90
-        conflicts: "*"
+        conflicts:
+          - controller
+          - compute
+          - cinder
+          - cinder-block-device
+          - ceph-osd
+          - mongo
+          - base-os
+          - virt
+          - ironic
         restrictions:
           - condition: "settings:common.use_vcenter.value == false"
             action: "hide"
+      ironic:
+        name: "Ironic"
+        description: "Ironic conductor"
+        weight: 100
+        limits:
+          min: 1
+          recommended: 3
+        conflicts:
+          - compute
+        restrictions:
+          - condition: "settings:additional_components.ironic.value == false"
+            message: "Ironic should be enabled."
 
     network_roles_metadata:
       -
@@ -167,6 +202,10 @@
         default_mapping: "management"
         properties: *default_network_roles_metadata_properties
       -
+        id: "murano/cfapi"
+        default_mapping: "management"
+        properties: *default_network_roles_metadata_properties
+      -
         id: "horizon"
         default_mapping: "management"
         properties: *default_network_roles_metadata_properties
@@ -212,6 +251,12 @@
               name: "vrouter_pub"
               namespace: "vrouter"
               alias: "public_vrouter_vip"
+              vendor_specific:
+                iptables_rules:
+                  ns_start:
+                    - "iptables -t nat -A POSTROUTING -o <%INT%> -j MASQUERADE"
+                  ns_stop:
+                    - "iptables -t nat -D POSTROUTING -o <%INT%> -j MASQUERADE"
             -
               name: "public"
               namespace: "haproxy"
@@ -284,6 +329,31 @@
         id: "nova/migration"
         default_mapping: "management"
         properties: *default_network_roles_metadata_properties
+      -
+        id: "ironic/api"
+        default_mapping: "management"
+        properties: *default_network_roles_metadata_properties
+      -
+        id: "ironic/baremetal"
+        default_mapping: "baremetal"
+        properties:
+          subnet: true
+          gateway: false
+          vip:
+            -
+              name: "baremetal"
+              namespace: "haproxy"
+              alias: "baremetal_vip"
+              vendor_specific:
+                iptables_rules:
+                  ns_start:
+                    - "iptables -A INPUT -i <%INT%> -s <%CIDR%> -d <%IP%> -p tcp -m multiport --dports 6385,8080 -m state --state NEW -j ACCEPT"
+                    - "iptables -A INPUT -i <%INT%> -s <%CIDR%> -d <%IP%> -m state --state ESTABLISHED,RELATED -j ACCEPT"
+                    - "iptables -A INPUT -i <%INT%> -j DROP"
+                  ns_stop:
+                    - "iptables -D INPUT -i <%INT%> -s <%CIDR%> -d <%IP%> -p tcp -m multiport --dports 6385,8080 -m state --state NEW -j ACCEPT"
+                    - "iptables -D INPUT -i <%INT%> -s <%CIDR%> -d <%IP%> -m state --state ESTABLISHED,RELATED -j ACCEPT"
+                    - "iptables -D INPUT -i <%INT%> -j DROP"
 
     networks_metadata:
       bonding:
@@ -417,13 +487,28 @@
             render_addr_mask: null
             map_priority: 2
             configurable: true
+          - name: "baremetal"
+            cidr: "192.168.3.0/24"
+            ip_range: ["192.168.3.1", "192.168.3.50"]
+            vlan_start: 104
+            use_gateway: false
+            notation: "ip_ranges"
+            render_type: null
+            map_priority: 2
+            configurable: true
+            restrictions:
+              - condition: "settings:additional_components.ironic.value == false"
         config:
           vlan_range: [1000, 1030]
           gre_id_range: [2, 65535]
           base_mac: "fa:16:3e:00:00:00"
+          internal_name: "admin_internal_net"
           internal_cidr: "192.168.111.0/24"
           internal_gateway: "192.168.111.1"
+          floating_name: "admin_floating_net"
           floating_ranges: [["172.16.0.130", "172.16.0.254"]]
+          baremetal_gateway: "192.168.3.51"
+          baremetal_range: ["192.168.3.52", "192.168.3.254"]
           parameters:
             amqp:
               provider: "rabbitmq"
@@ -461,6 +546,9 @@
           - {allocate_size: "min", id: "os"}
           - {allocate_size: "min", id: "cephjournal"}
           - {allocate_size: "full-disk", id: "ceph"}
+        cinder-block-device:
+          - {allocate_size: "min", id: "os"}
+          - {allocate_size: "full-disk", id: "cinder-block-device"}
         mongo:
           - {allocate_size: "min", id: "os"}
           - {allocate_size: "all", id: "mongo"}
@@ -477,6 +565,9 @@
           - {allocate_size: "all", id: "vm"}
         compute-vmware:
           - {allocate_size: "min", id: "os"}
+        ironic:
+          - {allocate_size: "min", id: "os"}
+          - {allocate_size: "min", id: "logs"}
       volumes:
         - id: "os"
           type: "vg"
@@ -590,12 +681,19 @@
           label: "Cinder"
           min_size: {generator: "calc_min_cinder_size"}
           volumes: []
+        - id: "cinder-block-device"
+          type: "vg"
+          label: "Cinder Block Device"
+          min_size: { generator: "calc_min_cinder_size" }
+          mount: "none"
+          volumes: []
     attributes_metadata:
       editable:
         access:
           metadata:
             label: "Access"
             weight: 10
+            group: "general"
           user:
             value: "admin"
             label: "Username"
@@ -603,7 +701,7 @@
             weight: 10
             type: "text"
             regex:
-              source: &user_tenant_blacklist '^(?!services$)(?!nova$)(?!glance$)(?!keystone$)(?!neutron$)(?!cinder$)(?!swift$)(?!ceph$)(?![Gg]uest$)(?!.* +.*$).+'
+              source: &user_tenant_blacklist '^(?!services$)(?!nova$)(?!glance$)(?!keystone$)(?!neutron$)(?!cinder$)(?!swift$)(?!ceph$)(?!ironic$)(?![Gg]uest$)(?!.* +.*$).+'
               error: "Invalid username"
           email:
             value: "admin@localhost"
@@ -636,6 +734,7 @@
           metadata:
             label: "Workloads Collector User"
             weight: 10
+            group: "general"
             restrictions:
               - condition: "true"
                 action: "hide"
@@ -656,6 +755,7 @@
           metadata:
             label: "Murano Settings"
             weight: 20
+            group: "openstack_services"
             restrictions:
               - condition: "settings:additional_components.murano.value == false"
                 message: "Murano is not enabled on the Additional Components section"
@@ -670,6 +770,7 @@
           metadata:
             label: "External MongoDB"
             weight: 20
+            group: "openstack_services"
             restrictions:
               - condition: "settings:additional_components.mongo.value == false"
                 message: "Ceilometer and MongoDB are not enabled on the Additional Components section"
@@ -722,6 +823,7 @@
             enabled: true
             label: "Mellanox Neutron components"
             weight: 50
+            group: "network"
             restrictions:
               - condition: "not ('experimental' in version:feature_groups)"
                 action: "hide"
@@ -758,6 +860,7 @@
           metadata:
             label: "Additional Components"
             weight: 20
+            group: "openstack_services"
           sahara:
             value: false
             label: "Install Sahara"
@@ -770,51 +873,86 @@
             description: "If selected, Murano component will be installed"
             weight: 20
             type: "checkbox"
+          murano-cfapi:
+            value: false
+            label: "Install Murano service broker for Cloud Foundry"
+            description: "If selected, Murano service broker will be installed"
+            weight: 30
+            type: "checkbox"
+            restrictions:
+              - condition: "settings:additional_components.murano.value == false"
+                message: "Murano should be enabled"
+              - condition: "not ('experimental' in version:feature_groups)"
+                action: "hide"
+          murano_glance_artifacts_plugin:
+            value: false
+            label: "Enable glance artifact repository"
+            description: "If selected glance artifact repository will be enabled"
+            weight: 40
+            type: "checkbox"
+            restrictions:
+              - condition: "settings:additional_components.murano.value == false"
+                message: "Murano should be enabled"
+              - condition: "not ('experimental' in version:feature_groups)"
+                action: "hide"
           heat:
             value: true
             label: ""
             description: ""
-            weight: 30
+            weight: 50
             type: "hidden"
           ceilometer:
             value: false
             label: "Install Ceilometer"
             description: "If selected, Ceilometer component will be installed"
-            weight: 40
+            weight: 60
             type: "checkbox"
           mongo:
             value: false
             label: "Use external Mongo DB"
             description: "If selected, You can use external Mongo DB as ceilometer backend"
-            weight: 40
+            weight: 70
             type: "checkbox"
             restrictions:
               - "settings:additional_components.ceilometer.value == false"
+          ironic:
+            value: false
+            label: "Install Ironic"
+            description: "If selected, Ironic component will be installed"
+            weight: 80
+            type: "checkbox"
+            restrictions:
+              - "cluster:net_provider != 'neutron' or networking_parameters:segmentation_type != 'vlan'": "Ironic requires Neutron with VLAN segmentation."
+              - "settings:storage.images_ceph.value == true and settings:storage.objects_ceph.value == false": "Ironic requires Swift or RadosGW for Glance images."
         common:
           metadata:
             label: "Common"
-            weight: 30
+            weight: 10
           debug:
             value: false
             label: "OpenStack debug logging"
+            group: "logging"
             description: "Debug logging mode provides more information, but requires more disk space."
             weight: 20
             type: "checkbox"
           puppet_debug:
             value: true
             label: "Puppet debug logging"
+            group: "logging"
             description: "Debug puppet logging mode provides more information, but requires more disk space."
             weight: 20
             type: "checkbox"
           nova_quota:
             value: false
             label: "Nova quotas"
+            group: "compute"
             description: "Quotas are used to limit CPU and memory usage for tenants. Enabling quotas will increase load on the Nova database."
-            weight: 25
+            weight: 30
             type: "checkbox"
           auto_assign_floating_ip:
             value: false
             label: "Auto assign floating IP"
+            group: "network"
             description: "If selected, OpenStack will automatically assign a floating IP to a new instance"
             weight: 40
             type: "checkbox"
@@ -825,8 +963,6 @@
             value: false
             weight: 30
             type: "hidden"
-            restrictions:
-              - condition: "cluster:net_provider == 'nova_network'"
           libvirt_type:
             value: "qemu"
             values:
@@ -837,30 +973,45 @@
                 label: "QEMU"
                 description: "Choose this type of hypervisor if you run OpenStack on virtual hosts."
             label: "Hypervisor type"
+            group: "compute"
             weight: 30
             type: "radio"
           resume_guests_state_on_host_boot:
             value: true
             label: "Resume guests state on host boot"
+            group: "compute"
             description: "Whether to resume previous guests state when the host reboots. If enabled, this option causes guests assigned to the host to resume their previous state. If the guest was running a restart will be attempted when nova-compute starts. If the guest was not running previously, a restart will not be attempted."
-            weight: 60
+            weight: 50
             type: "checkbox"
           use_cow_images:
             value: true
             label: "Use qcow format for images"
+            group: "storage"
             description: "For most cases you will want qcow format. If it's disabled, raw image format will be used to run VMs. OpenStack with raw format currently does not support snapshotting."
-            weight: 50
+            weight: 60
             type: "checkbox"
           auth_key:
             value: ""
             label: "Public Key"
+            group: "security"
             description: "Public key(s) to include in authorized_keys on deployed nodes"
             weight: 70
             type: "textarea"
+          task_deploy:
+            value: false
+            label: "Enable task based deploy"
+            description: "Enables new deployment engine based on cross-node dependencies for deployment tasks which allows to deploy all nodes simultaneously. Works only for deployment tasks with version >= 2.0.0."
+            weight: 11
+            type: "checkbox"
+            restrictions:
+              - condition: "not ('experimental' in version:feature_groups)"
+                action: "hide"
+
         public_network_assignment:
           metadata:
-            weight: 50
+            weight: 10
             label: "Public network assignment"
+            group: "network"
             restrictions:
               - condition: "cluster:net_provider != 'neutron'"
                 action: "hide"
@@ -872,8 +1023,9 @@
             type: "checkbox"
         neutron_advanced_configuration:
           metadata:
-            weight: 45
+            weight: 20
             label: "Neutron Advanced Configuration"
+            group: "network"
             restrictions:
               - condition: "cluster:net_provider != 'neutron'"
                 action: "hide"
@@ -894,10 +1046,22 @@
             type: "checkbox"
             restrictions:
               - "networking_parameters:segmentation_type != 'vlan' and settings:neutron_advanced_configuration.neutron_l2_pop.value == false": "DVR requires L2 population to be enabled."
+          neutron_l3_ha:
+            value: false
+            label: "Neutron L3 HA"
+            description: |
+              Enable High Availability features for Virtual Routers in Neutron
+              Requires at least 2 Controller nodes to function properly
+            weight: 30
+            type: "checkbox"
+            restrictions:
+              - condition: "settings:neutron_advanced_configuration.neutron_dvr.value == true"
+                message: "Neutron DVR must be disabled in order to use Neutron L3 HA"
         corosync:
           metadata:
             label: "Corosync"
             weight: 50
+            group: "general"
             restrictions:
               - condition: "true"
                 action: "hide"
@@ -923,6 +1087,9 @@
           metadata:
             label: "Syslog"
             weight: 50
+            group: "logging"
+            toggleable: true
+            enabled: false
           syslog_transport:
             value: "tcp"
             values:
@@ -941,6 +1108,9 @@
             description: "Remote syslog hostname"
             weight: 10
             type: "text"
+            regex:
+              source: &ipv4_or_hostname_regex '^[a-zA-Z\d]+[-\.\da-zA-Z]*$'
+              error: "Invalid hostname"
           syslog_port:
             value: "514"
             label: "Port"
@@ -954,6 +1124,7 @@
           metadata:
             label: "Provision"
             weight: 80
+            group: "general"
             restrictions:
               - condition: "true"
                 action: "hide"
@@ -963,7 +1134,8 @@
         external_dns:
           metadata:
             label: "Host OS DNS Servers"
-            weight: 90
+            weight: 30
+            group: "network"
           dns_list:
             value:
               generator: "from_settings"
@@ -978,7 +1150,8 @@
         external_ntp:
           metadata:
             label: "Host OS NTP Servers"
-            weight: 100
+            weight: 40
+            group: "network"
           ntp_list:
             value:
               generator: "from_settings"
@@ -994,18 +1167,21 @@
           metadata:
             label: "Public TLS"
             weight: 110
-          horizon:
-            value: true
-            label: "HTTPS for Horizon"
-            description: "Secure access to Horizon enabling HTTPS instead of HTTP"
-            weight: 10
-            type: "checkbox"
+            group: "security"
           services:
-            value: true
+            value: false
             label: "TLS for OpenStack public endpoints"
             description: "Enable TLS termination on HAProxy for OpenStack services"
+            weight: 10
+            type: "checkbox"
+          horizon:
+            value: false
+            label: "HTTPS for Horizon"
+            description: "Secure access to Horizon enabling HTTPS instead of HTTP"
             weight: 20
             type: "checkbox"
+            restrictions:
+              - "settings:public_ssl.services.value == false": "TLS for OpenStack public endpoints should be enabled"
           cert_source:
             type: "radio"
             weight: 30
@@ -1043,17 +1219,18 @@
         kernel_params:
           metadata:
             label: "Kernel parameters"
-            weight: 40
+            weight: 60
+            group: "general"
           kernel:
             value: "console=tty0 biosdevname=0 rootdelay=90 nomodeset"
             label: "Initial parameters"
             description: "Default kernel parameters"
-            weight: 45
             type: "text"
         storage:
           metadata:
-            label: "Storage"
+            label: "Storage Backends"
             weight: 60
+            group: "storage"
           volumes_lvm:
             value: true
             label: "Cinder LVM over iSCSI for volumes"
@@ -1072,6 +1249,14 @@
               - "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm'"
               - condition: "not ('experimental' in version:feature_groups)"
                 action: "hide"
+          volumes_block_device:
+            value: false
+            label: "Cinder Block device driver"
+            description: "High performance block device storage. It is recommended to have at least one Storage - Cinder Block Device"
+            weight: 15
+            type: "checkbox"
+            restrictions:
+              - "settings:storage.volumes_ceph.value == true"
           volumes_ceph:
             value: false
             label: "Ceph RBD for volumes (Cinder)"
@@ -1079,7 +1264,7 @@
             weight: 20
             type: "checkbox"
             restrictions:
-              - "settings:storage.volumes_lvm.value == true"
+              - "settings:storage.volumes_lvm.value == true or settings:storage.volumes_block_device.value == true"
           images_ceph:
             value: false
             label: "Ceph RBD for images (Glance)"
@@ -1090,7 +1275,7 @@
               - "settings:storage.images_vcenter.value == true": "Only one Glance backend could be selected."
           images_vcenter:
             value: false
-            label: "VMWare vCenter/ESXi datastore for images (Glance)"
+            label: "VMware vCenter/ESXi datastore for images (Glance)"
             description: "Configures Glance to use the vCenter/ESXi backend to store images. If enabled, this option will prevent Swift from installing."
             weight: 35
             type: "checkbox"
@@ -1111,10 +1296,8 @@
             description: "Configures RadosGW front end for Ceph RBD. This exposes S3 and Swift API Interfaces. If enabled, this option will prevent Swift from installing."
             weight: 80
             type: "checkbox"
-            restrictions:
-              - "settings:storage.images_ceph.value == false"
           osd_pool_size:
-            value: "2"
+            value: "3"
             label: "Ceph object replication factor"
             description: "Configures the default number of object replicas in Ceph. This number must be equal to or lower than the number of deployed 'Storage - Ceph OSD' nodes."
             weight: 85
@@ -1184,6 +1367,13 @@
             generator: "password"
           db_password:
             generator: "password"
+        murano-cfapi:
+          user_password:
+            generator: "password"
+          rabbit_password:
+            generator: "password"
+          db_password:
+            generator: "password"
         heat:
           user_password:
             generator: "password"
@@ -1211,9 +1401,18 @@
           metadata:
             metadata_proxy_shared_secret:
               generator: "password"
+        ironic:
+          user_password:
+            generator: "password"
+          db_password:
+            generator: "password"
+          swift_tempurl_key:
+            generator: "password"
         puppet:
           manifests: "rsync://{settings.MASTER_IP}:/puppet/{cluster.release.version}/manifests/"
           modules: "rsync://{settings.MASTER_IP}:/puppet/{cluster.release.version}/modules/"
+        deployed_before:
+          value: false
     wizard_metadata:
       Mode:
         metadata:
@@ -1278,7 +1477,7 @@
               label: "dialog.create_cluster_wizard.network.nova_network"
               description: "dialog.create_cluster_wizard.network.nova_network_description"
               restrictions:
-                - "Compute.vcenter == false": "dialog.create_cluster_wizard.network.nove_network_vcenter_alert"
+                - "Compute.vcenter == false": "dialog.create_cluster_wizard.network.nova_network_vcenter_alert"
               bind:
                 - "cluster:net_provider": "nova_network"
       Storage:
@@ -1320,6 +1519,14 @@
           description: "dialog.create_cluster_wizard.additional.install_ceilometer_description"
           bind: "settings:additional_components.ceilometer.value"
           weight: 30
+        ironic:
+          type: "checkbox"
+          label: "dialog.create_cluster_wizard.additional.install_ironic"
+          description: "dialog.create_cluster_wizard.additional.install_ironic_description"
+          bind: "settings:additional_components.ironic.value"
+          weight: 40
+          restrictions:
+            - "Network.manager != 'neutron-vlan'": "dialog.create_cluster_wizard.additional.ironic_network_mode_alert"
       Ready: {}
     vmware_attributes_metadata:
       editable:
@@ -1345,7 +1552,7 @@
                 label: "vCenter host"
                 description: "vCenter host or IP"
                 regex:
-                  source: &ipv4_or_hostname_regex '^[a-zA-Z\d]+[-\.\da-zA-Z]*$'
+                  source: *ipv4_or_hostname_regex
                   error: "Invalid vCenter host"
               -
                 name: "vcenter_username"
@@ -1366,6 +1573,7 @@
               -
                 name: "nova_computes"
                 type: "array"
+                editable_for_deployed: true
                 fields:
                   -
                     name: "vsphere_cluster"
@@ -1381,7 +1589,7 @@
                     label: "Service name"
                     description: "Service name"
                     regex:
-                      source: '^\w+$'
+                      source: '^\w[\w\-]+$'
                       error: "Invalid service name"
                   -
                     name: "datastore_regex"
@@ -1396,21 +1604,6 @@
                     type: "select"
                     label: "Target node"
                     description: "Target node for nova-compute service"
-          -
-            name: "network"
-            type: "object"
-            restrictions:
-              - condition: "cluster:net_provider != 'nova_network' or networking_parameters:net_manager != 'VlanManager' or settings:common.use_vcenter.value == false"
-                action: "hide"
-            fields:
-              -
-                name: "esxi_vlan_interface"
-                type: "text"
-                label: "VLAN interface"
-                description: "VLAN interface"
-                regex:
-                  source: *non_empty_string
-                  error: "Invalid network interface"
           -
             name: "glance"
             type: "object"
@@ -1477,28 +1670,252 @@
                     current:
                       id: "controllers"
                       label: "controllers"
-              cinder:
-                enable: true
-          network:
-            esxi_vlan_interface: ""
           glance:
             vcenter_host: ""
             vcenter_username: ""
             vcenter_password: ""
             datacenter: ""
             datastore: ""
+    components_metadata:
+      - name: hypervisor:qemu
+        default: true
+        bind: !!pairs
+          - "settings:common.libvirt_type.value": "qemu"
+        weight: 5
+        label: "dialog.create_cluster_wizard.compute.qemu"
+        description: "dialog.create_cluster_wizard.compute.qemu_description"
+        compatible:
+          - name: hypervisor:vmware
+      - name: hypervisor:vmware
+        weight: 15
+        bind:
+          - "settings:common.use_vcenter.value"
+        label: "dialog.create_cluster_wizard.compute.vcenter"
+        description: "dialog.create_cluster_wizard.compute.vcenter_description"
+        compatible:
+          - name: hypervisor:qemu
+        requires:
+          - name: hypervisor:qemu
+            message: "dialog.create_cluster_wizard.compute.vcenter_warning"
+      - name: network:neutron:core:ml2
+        default: true
+        weight: 1000
+        label: "dialog.create_cluster_wizard.network.neutron_ml2"
+        description: "dialog.create_cluster_wizard.network.neutron_ml2_description"
+        compatible:
+          - name: hypervisor:*
+          - name: network:neutron:ml2:*
+      - name: network:neutron:ml2:vlan
+        default: true
+        bind: !!pairs
+          - "cluster:net_provider": "neutron"
+          - "cluster:net_segment_type": "vlan"
+        weight: 5
+        label: "common.network.neutron_vlan"
+        description: "dialog.create_cluster_wizard.network.neutron_vlan_description"
+        incompatible:
+          - name: network:neutron:ml2:tun
+            message: "dialog.create_cluster_wizard.network.vlan_tun_alert"
+        compatible:
+          - name: network:neutron:core:ml2
+          - name: hypervisor:qemu
+        requires:
+          - name: network:neutron:core:ml2
+      - name: network:neutron:ml2:tun
+        bind: !!pairs
+         - "cluster:net_provider": "neutron"
+         - "cluster:net_segment_type": "tun"
+        weight: 10
+        label: "common.network.neutron_tun"
+        description: "dialog.create_cluster_wizard.network.neutron_tun_description"
+        compatible:
+          - name: network:neutron:core:ml2
+          - name: hypervisor:qemu
+        incompatible:
+          - name: network:neutron:ml2:vlan
+            message: "dialog.create_cluster_wizard.network.vlan_tun_alert"
+          - name: hypervisor:vmware
+            message: "dialog.create_cluster_wizard.network.hypervisor_alert"
+          - name: additional_service:ironic
+            message: "dialog.create_cluster_wizard.additional.ironic_network_mode_alert"
+        requires:
+          - name: network:neutron:core:ml2
+      - name: storage:block:lvm
+        label: "dialog.create_cluster_wizard.storage.lvm"
+        description: "dialog.create_cluster_wizard.storage.default_provider"
+        default: true
+        weight: 5
+        bind:
+          - "settings:storage.volumes_lvm.value"
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+        incompatible:
+          - name: storage:block:ceph
+            message: "LVM not compatible with Ceph"
+      - name: storage:block:ceph
+        label: "dialog.create_cluster_wizard.storage.ceph"
+        description: "dialog.create_cluster_wizard.storage.ceph_block"
+        weight: 10
+        bind: !!pairs
+          - "settings:storage.volumes_ceph.value": true
+          - "settings:storage.volumes_lvm.value": false
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+          - name: storage:object:ceph
+          - name: storage:ephemeral:ceph
+          - name: storage:image:ceph
+        incompatible:
+          - name: storage:block:lvm
+            message: "Ceph not compatible with LVM"
+      - name: storage:object:ceph
+        label: "dialog.create_cluster_wizard.storage.ceph"
+        description: "dialog.create_cluster_wizard.storage.ceph_object"
+        weight: 10
+        bind:
+          - "settings:storage.objects_ceph.value"
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+          - name: storage:block:lvm
+          - name: storage:block:ceph
+          - name: storage:ephemeral:ceph
+          - name: storage:image:ceph
+      - name: storage:ephemeral:ceph
+        label: "dialog.create_cluster_wizard.storage.ceph"
+        description: "dialog.create_cluster_wizard.storage.ceph_ephemeral"
+        weight: 10
+        bind:
+          - "settings:storage.ephemeral_ceph.value"
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+          - name: storage:block:lvm
+          - name: storage:block:ceph
+          - name: storage:object:ceph
+          - name: storage:image:ceph
+      - name: storage:image:ceph
+        label: "dialog.create_cluster_wizard.storage.ceph"
+        description: "dialog.create_cluster_wizard.storage.ceph_image"
+        weight: 10
+        bind:
+          - "settings:storage.images_ceph.value"
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+          - name: storage:block:lvm
+          - name: storage:block:ceph
+          - name: storage:object:ceph
+          - name: storage:ephemeral:ceph
+      - name: additional_service:sahara
+        bind:
+          - "settings:additional_components.sahara.value"
+        weight: 10
+        label: "dialog.create_cluster_wizard.additional.install_sahara"
+        description: "dialog.create_cluster_wizard.additional.install_sahara_description"
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+          - name: storage:block:lvm
+          - name: storage:block:ceph
+          - name: storage:object:ceph
+          - name: storage:ephemeral:ceph
+          - name: storage:image:ceph
+          - name: additional_service:sahara
+          - name: additional_service:murano
+          - name: additional_service:ceilometer
+          - name: additional_service:ironic
+      - name: additional_service:murano
+        bind:
+          - "settings:additional_components.murano.value"
+        weight: 20
+        label: "dialog.create_cluster_wizard.additional.install_murano"
+        description: "dialog.create_cluster_wizard.additional.install_murano_description"
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+          - name: storage:block:lvm
+          - name: storage:block:ceph
+          - name: storage:object:ceph
+          - name: storage:ephemeral:ceph
+          - name: storage:image:ceph
+          - name: additional_service:sahara
+          - name: additional_service:ceilometer
+          - name: additional_service:ironic
+      - name: additional_service:ceilometer
+        bind:
+          - "settings:additional_components.ceilometer.value"
+        weight: 30
+        label: "dialog.create_cluster_wizard.additional.install_ceilometer"
+        description: "dialog.create_cluster_wizard.additional.install_ceilometer_description"
+        compatible:
+          - name: hypervisor:qemu
+          - name: hypervisor:vmware
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: network:neutron:ml2:tun
+          - name: storage:block:lvm
+          - name: storage:block:ceph
+          - name: storage:object:ceph
+          - name: storage:ephemeral:ceph
+          - name: storage:image:ceph
+          - name: additional_service:sahara
+          - name: additional_service:murano
+          - name: additional_service:ironic
+      - name: additional_service:ironic
+        bind:
+          - "settings:additional_components.ironic.value"
+        weight: 40
+        label: "dialog.create_cluster_wizard.additional.install_ironic"
+        description: "dialog.create_cluster_wizard.additional.install_ironic_description"
+        compatible:
+          - name: hypervisor:qemu
+          - name: network:neutron:core:ml2
+          - name: network:neutron:ml2:vlan
+          - name: storage:block:lvm
+          - name: storage:block:ceph
+          - name: storage:object:ceph
+          - name: storage:ephemeral:ceph
+          - name: storage:image:ceph
+          - name: additional_service:sahara
+          - name: additional_service:murano
+          - name: additional_service:ceilometer
+        incompatible:
+          - name: network:neutron:ml2:tun
+            message: "dialog.create_cluster_wizard.additional.ironic_network_mode_alert"
     modes: ['ha_compact']
     extensions: ['volume_manager']
 - pk: 1
   extend: *base_release
   fields:
-    name: "Kilo on CentOS 6.5"
+    name: "Liberty on CentOS 6.5"
     state: "unavailable"
-    version: "2015.1.0-7.0"
-    is_deployable: false
+    version: "liberty-8.0"
     can_update_from_versions: []
     operating_system: "CentOS"
-    description: "This option will install the OpenStack Kilo packages using a CentOS based operating system. With high availability features built in, you are getting a robust, enterprise-grade OpenStack deployment."
+    description: "This option will install the OpenStack Liberty packages using a CentOS based operating system. With high availability features built in, you are getting a robust, enterprise-grade OpenStack deployment."
     attributes_metadata:
       editable:
         kernel_params:
@@ -1524,6 +1941,7 @@
           metadata:
             label: "Repositories"
             weight: 50
+            group: "general"
             always_editable: true
           repos:
             type: "custom_repo_configuration"
@@ -1531,7 +1949,7 @@
             description: |
               To create a local repository mirror on the Fuel master node, please follow the instructions provided by running "fuel-package-updates --help" on the Fuel master node.
               Please make sure your Fuel master node has Internet access to the repository before attempting to create a mirror.
-              For more details, please refer to the documentation (https://docs.mirantis.com/openstack/fuel/fuel-7.0/reference-architecture.html#fuel-rep-mirror).
+              For more details, please refer to the documentation (https://docs.mirantis.com/openstack/fuel/fuel-8.0/reference-architecture.html#fuel-rep-mirror).
             value:
               - type: "rpm"
                 name: "mos"
@@ -1539,11 +1957,11 @@
                 priority: null
               - type: "rpm"
                 name: "mos-updates"
-                uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos{cluster.release.environment_version}-centos6/updates/x86_64"
+                uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos{cluster.release.environment_version}-centos7-fuel/updates/x86_64"
                 priority: null
               - type: "rpm"
                 name: "mos-security"
-                uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos{cluster.release.environment_version}-centos6/security/x86_64"
+                uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos{cluster.release.environment_version}-centos7-fuel/security/x86_64"
                 priority: null
               - type: "rpm"
                 name: "Auxiliary"
@@ -1566,11 +1984,11 @@
 - pk: 2
   extend: *base_release
   fields:
-    name: "Kilo on Ubuntu 14.04"
-    version: "2015.1.0-7.0"
+    name: "Liberty on Ubuntu 14.04"
+    version: "liberty-8.0"
     can_update_from_versions: []
     operating_system: "Ubuntu"
-    description: "This option will install the OpenStack Kilo packages using Ubuntu as a base operating system. With high availability features built in, you are getting a robust, enterprise-grade OpenStack deployment."
+    description: "This option will install the OpenStack Liberty packages using Ubuntu as a base operating system. With high availability features built in, you are getting a robust, enterprise-grade OpenStack deployment."
     attributes_metadata:
       editable:
         kernel_params:
@@ -1580,6 +1998,7 @@
           metadata:
             label: "Repositories"
             weight: 50
+            group: "general"
             always_editable: true
           repos:
             type: "custom_repo_configuration"
@@ -1588,7 +2007,7 @@
               Please note: the first repository will be considered the operating system mirror that will be used during node provisioning.
               To create a local repository mirror on the Fuel master node, please follow the instructions provided by running "fuel-createmirror --help" on the Fuel master node.
               Please make sure your Fuel master node has Internet access to the repository before attempting to create a mirror.
-              For more details, please refer to the documentation (https://docs.mirantis.com/openstack/fuel/fuel-7.0/operations.html#external-ubuntu-ops).
+              For more details, please refer to the documentation (https://docs.mirantis.com/openstack/fuel/fuel-8.0/operations.html#external-ubuntu-ops).
             value:
               - type: "deb"
                 name: "ubuntu"
@@ -1611,25 +2030,25 @@
               - type: "deb"
                 name: "mos"
                 uri: "http://{settings.MASTER_IP}:8080/{cluster.release.version}/ubuntu/x86_64"
-                suite: "mos7.0"
+                suite: "mos8.0"
                 section: "main restricted"
                 priority: 1050
               - type: "deb"
                 name: "mos-updates"
                 uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/{cluster.release.environment_version}/"
-                suite: "mos7.0-updates"
+                suite: "mos8.0-updates"
                 section: "main restricted"
                 priority: 1050
               - type: "deb"
                 name: "mos-security"
                 uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/{cluster.release.environment_version}/"
-                suite: "mos7.0-security"
+                suite: "mos8.0-security"
                 section: "main restricted"
                 priority: 1050
               - type: "deb"
                 name: "mos-holdback"
                 uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/{cluster.release.environment_version}/"
-                suite: "mos7.0-holdback"
+                suite: "mos8.0-holdback"
                 section: "main restricted"
                 priority: 1100
               - type: "deb"
