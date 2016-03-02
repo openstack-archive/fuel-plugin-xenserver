@@ -5,3 +5,4 @@
 *.sublime-workspace
 doc/build/*/*
 !doc/build/*/*.pdf
+xs_release.yaml
