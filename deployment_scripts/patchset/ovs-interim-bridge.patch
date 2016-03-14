@@ -1,0 +1,715 @@
+diff --git a/nova/tests/unit/virt/xenapi/stubs.py b/nova/tests/unit/virt/xenapi/stubs.py
+index 5d515b1..f3a49b2 100644
+--- a/nova/tests/unit/virt/xenapi/stubs.py
++++ b/nova/tests/unit/virt/xenapi/stubs.py
+@@ -29,6 +29,13 @@ from nova.virt.xenapi import vm_utils
+ from nova.virt.xenapi import vmops
+ 
+ 
++def stubout_create_vifs(stubs, vmops):
++    def fake_create_vifs(*args):
++        return ['fake_vif_ref']
++
++    stubs.Set(vmops, '_create_vifs', fake_create_vifs)
++
++
+ def stubout_firewall_driver(stubs, conn):
+ 
+     def fake_none(self, *args):
+diff --git a/nova/tests/unit/virt/xenapi/test_vif.py b/nova/tests/unit/virt/xenapi/test_vif.py
+index a41e506..65e3070 100644
+--- a/nova/tests/unit/virt/xenapi/test_vif.py
++++ b/nova/tests/unit/virt/xenapi/test_vif.py
+@@ -13,7 +13,9 @@
+ #    License for the specific language governing permissions and limitations
+ #    under the License.
+ 
+-import mock
++from mock import call
++from mock import Mock
++from mock import patch
+ 
+ from nova import exception
+ from nova.network import model
+@@ -30,7 +32,7 @@ fake_vif = {
+     'address': '00:00:00:00:00:00',
+     'network_id': 123,
+     'instance_uuid': 'fake-uuid',
+-    'uuid': 'fake-uuid-2',
++    'uuid': 'fake_uuid',
+ }
+ 
+ 
+@@ -42,7 +44,7 @@ def fake_call_xenapi(method, *args):
+             return {'uuid': fake_vif['uuid'],
+                     'MAC': fake_vif['address'],
+                     'network': 'fake_network',
+-                    'other_config': {'nicira-iface-id': fake_vif['id']}
++                    'other_config': {'nicira-iface-id': 'fake-nicira-iface-id'}
+                     }
+         else:
+             raise exception.Exception("Failed get vif record")
+@@ -58,14 +60,27 @@ def fake_call_xenapi(method, *args):
+             return "fake_vif_ref"
+         else:
+             raise exception.Exception("VIF existed")
++    if method == "network.create":
++        return "fake_network_ref"
++    if method == "network.get_bridge":
++        return "fake_bridge"
++    if method == "network.get_VIFs":
++        return
++    if method == "network.destroy":
++        return
+     return "Unexpected call_xenapi: %s.%s" % (method, args)
+ 
+ 
++def fake_call_plugin(plugin, method, *args):
++    return
++
++
+ class XenVIFDriverTestBase(stubs.XenAPITestBaseNoDB):
+     def setUp(self):
+         super(XenVIFDriverTestBase, self).setUp()
+-        self._session = mock.Mock()
++        self._session = Mock()
+         self._session.call_xenapi.side_effect = fake_call_xenapi
++        self._session.call_plugin.side_effect = fake_call_plugin
+ 
+ 
+ class XenVIFDriverTestCase(XenVIFDriverTestBase):
+@@ -79,8 +94,8 @@ class XenVIFDriverTestCase(XenVIFDriverTestBase):
+         ret_vif_ref = self.base_driver._get_vif_ref(fake_vif, vm_ref)
+         self.assertEqual(vif_ref, ret_vif_ref)
+ 
+-        expected = [mock.call('VM.get_VIFs', vm_ref),
+-                    mock.call('VIF.get_record', vif_ref)]
++        expected = [call('VM.get_VIFs', vm_ref),
++                    call('VIF.get_record', vif_ref)]
+         self.assertEqual(expected, self._session.call_xenapi.call_args_list)
+ 
+     def test_get_vif_ref_none_and_exception(self):
+@@ -89,9 +104,9 @@ class XenVIFDriverTestCase(XenVIFDriverTestBase):
+         ret_vif_ref = self.base_driver._get_vif_ref(vif, vm_ref)
+         self.assertIsNone(ret_vif_ref)
+ 
+-        expected = [mock.call('VM.get_VIFs', vm_ref),
+-                    mock.call('VIF.get_record', 'fake_vif_ref'),
+-                    mock.call('VIF.get_record', 'fake_vif_ref_A2')]
++        expected = [call('VM.get_VIFs', vm_ref),
++                    call('VIF.get_record', 'fake_vif_ref'),
++                    call('VIF.get_record', 'fake_vif_ref_A2')]
+         self.assertEqual(expected, self._session.call_xenapi.call_args_list)
+ 
+     def test_create_vif(self):
+@@ -100,7 +115,7 @@ class XenVIFDriverTestCase(XenVIFDriverTestBase):
+         ret_vif_ref = self.base_driver._create_vif(fake_vif, vif_rec, vm_ref)
+         self.assertEqual("fake_vif_ref", ret_vif_ref)
+ 
+-        expected = [mock.call('VIF.create', vif_rec)]
++        expected = [call('VIF.create', vif_rec)]
+         self.assertEqual(expected, self._session.call_xenapi.call_args_list)
+ 
+     def test_create_vif_exception(self):
+@@ -108,16 +123,16 @@ class XenVIFDriverTestCase(XenVIFDriverTestBase):
+                           self.base_driver._create_vif,
+                           "fake_vif", "missing_vif_rec", "fake_vm_ref")
+ 
+-    @mock.patch.object(vif.XenVIFDriver, '_get_vif_ref',
++    @patch.object(vif.XenVIFDriver, '_get_vif_ref',
+                        return_value='fake_vif_ref')
+     def test_unplug(self, mock_get_vif_ref):
+         instance = {'name': "fake_instance"}
+         vm_ref = "fake_vm_ref"
+         self.base_driver.unplug(instance, fake_vif, vm_ref)
+-        expected = [mock.call('VIF.destroy', 'fake_vif_ref')]
++        expected = [call('VIF.destroy', 'fake_vif_ref')]
+         self.assertEqual(expected, self._session.call_xenapi.call_args_list)
+ 
+-    @mock.patch.object(vif.XenVIFDriver, '_get_vif_ref',
++    @patch.object(vif.XenVIFDriver, '_get_vif_ref',
+                        return_value='missing_vif_ref')
+     def test_unplug_exception(self, mock_get_vif_ref):
+         instance = "fake_instance"
+@@ -132,9 +147,9 @@ class XenAPIBridgeDriverTestCase(XenVIFDriverTestBase, object):
+         super(XenAPIBridgeDriverTestCase, self).setUp()
+         self.bridge_driver = vif.XenAPIBridgeDriver(self._session)
+ 
+-    @mock.patch.object(vif.XenAPIBridgeDriver, '_ensure_vlan_bridge',
++    @patch.object(vif.XenAPIBridgeDriver, '_ensure_vlan_bridge',
+                        return_value='fake_network_ref')
+-    @mock.patch.object(vif.XenVIFDriver, '_create_vif',
++    @patch.object(vif.XenVIFDriver, '_create_vif',
+                        return_value='fake_vif_ref')
+     def test_plug_create_vlan(self, mock_create_vif, mock_ensure_vlan_bridge):
+         instance = {'name': "fake_instance_name"}
+@@ -149,14 +164,14 @@ class XenAPIBridgeDriverTestCase(XenVIFDriverTestBase, object):
+         ret_vif_ref = self.bridge_driver.plug(instance, vif, vm_ref, device)
+         self.assertEqual('fake_vif_ref', ret_vif_ref)
+ 
+-    @mock.patch.object(vif.XenVIFDriver, '_get_vif_ref',
++    @patch.object(vif.XenVIFDriver, '_get_vif_ref',
+                        return_value='fake_vif_ref')
+     def test_unplug(self, mock_get_vif_ref):
+         instance = {'name': "fake_instance"}
+         vm_ref = "fake_vm_ref"
+         self.bridge_driver.unplug(instance, fake_vif, vm_ref)
+ 
+-        expected = [mock.call('VIF.destroy', 'fake_vif_ref')]
++        expected = [call('VIF.destroy', 'fake_vif_ref')]
+         self.assertEqual(expected, self._session.call_xenapi.call_args_list)
+ 
+ 
+@@ -165,25 +180,106 @@ class XenAPIOpenVswitchDriverTestCase(XenVIFDriverTestBase):
+         super(XenAPIOpenVswitchDriverTestCase, self).setUp()
+         self.ovs_driver = vif.XenAPIOpenVswitchDriver(self._session)
+ 
+-    @mock.patch.object(network_utils, 'find_network_with_bridge',
+-                       return_value='fake_network_ref')
+-    @mock.patch.object(vif.XenVIFDriver, '_create_vif',
++    @patch.object(vif.XenVIFDriver, '_create_vif',
+                        return_value='fake_vif_ref')
+-    @mock.patch.object(vif.XenVIFDriver, '_get_vif_ref', return_value=None)
+-    def test_plug(self, mock_get_vif_ref, mock_create_vif,
+-                  mock_find_network_with_bridge):
++    @patch.object(vif.XenAPIOpenVswitchDriver, 'create_vif_interim_network')
++    @patch.object(vif.XenVIFDriver, '_get_vif_ref', return_value=None)
++    def test_plug(self, mock_get_vif_ref,
++                  mock_create_vif_interim_network,
++                  mock_create_vif):
+         instance = {'name': "fake_instance_name"}
+         vm_ref = "fake_vm_ref"
+         device = 1
+         ret_vif_ref = self.ovs_driver.plug(instance, fake_vif, vm_ref, device)
+         self.assertEqual('fake_vif_ref', ret_vif_ref)
++        self.assertTrue(mock_create_vif_interim_network.called)
+ 
+-    @mock.patch.object(vif.XenVIFDriver, '_get_vif_ref',
++    @patch.object(vif.XenAPIOpenVswitchDriver, 'get_vif_interim_net_name',
++                       return_value="fake_net_name")
++    @patch.object(vif.XenAPIOpenVswitchDriver, '_get_patch_port_pair_names',
++                       return_value=("fake_port_name1", "fake_port_name2"))
++    @patch.object(network_utils, 'find_network_with_name_label',
++                       return_value='fake_network')
++    @patch.object(vif.XenVIFDriver, '_get_vif_ref',
+                        return_value='fake_vif_ref')
+-    def test_unplug(self, mock_get_vif_ref):
++    def test_unplug(self, mock_get_vif_ref,
++                    mock_find_network_with_name_label,
++                    mock_get_patch_port_pair_names,
++                    mock_get_vif_interim_net_name):
+         instance = {'name': "fake_instance"}
+         vm_ref = "fake_vm_ref"
+         self.ovs_driver.unplug(instance, fake_vif, vm_ref)
+ 
+-        expected = [mock.call('VIF.destroy', 'fake_vif_ref')]
+-        self.assertEqual(expected, self._session.call_xenapi.call_args_list)
++        del_p1 = '["ovs-vsctl", "--", "--if-exists", ' \
++                   '"del-port", "fake_bridge", "fake_port_name1"]'
++        del_p2 = '["ovs-vsctl", "--", "--if-exists", ' \
++                   '"del-port", "xapi1", "fake_port_name2"]'
++        del_br = '["ovs-vsctl", "--", "--if-exists", ' \
++                   '"del-br", "fake_bridge"]'
++
++        expected_calls = [call.call_xenapi('VIF.destroy', 'fake_vif_ref'),
++            call.call_xenapi('network.get_VIFs', 'fake_network'),
++            call.call_xenapi('network.get_bridge', 'fake_network'),
++            call.call_plugin('xenhost', 'network_config', {'cmd': del_p1}),
++            call.call_plugin('xenhost', 'network_config', {'cmd': del_p2}),
++            call.call_xenapi('network.destroy', 'fake_network'),
++            call.call_plugin('xenhost', 'network_config', {'cmd': del_br})]
++        self._session.assert_has_calls(expected_calls)
++
++    @patch.object(vif.XenAPIOpenVswitchDriver, 'get_vif_interim_net_name',
++                       return_value="fake_net_name")
++    @patch.object(vif.XenAPIOpenVswitchDriver, '_get_patch_port_pair_names',
++                       return_value=("fake_port_name1", "fake_port_name2"))
++    def test_post_start_actions(self, mock_get_patch_port_pair_names,
++                                mock_get_vif_interim_net_name):
++        vif_ref = "fake_vif_ref"
++        instance = {'name': 'fake_instance_name'}
++        self.ovs_driver.post_start_actions(instance, vif_ref)
++
++        add_p1 = '["ovs-vsctl", "--", ' \
++                 '"--if-exists", "del-port", "fake_port_name1", "--", ' \
++                 '"add-port", "fake_bridge", "fake_port_name1", "--", ' \
++                 '"set", "interface", "fake_port_name1", ' \
++                 '"type=patch", "options:peer=fake_port_name2"]'
++        add_p2 = '["ovs-vsctl", "--", ' \
++                 '"--if-exists", "del-port", "fake_port_name2", "--", ' \
++                 '"add-port", "xapi1", "fake_port_name2", "--", ' \
++                 '"set", "interface", "fake_port_name2", ' \
++                 '"type=patch", "options:peer=fake_port_name1"]'
++        ext_map = '["ovs-vsctl", "set", "Interface", "fake_port_name2", ' \
++                  '"external-ids:attached-mac=00:00:00:00:00:00", ' \
++                  '"external-ids:iface-id=fake-nicira-iface-id", ' \
++                  '"external-ids:iface-status=active", ' \
++                  '"external-ids:xs-vif-uuid=fake_uuid"]'
++
++        expected_calls = [call.call_xenapi('VIF.get_record', vif_ref),
++            call.call_xenapi('network.get_bridge', 'fake_network'),
++            call.call_plugin('xenhost', 'network_config', {'cmd': add_p1}),
++            call.call_plugin('xenhost', 'network_config', {'cmd': add_p2}),
++            call.call_plugin('xenhost', 'network_config', {'cmd': ext_map})]
++        self._session.assert_has_calls(expected_calls)
++
++    @patch.object(network_utils, 'find_network_with_name_label',
++                  return_value="fake_network_ref")
++    @patch.object(vif.XenAPIOpenVswitchDriver, 'get_vif_interim_net_name',
++                  return_value="fake_net_name")
++    def test_create_vif_interim_network_exist(self,
++                  mock_get_vif_interim_net_name,
++                  mock_find_network_with_name_label):
++        self.ovs_driver.create_vif_interim_network(fake_vif)
++        self._session.call_xenapi.assert_not_called()
++
++    @patch.object(network_utils, 'find_network_with_name_label',
++                  return_value=None)
++    @patch.object(vif.XenAPIOpenVswitchDriver, 'get_vif_interim_net_name',
++                  return_value="fake_net_name")
++    def test_create_vif_interim_network_new(self,
++                  mock_get_vif_interim_net_name,
++                  mock_find_network_with_name_label):
++        network_rec = {'name_label': "fake_net_name",
++                       'name_description': "interim network for vif",
++                       'other_config': {}}
++        network_ref = self.ovs_driver.create_vif_interim_network(fake_vif)
++        self._session.call_xenapi.assert_called_once_with('network.create',
++                                                          network_rec)
++        self.assertEqual(network_ref, 'fake_network_ref')
+diff --git a/nova/tests/unit/virt/xenapi/test_vmops.py b/nova/tests/unit/virt/xenapi/test_vmops.py
+index 33bec73..c6f1499 100644
+--- a/nova/tests/unit/virt/xenapi/test_vmops.py
++++ b/nova/tests/unit/virt/xenapi/test_vmops.py
+@@ -50,6 +50,7 @@ class VMOpsTestBase(stubs.XenAPITestBaseNoDB):
+         self._session = xenapi_session.XenAPISession('test_url', 'root',
+                                                      'test_pass')
+         self.vmops = vmops.VMOps(self._session, fake.FakeVirtAPI())
++        stubs.stubout_create_vifs(self.stubs, self.vmops)
+ 
+     def create_vm(self, name, state="Running"):
+         vm_ref = xenapi_fake.create_vm(name, state)
+@@ -303,7 +304,6 @@ class SpawnTestCase(VMOpsTestBase):
+         self.mox.StubOutWithMock(self.vmops, '_inject_instance_metadata')
+         self.mox.StubOutWithMock(self.vmops, '_inject_auto_disk_config')
+         self.mox.StubOutWithMock(self.vmops, '_file_inject_vm_settings')
+-        self.mox.StubOutWithMock(self.vmops, '_create_vifs')
+         self.mox.StubOutWithMock(self.vmops.firewall_driver,
+                                  'setup_basic_filtering')
+         self.mox.StubOutWithMock(self.vmops.firewall_driver,
+@@ -401,6 +401,9 @@ class SpawnTestCase(VMOpsTestBase):
+                                           "0/0000:00:00.0")
+         else:
+             pci_manager.get_instance_pci_devs(instance).AndReturn([])
++
++        self.vmops._create_vifs(instance, vm_ref, network_info)
++
+         step += 1
+         self.vmops._update_instance_progress(context, instance, step, steps)
+ 
+@@ -425,15 +428,6 @@ class SpawnTestCase(VMOpsTestBase):
+                 error_callback=self.vmops._neutron_failed_callback).\
+                 AndRaise(exception.VirtualInterfaceCreateException)
+         else:
+-            self.vmops._create_vifs(instance, vm_ref, network_info)
+-            self.vmops.firewall_driver.setup_basic_filtering(instance,
+-                    network_info).AndRaise(NotImplementedError)
+-            self.vmops.firewall_driver.prepare_instance_filter(instance,
+-                                                               network_info)
+-            step += 1
+-            self.vmops._update_instance_progress(context, instance,
+-                                                 step, steps)
+-
+             if rescue:
+                 self.vmops._attach_orig_disks(instance, vm_ref)
+                 step += 1
+@@ -444,6 +438,22 @@ class SpawnTestCase(VMOpsTestBase):
+             step += 1
+             self.vmops._update_instance_progress(context, instance,
+                                                  step, steps)
++
++            self.vmops.firewall_driver.setup_basic_filtering(instance,
++                    network_info).AndRaise(NotImplementedError)
++            self.vmops.firewall_driver.prepare_instance_filter(instance,
++                                                               network_info)
++            step += 1
++            self.vmops._update_instance_progress(context, instance, step,
++                    steps)
++
++            self.vmops._configure_new_instance_with_agent(instance, vm_ref,
++                    injected_files, admin_password)
++            self.vmops._remove_hostname(instance, vm_ref)
++            step += 1
++            self.vmops._update_instance_progress(context, instance,
++                                                 step, steps)
++
+             self.vmops.firewall_driver.apply_instance_filter(instance,
+                                                              network_info)
+             step += 1
+@@ -560,6 +570,7 @@ class SpawnTestCase(VMOpsTestBase):
+                             vdis, di_type, network_info, False, None, None)
+         self.vmops._attach_mapped_block_devices(instance, block_device_info)
+         pci_manager.get_instance_pci_devs(instance).AndReturn([])
++        self.vmops._create_vifs(instance, vm_ref, network_info)
+ 
+         self.vmops._inject_instance_metadata(instance, vm_ref)
+         self.vmops._inject_auto_disk_config(instance, vm_ref)
+@@ -567,15 +578,14 @@ class SpawnTestCase(VMOpsTestBase):
+                                             network_info)
+         self.vmops.inject_network_info(instance, network_info, vm_ref)
+ 
+-        self.vmops._create_vifs(instance, vm_ref, network_info)
++        if power_on:
++            self.vmops._start(instance, vm_ref, start_pause=True)
++
+         self.vmops.firewall_driver.setup_basic_filtering(instance,
+                 network_info).AndRaise(NotImplementedError)
+         self.vmops.firewall_driver.prepare_instance_filter(instance,
+                                                            network_info)
+ 
+-        if power_on:
+-            self.vmops._start(instance, vm_ref, start_pause=True)
+-
+         self.vmops.firewall_driver.apply_instance_filter(instance,
+                                                          network_info)
+         if power_on:
+diff --git a/nova/virt/xenapi/vif.py b/nova/virt/xenapi/vif.py
+index 5c7a350..5c1ac29 100644
+--- a/nova/virt/xenapi/vif.py
++++ b/nova/virt/xenapi/vif.py
+@@ -19,13 +19,17 @@
+ 
+ from oslo_config import cfg
+ from oslo_log import log as logging
++from oslo_serialization import jsonutils
+ 
+ from nova import exception
+ from nova.i18n import _
+ from nova.i18n import _LW
++from nova.network import model as network_model
+ from nova.virt.xenapi import network_utils
+ from nova.virt.xenapi import vm_utils
+ 
++LOG = logging.getLogger(__name__)
++
+ 
+ xenapi_ovs_integration_bridge_opt = cfg.StrOpt('ovs_integration_bridge',
+                         default='xapi1',
+@@ -63,8 +67,6 @@ class XenVIFDriver(object):
+             raise exception.NovaException(
+                 reason=_("Failed to create vif %s") % vif)
+ 
+-        LOG.debug("create vif %(vif)s for vm %(vm_ref)s successfully",
+-                  {'vif': vif, 'vm_ref': vm_ref})
+         return vif_ref
+ 
+     def unplug(self, instance, vif, vm_ref):
+@@ -185,11 +187,18 @@ class XenAPIBridgeDriver(XenVIFDriver):
+     def unplug(self, instance, vif, vm_ref):
+         super(XenAPIBridgeDriver, self).unplug(instance, vif, vm_ref)
+ 
++    def post_start_actions(self, instance, vif_ref):
++        """no further actions needed for this driver type"""
++        pass
++
+ 
+ class XenAPIOpenVswitchDriver(XenVIFDriver):
+     """VIF driver for Open vSwitch with XenAPI."""
+ 
+     def plug(self, instance, vif, vm_ref=None, device=None):
++        """create an interim network for this vif; and build
++        the vif_rec which will be used by xapi to create VM vif
++        """
+         if not vm_ref:
+             vm_ref = vm_utils.lookup(self._session, instance['name'])
+ 
+@@ -203,10 +212,9 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+         if not device:
+             device = 0
+ 
+-        # with OVS model, always plug into an OVS integration bridge
+-        # that is already created
+-        network_ref = network_utils.find_network_with_bridge(
+-                self._session, CONF.xenserver.ovs_integration_bridge)
++        # create an interim network which has a bridge directly connected
++        # to instance
++        network_ref = self.create_vif_interim_network(vif)
+         vif_rec = {}
+         vif_rec['device'] = str(device)
+         vif_rec['network'] = network_ref
+@@ -221,4 +229,138 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+         return self._create_vif(vif, vif_rec, vm_ref)
+ 
+     def unplug(self, instance, vif, vm_ref):
+-        super(XenAPIOpenVswitchDriver, self).unplug(instance, vif, vm_ref)
++        """unplug vif:
++        1. unplug and destroy vif.
++        2. delete the patch port pair between the integration bridge and
++           the interim network.
++        3. destroy the interim network
++        4. delete the OVS bridge service for the interim network
++        """
++        try:
++            super(XenAPIOpenVswitchDriver, self).unplug(instance, vif, vm_ref)
++
++            net_name = self.get_vif_interim_net_name(vif)
++            network = network_utils.find_network_with_name_label(
++                self._session, net_name)
++            if network is None:
++                return
++            vifs = self._session.call_xenapi('network.get_VIFs', network)
++            if vifs:
++                # only remove the interim network when it's empty.
++                # for resize/migrate on local host, vifs on both of the
++                # source and target VM will be connected to the same
++                # interim network.
++                return
++            LOG.debug('destroying patch port pair for vif: vif_id=%(vif_id)s',
++                      {'vif_id': vif['id']})
++            bridge_name = self._session.call_xenapi('network.get_bridge',
++                                                    network)
++            patch_port1, patch_port2 = self._get_patch_port_pair_names(
++                                                    vif['id'])
++            # delete the patch port pair
++            self._del_ovs_port(bridge_name, patch_port1)
++            self._del_ovs_port(CONF.xenserver.ovs_integration_bridge,
++                               patch_port2)
++
++            LOG.debug('destroying network: network=%(network)s,'
++                      'bridge=%(br)s',
++                      {'network': network, 'br': bridge_name})
++            self._session.call_xenapi('network.destroy', network)
++            # delete bridge if it still exists.
++            # As there is patch port existing on this bridge when destroying
++            # the VM vif (which happens when shutdown the VM), the bridge
++            # won't be destroyed automatically by XAPI. So let's destroy it
++            # at here.
++            self._del_ovs_br(bridge_name)
++        except Exception as e:
++            LOG.debug("Fail to unplug vif %(vif)s, exception:%(exception)s",
++                      {'vif': vif, 'exception': e}, instance=instance)
++
++    def post_start_actions(self, instance, vif_ref):
++        """Do needed actions post vif start:
++        plug the interim ovs bridge to the integration bridge;
++        set external_ids to the int-br port which will service
++        for this vif.
++        """
++        vif_rec = self._session.call_xenapi('VIF.get_record', vif_ref)
++        network_ref = vif_rec['network']
++        bridge_name = self._session.call_xenapi('network.get_bridge',
++                                                network_ref)
++        iface_id = vif_rec['other_config']['nicira-iface-id']
++        patch_port1, patch_port2 = self._get_patch_port_pair_names(iface_id)
++        LOG.debug('plug_ovs_bridge: port1=%(port1)s, port2=%(port2)s,'
++                  'network_ref=%(network_ref)s, bridge_name=%(bridge_name)s',
++                  {'port1': patch_port1, 'port2': patch_port2,
++                   'network_ref': network_ref,
++                   'bridge_name': bridge_name})
++        if bridge_name is None:
++            raise Exception(_("Can't find bridge for vif_ref:%(vif_ref)s of"
++                              "VM:%(vm_name)s"),
++                            {'vif_ref': vif_ref, 'vm_name': instance['name']})
++
++        self._add_patch_port(bridge_name, patch_port1, patch_port2)
++        self._add_patch_port(CONF.xenserver.ovs_integration_bridge,
++                            patch_port2, patch_port1)
++        self._map_external_ids_with_vif(patch_port2, vif_rec)
++
++    def get_vif_interim_net_name(self, vif):
++        return ("net-" + vif['id'])[:network_model.NIC_NAME_LEN]
++
++    def create_vif_interim_network(self, vif):
++        net_name = self.get_vif_interim_net_name(vif)
++        network_rec = {'name_label': net_name,
++                   'name_description': "interim network for vif",
++                   'other_config': {}}
++        network_ref = network_utils.find_network_with_name_label(
++            self._session, net_name)
++        if network_ref:
++            # already exist, just return
++            # in some scenarios: e..g resize/migrate, it won't create new
++            # interim network.
++            return network_ref
++        network_ref = self._session.call_xenapi('network.create', network_rec)
++        if network_ref is None:
++            raise Exception(_("Failed to create the interim netowrk for vif -"
++                              "%(vif_id)s"),
++                              {'vif_id': vif['id']})
++        return network_ref
++
++    def _get_patch_port_pair_names(self, iface_id):
++        return (("pp1-%s" % iface_id)[:network_model.NIC_NAME_LEN],
++                ("pp2-%s" % iface_id)[:network_model.NIC_NAME_LEN])
++
++    def _add_patch_port(self, bridge_name, port_name, peer_port_name):
++        cmd_args = ['ovs-vsctl', '--', '--if-exists', 'del-port', port_name,
++                    '--', 'add-port', bridge_name, port_name,
++                    '--', 'set', 'interface', port_name,
++                    'type=patch', 'options:peer=%s' % peer_port_name]
++        self._exec_dom0_cmd(cmd_args)
++
++    def _del_ovs_port(self, bridge_name, port_name):
++        cmd_args = ['ovs-vsctl', '--', '--if-exists', 'del-port',
++                    bridge_name, port_name]
++        self._exec_dom0_cmd(cmd_args)
++
++    def _del_ovs_br(self, bridge_name):
++        cmd_args = ['ovs-vsctl', '--', '--if-exists', 'del-br', bridge_name]
++        self._exec_dom0_cmd(cmd_args)
++
++    def _map_external_ids_with_vif(self, interface, vif_rec):
++        '''set external ids on the integration bridge vif
++        '''
++        mac = vif_rec['MAC']
++        iface_id = vif_rec['other_config']['nicira-iface-id']
++        vif_uuid = vif_rec['uuid']
++        cmd_args = ['ovs-vsctl', 'set', 'Interface', interface,
++                    'external-ids:attached-mac=%s' % mac,
++                    'external-ids:iface-id=%s' % iface_id,
++                    'external-ids:iface-status=active',
++                    'external-ids:xs-vif-uuid=%s' % vif_uuid,
++                   ]
++        self._exec_dom0_cmd(cmd_args)
++
++    def _exec_dom0_cmd(self, cmd_args):
++        args = {
++            'cmd': jsonutils.dumps(cmd_args),
++        }
++        self._session.call_plugin('xenhost', 'network_config', args)
+diff --git a/nova/virt/xenapi/vm_utils.py b/nova/virt/xenapi/vm_utils.py
+index c8fdc52..0a48a3f 100644
+--- a/nova/virt/xenapi/vm_utils.py
++++ b/nova/virt/xenapi/vm_utils.py
+@@ -1686,6 +1686,15 @@ def lookup_vm_vdis(session, vm_ref):
+     return vdi_refs
+ 
+ 
++def lookup_vm_vifs(session, vm_ref):
++    """Look for the VIFs that are attached to the VM."""
++    try:
++        vif_refs = session.call_xenapi("VM.get_VIFs", vm_ref)
++    except session.XenAPI.Failure:
++        LOG.exception(_LE('"Look for the VIFs failed'))
++    return vif_refs
++
++
+ def lookup(session, name_label, check_rescue=False):
+     """Look the instance up and return it if available.
+     :param:check_rescue: if True will return the 'name'-rescue vm if it
+diff --git a/nova/virt/xenapi/vmops.py b/nova/virt/xenapi/vmops.py
+index 1fbc15a..0e4509f 100644
+--- a/nova/virt/xenapi/vmops.py
++++ b/nova/virt/xenapi/vmops.py
+@@ -348,6 +348,15 @@ class VMOps(object):
+         if bad_volumes_callback and bad_devices:
+             bad_volumes_callback(bad_devices)
+ 
++        # Do some post start operations which needed to be done after start.
++        self._post_start_actions(instance)
++
++    def _post_start_actions(self, instance):
++        vm_ref = vm_utils.lookup(self._session, instance['name'])
++        vif_refs = vm_utils.lookup_vm_vifs(self._session, vm_ref)
++        for vif_ref in vif_refs:
++            self.vif_driver.post_start_actions(instance, vif_ref)
++
+     def _get_vdis_for_instance(self, context, instance, name_label,
+                                image_meta, image_type, block_device_info):
+         """Create or connect to all virtual disks for this instance."""
+@@ -513,9 +522,11 @@ class VMOps(object):
+             return vm_ref
+ 
+         @step
+-        def attach_devices_step(undo_mgr, vm_ref, vdis, disk_image_type):
++        def attach_devices_step(undo_mgr, instance, vm_ref, vdis,
++                                disk_image_type, network_info):
+             attach_disks(undo_mgr, vm_ref, vdis, disk_image_type)
+             attach_pci_devices(undo_mgr, vm_ref)
++            self._create_vifs(instance, vm_ref, network_info)
+ 
+         if rescue:
+             # NOTE(johannes): Attach disks from original VM to rescue VM now,
+@@ -581,7 +592,8 @@ class VMOps(object):
+ 
+             vm_ref = create_vm_record_step(undo_mgr, disk_image_type,
+                     kernel_file, ramdisk_file)
+-            attach_devices_step(undo_mgr, vm_ref, vdis, disk_image_type)
++            attach_devices_step(undo_mgr, instance, vm_ref, vdis,
++                                           disk_image_type, network_info)
+ 
+             inject_instance_data_step(undo_mgr, vm_ref, vdis)
+ 
+@@ -1930,13 +1942,20 @@ class VMOps(object):
+         """Creates vifs for an instance."""
+ 
+         LOG.debug("Creating vifs", instance=instance)
++        vif_refs = []
+ 
+         # this function raises if vm_ref is not a vm_opaque_ref
+         self._session.call_xenapi("VM.get_domid", vm_ref)
+ 
+         for device, vif in enumerate(network_info):
+             LOG.debug('Create VIF %s', vif, instance=instance)
+-            self.vif_driver.plug(instance, vif, vm_ref=vm_ref, device=device)
++            vif_ref = self.vif_driver.plug(instance, vif,
++                                           vm_ref=vm_ref, device=device)
++            vif_refs.append(vif_ref)
++
++        LOG.debug('Created the vif_refs: %(vifs)s for VM name: %(name)s',
++                  {'vifs': vif_refs, 'name': instance['name']},
++                  instance=instance)
+ 
+     def plug_vifs(self, instance, network_info):
+         """Set up VIF networking on the host."""
+diff --git a/plugins/xenserver/xenapi/etc/xapi.d/plugins/nova_plugin_version b/plugins/xenserver/xenapi/etc/xapi.d/plugins/nova_plugin_version
+index b67c84b..8674d0a 100755
+--- a/plugins/xenserver/xenapi/etc/xapi.d/plugins/nova_plugin_version
++++ b/plugins/xenserver/xenapi/etc/xapi.d/plugins/nova_plugin_version
+@@ -28,7 +28,13 @@ import utils
+ # 1.0 - Initial version.
+ # 1.1 - New call to check GC status
+ # 1.2 - Added support for pci passthrough devices
++<<<<<<< HEAD
+ PLUGIN_VERSION = "1.2"
++=======
++# 1.3 - Add vhd2 functions for doing glance operations by url
++# 1.4 - Added function for network configuration on ovs bridge
++PLUGIN_VERSION = "1.4"
++>>>>>>> 52d0d42... xenapi: OVS agent updates the wrong port when using XenServer + Neutron
+ 
+ def get_version(session):
+     return PLUGIN_VERSION
+diff --git a/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost b/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
+index 0e95e33..4bf85ac 100755
+--- a/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
++++ b/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
+@@ -213,6 +213,22 @@ def iptables_config(session, args):
+         raise pluginlib.PluginError(_("Invalid iptables command"))
+ 
+ 
++def network_config(session, args):
++    # function to config OVS bridge
++    ALLOWED_CMDS = [
++        'ovs-vsctl',
++        ]
++    cmd = json.loads(args.get('cmd'))
++    if cmd is None or cmd == []:
++        msg = _("empty command is supplied")
++        raise pluginlib.PluginError(msg)
++    if cmd[0] not in ALLOWED_CMDS:
++        msg = _("Dom0 execution of '%s' is not permitted") % cmd[0]
++        raise pluginlib.PluginError(msg)
++    result = _run_command(cmd, json.loads(args.get('cmd_input', 'null')))
++    return json.dumps(result)
++
++
+ def _power_action(action, arg_dict):
+     # Host must be disabled first
+     host_uuid = arg_dict['host_uuid']
+@@ -457,4 +473,5 @@ if __name__ == "__main__":
+             "get_config": get_config,
+             "set_config": set_config,
+             "iptables_config": iptables_config,
++            "network_config": network_config,
+             "host_uptime": host_uptime})
