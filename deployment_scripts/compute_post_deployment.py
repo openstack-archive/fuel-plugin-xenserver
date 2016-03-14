@@ -8,6 +8,7 @@ import re
 from socket import inet_ntoa
 from struct import pack
 import subprocess
+import sys
 import yaml
 
 
@@ -194,7 +195,7 @@ def create_novacompute_conf(himn, username, password, public_ip):
     try:
         cf.read(filename)
         cf.set('DEFAULT', 'compute_driver', 'xenapi.XenAPIDriver')
-        cf.set('DEFAULT', 'force_config_drive', 'always')
+        cf.set('DEFAULT', 'force_config_drive', 'True')
         cf.set('DEFAULT', 'novncproxy_base_url',
                'https://%s:6080/vnc_auto.html' % public_ip)
         cf.set('DEFAULT', 'vncserver_proxyclient_address', mgmt_ip)
@@ -373,6 +374,18 @@ def enable_linux_bridge(himn, username, password):
     ssh(himn, username, password, 'rm -f /etc/modprobe.d/blacklist-bridge')
 
 
+def replace_xenapi(himn, username, password):
+    """replace folder xenapi to add patches which are not merged to upstream"""
+    # TODO(huanxie): need to confirm the overall patchset list
+    patchset_dir = sys.path[0]
+    patchfile_list = ['%s/patchset/vif-plug.patch' % patchset_dir,
+            '%s/patchset/nova-neutron-race-condition.patch' % patchset_dir,
+            '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
+            '%s/patchset/neutron-security-group.patch' % patchset_dir]
+    for patch_file in patchfile_list:
+        execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -397,6 +410,7 @@ if __name__ == '__main__':
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
 
             create_novacompute_conf(HIMN_IP, username, password, public_ip)
+            replace_xenapi(HIMN_IP, username, password)
             restart_services('nova-compute')
 
             install_logrotate_script(HIMN_IP, username, password)
