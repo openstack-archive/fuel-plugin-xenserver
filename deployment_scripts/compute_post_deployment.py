@@ -8,6 +8,7 @@ import re
 from socket import inet_ntoa
 from struct import pack
 import subprocess
+import sys
 import yaml
 
 
@@ -373,6 +374,24 @@ def enable_linux_bridge(himn, username, password):
     ssh(himn, username, password, 'rm -f /etc/modprobe.d/blacklist-bridge')
 
 
+def patch_compute_xenapi():
+    """replace folder xenapi to add patches which are not merged to upstream"""
+    # TODO(huanxie): need to confirm the overall patchset list
+    patchset_dir = sys.path[0]
+    patchfile_list = ['%s/patchset/vif-plug.patch' % patchset_dir,
+            '%s/patchset/nova-neutron-race-condition.patch' % patchset_dir,
+            '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
+            '%s/patchset/neutron-security-group.patch' % patchset_dir]
+    for patch_file in patchfile_list:
+        execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
+
+
+def patch_neutron_ovs_agent():
+    patchset_dir = sys.path[0]
+    patch_file = '%s/patchset/neutron-rootwrap-xen-dom0.patch' % patchset_dir
+    execute('patch', '-d', '/usr/', '-p1', '-i', patch_file)
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -397,6 +416,7 @@ if __name__ == '__main__':
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
 
             create_novacompute_conf(HIMN_IP, username, password, public_ip)
+            patch_compute_xenapi()
             restart_services('nova-compute')
 
             install_logrotate_script(HIMN_IP, username, password)
@@ -406,4 +426,5 @@ if __name__ == '__main__':
             br_mappings = find_bridge_mappings(astute, HIMN_IP,
                                                username, password)
             modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings)
+            patch_neutron_ovs_agent()
             restart_services('neutron-plugin-openvswitch-agent')
