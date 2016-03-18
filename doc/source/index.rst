@@ -1,4 +1,4 @@
-Guide to the XenServer Plugin for Fuel 7.0
+Guide to the XenServer Plugin for Fuel 8.0
 ==========================================
 
 Intro
