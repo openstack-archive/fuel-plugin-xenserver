@@ -27,10 +27,9 @@ Prepare infrastructure
     - eth0 / “Access network”: Used to access the XenServer hosts and Fuel Master during setup.
     - eth1 / “VLAN network”: Carries all traffic during setup + use of OpenStack.  Untagged packets are tagged at the switch to ensure isolation from eth0.
 
-   - Two virtual networks
+   - One virtual network
 
     - VLAN 'A' on eth1 / “PXE network”: Used for node bootstrapping.
-    - VLAN 'B' on eth1 / "br100": Used to give connectivity between VM and router.
 
 4. To simplify the setup, the fuel master can also be installed on the XenServer hosts (so XenServer hosts can fully control the network setup), but this is not required.
 One example deployment, shown below, makes use of VLAN 19 for the "PXE network" and provides an isolated network for eth1 by tagging any untagged traffic at the switch with VLAN 237
@@ -42,7 +41,7 @@ One example deployment, shown below, makes use of VLAN 19 for the "PXE network" 
 Select Environment
 ------------------
 
-#. Create a new environment with the Fuel UI wizard. Select "Kilo+Citrix XenServer on Ubuntu 14.04" from OpenStack Release dropdown list. At the moment you will see most of options are disabled in the wizard.
+#. Create a new environment with the Fuel UI wizard. Select "Liberty+Citrix XenServer on Ubuntu 14.04" from OpenStack Release dropdown list. At the moment you will see most of options are disabled in the wizard.
 
    .. image:: _static/fmwizard00.png
       :width: 80%
@@ -58,7 +57,7 @@ Select Environment
     .. image:: _static/HIMN_dialog.jpg
       :width: 80%
 
-#. Add new VMs to the new environment according to `Fuel User Guide <https://docs.mirantis.com/openstack/fuel/fuel-7.0/user-guide.html#add-nodes-to-the-environment>`_ and configure them properly. A typical topology of 1 controller node + 3 compute nodes + 1 storage node is recommended.
+#. Add new VMs to the new environment according to `Fuel User Guide <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#add-nodes-to-the-environment>`_ and configure them properly. A typical topology of 1 controller node + 3 compute nodes + 1 storage node is recommended.
 
 #. Go to Settings tab and scroll down to "XenServer Plugin" section. You need to input the common access credentials to all XenServers that previously are used to create new VMs.
 
@@ -71,9 +70,9 @@ Select Environment
 Finish environment configuration
 --------------------------------
 
-#. Run `network verification check <https://docs.mirantis.com/openstack/fuel/fuel-7.0/user-guide.html#verify-networks>`_
+#. Run `network verification check <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#verify-networks>`_
 
-#. Press `Deploy button <https://docs.mirantis.com/openstack/fuel/fuel-7.0/user-guide.html#deploy-changes>`_ to once you are done with environment configuration.
+#. Press `Deploy button <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#deploy-changes>`_ to once you are done with environment configuration.
 
 #. After deployment is done, you will see in Horizon that all hypervisors are xen.
 
