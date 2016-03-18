@@ -1,4 +1,4 @@
-XenServer Plugin for Fuel 7.0
+XenServer Plugin for Fuel 8.0
 =============================
 
 Requirements
@@ -7,9 +7,9 @@ Requirements
 ========================= ============================
 Requirement               Version/Comment
 ========================= ============================
-Fuel                      7.0 + Maintenance Update 1
+Fuel                      8.0
 XenServer                 6.5 SP1 + Hotfix XS65ESP1013
-XenServer plugin for Fuel 2.0.0
+XenServer plugin for Fuel 3.0.0
 ========================= ============================
 
 * This plugin will not install XenServer or configure the Virtual
@@ -24,9 +24,6 @@ XenServer plugin for Fuel 2.0.0
   configured to PXE boot from the PXE network used by Fuel.
 * XenCenter is expected to be used to configure VMs, and is required
   by the HIMN tool in the installation steps
-* Network 'br100' must exist on the XenServer hypervisors.  This
-  network will be added automatically to Virtual Machines and the
-  compute nodes must have access to this network.
 
 Limitations
 -----------
