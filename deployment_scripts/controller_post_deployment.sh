@@ -31,7 +31,7 @@ function create_image {
 			--container-format ovf \
 			--disk-format vhd \
 			--property vm_mode="$vm_mode" \
-			--is-public True \
+			--visibility public \
 			--file "$image_file" \
 			&>> $LOG_FILE
 

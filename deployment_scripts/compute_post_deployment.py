@@ -181,7 +181,7 @@ def create_novacompute_conf(himn, username, password, public_ip):
     template = '\n'.join([
         '[DEFAULT]',
         'compute_driver=xenapi.XenAPIDriver',
-        'force_config_drive=always',
+        'force_config_drive=True',
         'novncproxy_base_url=https://%s:6080/vnc_auto.html',
         'vncserver_proxyclient_address=%s',
         '[xenserver]',
