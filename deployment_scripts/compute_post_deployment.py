@@ -181,7 +181,7 @@ def install_xenapi_sdk():
     execute('cp', 'XenAPI.py', DIST_PACKAGES_DIR)
 
 
-def create_novacompute_conf(himn, username, password, public_ip):
+def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
     """Fill nova-compute.conf with HIMN IP and root password. """
     mgmt_if = netifaces.ifaddresses('br-mgmt')
     if mgmt_if and mgmt_if.get(netifaces.AF_INET) \
@@ -196,8 +196,9 @@ def create_novacompute_conf(himn, username, password, public_ip):
         cf.read(filename)
         cf.set('DEFAULT', 'compute_driver', 'xenapi.XenAPIDriver')
         cf.set('DEFAULT', 'force_config_drive', 'True')
+        scheme = "https" if services_ssl else "http"
         cf.set('DEFAULT', 'novncproxy_base_url',
-               'https://%s:6080/vnc_auto.html' % public_ip)
+               '%s://%s:6080/vnc_auto.html' % (scheme, public_ip))
         cf.set('DEFAULT', 'vncserver_proxyclient_address', mgmt_ip)
         if not cf.has_section('xenserver'):
             cf.add_section('xenserver')
@@ -403,6 +404,9 @@ if __name__ == '__main__':
         public_ip = astute_get(
             astute, ('network_metadata', 'vips', 'public', 'ipaddr'))
 
+        services_ssl = astute_get(
+            astute, ('public_ssl', 'services'))
+
         if username and password and endpoints and himn_local:
             check_hotfix_exists(HIMN_IP, username, password, 'XS65ESP1013')
             route_to_compute(
@@ -415,7 +419,7 @@ if __name__ == '__main__':
             # port forwarding for novnc
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
 
-            create_novacompute_conf(HIMN_IP, username, password, public_ip)
+            create_novacompute_conf(HIMN_IP, username, password, public_ip, services_ssl)
             patch_compute_xenapi()
             restart_services('nova-compute')
 
