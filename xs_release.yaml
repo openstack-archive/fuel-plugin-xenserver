@@ -1769,9 +1769,6 @@
           - name: storage:object:ceph
           - name: storage:ephemeral:ceph
           - name: storage:image:ceph
-        incompatible:
-          - name: hypervisor:qemu
-            message: "Ceph not compatible with XenServer"
       - name: storage:object:ceph
         label: "dialog.create_cluster_wizard.storage.ceph"
         description: "dialog.create_cluster_wizard.storage.ceph_object"
@@ -1787,9 +1784,6 @@
           - name: storage:block:ceph
           - name: storage:ephemeral:ceph
           - name: storage:image:ceph
-        incompatible:
-          - name: hypervisor:qemu
-            message: "Ceph not compatible with XenServer"
       - name: storage:ephemeral:ceph
         label: "dialog.create_cluster_wizard.storage.ceph"
         description: "dialog.create_cluster_wizard.storage.ceph_ephemeral"
@@ -1805,9 +1799,6 @@
           - name: storage:block:ceph
           - name: storage:object:ceph
           - name: storage:image:ceph
-        incompatible:
-          - name: hypervisor:qemu
-            message: "Ceph not compatible with XenServer"
       - name: storage:image:ceph
         label: "dialog.create_cluster_wizard.storage.ceph"
         description: "dialog.create_cluster_wizard.storage.ceph_image"
@@ -1823,9 +1814,6 @@
           - name: storage:block:ceph
           - name: storage:object:ceph
           - name: storage:ephemeral:ceph
-        incompatible:
-          - name: hypervisor:qemu
-            message: "Ceph not compatible with XenServer"
       - name: additional_service:sahara
         bind:
           - "settings:additional_components.sahara.value"
