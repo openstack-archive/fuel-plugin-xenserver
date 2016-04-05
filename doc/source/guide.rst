@@ -22,13 +22,13 @@ Prepare infrastructure
 
 3. While many networking setups are expected to work, the following setup is known to work:
 
-   - Physical machines with three ethernet devices:
+  - Physical machines with three ethernet devices:
 
     - eth0 / “Access network”: Used to access the XenServer hosts and the Fuel Master’s web interface
     - eth1 / “Control network”: OpenStack control plane (management and storage), the PXE network, private network and the public network; all separated by VLAN tags.  The public network is also on this network, and if a VLAN is required this is applied by the switch for untagged traffic.
     - eth2 / “Private”: This version of the plugin only supports VLAN segmentation for Neutron networking.  This device carries all of the VLANs to be used by Neutron for VM traffic.
 
-   - One virtual network
+  - One virtual network
 
     - VLAN 'pxe' on eth1 / “PXE network”: Used for node bootstrapping.
 
