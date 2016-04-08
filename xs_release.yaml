@@ -1846,9 +1846,6 @@
           - name: additional_service:murano
           - name: additional_service:ceilometer
           - name: additional_service:ironic
-        incompatible:
-          - name: hypervisor:qemu
-            message: "Sahara not compatible with XenServer"
       - name: additional_service:murano
         bind:
           - "settings:additional_components.murano.value"
@@ -1868,9 +1865,6 @@
           - name: additional_service:sahara
           - name: additional_service:ceilometer
           - name: additional_service:ironic
-        incompatible:
-          - name: hypervisor:qemu
-            message: "Murano not compatible with XenServer"
       - name: additional_service:ceilometer
         bind:
           - "settings:additional_components.ceilometer.value"
