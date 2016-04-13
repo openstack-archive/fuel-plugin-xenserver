@@ -21,11 +21,22 @@ function create_image {
 	local image_url
 	image_url="$3"
 
-	if ! glance image-list --name "$image_name" --property vm_mode="$vm_mode" | grep -q "$image_name"; then
+	local checksum
+	checksum="$4"
+
+	if ! glance image-list --checksum "$checksum" | grep -q "$image_name"; then
 		local image_file
 		image_file=$(mktemp)
 
 		wget -q -O "$image_file" "$image_url"
+
+		md5=`md5sum "$image_file" | awk '{ print $1 }'`
+
+		if [[ $md5 != "$checksum" ]] ; then
+			echo "checksum is incorrect"
+			exit -1
+		fi
+
 		glance image-create \
 			--name "$image_name" \
 			--container-format ovf \
@@ -60,8 +71,9 @@ EOF
 source /root/openrc admin
 
 clear_images
-create_image "TestVM" "xen" "http://ca.downloads.xensource.com/OpenStack/cirros-0.3.4-x86_64-disk.vhd.tgz"
-create_image "F17-x86_64-cfntools" "hvm" "http://ca.downloads.xensource.com/OpenStack/F21-x86_64-cfntools.tgz"
+create_image "TestVM" "xen" \
+	"http://ca.downloads.xensource.com/OpenStack/cirros-0.3.4-x86_64-disk.vhd.tgz" \
+	0b9c6d663d8ba4f63733e53c2389c6ef
 glance image-list >> $LOG_FILE
 
 mod_novnc
