@@ -18,14 +18,10 @@ function create_image {
 	local vm_mode
 	vm_mode="$2"
 
-	local image_url
-	image_url="$3"
+	local image_file
+	image_file="$3"
 
-	if ! glance image-list --name "$image_name" --property vm_mode="$vm_mode" | grep -q "$image_name"; then
-		local image_file
-		image_file=$(mktemp)
-
-		wget -q -O "$image_file" "$image_url"
+	if ! glance image-list | grep -q "$image_name"; then
 		glance image-create \
 			--name "$image_name" \
 			--container-format ovf \
@@ -34,8 +30,6 @@ function create_image {
 			--visibility public \
 			--file "$image_file" \
 			&>> $LOG_FILE
-
-		rm "$image_file"
 	fi
 }
 
@@ -60,8 +54,7 @@ EOF
 source /root/openrc admin
 
 clear_images
-create_image "TestVM" "xen" "http://ca.downloads.xensource.com/OpenStack/cirros-0.3.4-x86_64-disk.vhd.tgz"
-create_image "F17-x86_64-cfntools" "hvm" "http://ca.downloads.xensource.com/OpenStack/F21-x86_64-cfntools.tgz"
+create_image "TestVM" "xen" cirros-0.3.4-x86_64-disk.vhd.tgz
 glance image-list >> $LOG_FILE
 
 mod_novnc
