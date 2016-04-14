@@ -44,6 +44,8 @@ source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
+test_plan = 'test_plan'
+test_report = 'test_report'
 
 # General information about the project.
 project = u'fuel-plugin-xenserver'
@@ -225,7 +227,11 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   (master_doc, 'fuel-plugin-xenserver.tex', u'fuel-plugin-xenserver Documentation',
-   u'John Hua (john.hua@citrix.com)', 'manual'),
+   author, 'manual'),
+  (test_plan, 'test_plan.tex', u'Test Plan for XenServer Fuel Plugin',
+   author, 'howto'),
+  (test_report, 'test_report.tex', u'Test Report for XenServer Fuel Plugin',
+   author, 'howto'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
