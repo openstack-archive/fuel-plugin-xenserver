@@ -25,15 +25,15 @@ Prepare infrastructure
   - Physical machines with three ethernet devices:
 
     - eth0 / “Access network”: Used to access the XenServer hosts and the Fuel Master’s web interface
-    - eth1 / “Control network”: OpenStack control plane (management and storage), the PXE network, private network and the public network; all separated by VLAN tags.  The public network is also on this network, and if a VLAN is required this is applied by the switch for untagged traffic.
-    - eth2 / “Private”: This version of the plugin only supports VLAN segmentation for Neutron networking.  This device carries all of the VLANs to be used by Neutron for VM traffic.
+    - eth1 / “Control network”: OpenStack control plane (management and storage), the PXE network and the public network; all separated by VLAN tags.  The public network is also on this network, and if a VLAN is required this is applied by the switch for untagged traffic.
+    - eth2 / “VLAN network”: This version of the plugin only supports VLAN segmentation for Neutron networking.  This device carries all of the VLANs to be used by Neutron for VM traffic.
 
   - One virtual network
 
     - VLAN 'pxe' on eth1 / “PXE network”: Used for node bootstrapping.
 
 4. To simplify the setup, the fuel master can also be installed on the XenServer hosts (so XenServer hosts can fully control the network setup), but this is not required.
-One example deployment, shown below, makes use of VLAN 19 for the "PXE network" and provides an isolated network for eth1 by tagging any untagged traffic at the switch with VLAN 237
+One example deployment is shown below.
 
    .. image:: _static/topology00.png
       :width: 80%
@@ -58,7 +58,7 @@ Select Environment
     .. image:: _static/HIMN_dialog.jpg
       :width: 80%
 
-#. Add new VMs to the new environment according to `Fuel User Guide <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#add-nodes-to-the-environment>`_ and configure them properly. A typical topology of 3 controller node2 + 3 compute nodes + 1 storage node is recommended.
+#. Add new VMs to the new environment according to `Fuel User Guide <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#add-nodes-to-the-environment>`_ and configure them properly. A typical topology of 3 controller nodes + 3 compute nodes + 1 storage node is recommended.
 
 #. Go to Settings tab and scroll down to "XenServer Plugin" section. You need to input the common access credentials to all XenServers that previously are used to create new VMs.
 
