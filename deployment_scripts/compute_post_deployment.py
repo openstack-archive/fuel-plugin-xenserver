@@ -169,11 +169,17 @@ def init_eth():
     reportError('HIMN failed to get IP address from XenServer')
 
 
-def check_hotfix_exists(himn, username, password, hotfix):
-    out = ssh(HIMN_IP, username, password,
-              'xe patch-list name-label=%s' % hotfix)
-    if not out:
-        reportError('Hotfix %s has not been installed' % hotfix)
+def check_host_compatibility(himn, username, password):
+    hotfix = 'XS65ESP1013'
+    installed = ssh(HIMN_IP, username, password,
+                    'xe patch-list name-label=%s --minimal' % hotfix)
+    ver = ssh(HIMN_IP, username, password,
+              ('xe host-param-get uuid=$(xe host-list --minimal) '
+               'param-name=software-version param-key=product_version_text'))
+
+    if not installed and float(ver) > 6.5:
+        reportError(('Hotfix %s has not been installed '
+                     'and product version is %s') % (hotfix, ver))
 
 
 def install_xenapi_sdk():
@@ -372,7 +378,7 @@ def enable_linux_bridge(himn, username, password):
     # When using OVS under XS6.5, it will prevent use of Linux bridge in
     # Dom0, but neutron-openvswitch-agent in compute node will use Linux
     # bridge, so we remove this restriction here
-    ssh(himn, username, password, 'rm -f /etc/modprobe.d/blacklist-bridge')
+    ssh(himn, username, password, 'rm -f /etc/modprobe.d/blacklist-bridge*')
 
 
 def patch_compute_xenapi():
@@ -409,7 +415,7 @@ if __name__ == '__main__':
             astute, ('public_ssl', 'services'))
 
         if username and password and endpoints and himn_local:
-            check_hotfix_exists(HIMN_IP, username, password, 'XS65ESP1013')
+            check_host_compatibility(HIMN_IP, username, password)
             route_to_compute(
                 endpoints, HIMN_IP, himn_local, username, password)
             if install_xapi:
