@@ -1,6 +1,152 @@
---- openstack.yaml	2016-03-09 08:29:07.000000000 +0000
-+++ xs_release.yaml	2016-03-09 08:29:07.000000000 +0000
-@@ -1680,21 +1680,20 @@
+--- openstack.yaml	2016-03-18 14:55:44.532489000 +0800
++++ xs_release.yaml	2016-04-22 13:06:41.070655060 +0800
+@@ -865,12 +865,18 @@
+             description: "If selected, Sahara component will be installed"
+             weight: 10
+             type: "checkbox"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+           murano:
+             value: false
+             label: "Install Murano"
+             description: "If selected, Murano component will be installed"
+             weight: 20
+             type: "checkbox"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+           murano-cfapi:
+             value: false
+             label: "Install Murano service broker for Cloud Foundry"
+@@ -905,6 +911,9 @@
+             description: "If selected, Ceilometer component will be installed"
+             weight: 60
+             type: "checkbox"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+           mongo:
+             value: false
+             label: "Use external Mongo DB"
+@@ -912,7 +921,8 @@
+             weight: 70
+             type: "checkbox"
+             restrictions:
+-              - "settings:additional_components.ceilometer.value == false"
++              - condition: "true"
++                action: "disable"
+           ironic:
+             value: false
+             label: "Install Ironic"
+@@ -920,8 +930,8 @@
+             weight: 80
+             type: "checkbox"
+             restrictions:
+-              - "cluster:net_provider != 'neutron' or networking_parameters:segmentation_type != 'vlan'": "Ironic requires Neutron with VLAN segmentation."
+-              - "settings:storage.images_ceph.value == true and settings:storage.objects_ceph.value == false": "Ironic requires Swift or RadosGW for Glance images."
++              - condition: "true"
++                action: "disable"
+         common:
+           metadata:
+             label: "Common"
+@@ -974,6 +984,9 @@
+             group: "compute"
+             weight: 30
+             type: "radio"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+           resume_guests_state_on_host_boot:
+             value: true
+             label: "Resume guests state on host boot"
+@@ -982,12 +995,15 @@
+             weight: 50
+             type: "checkbox"
+           use_cow_images:
+-            value: true
++            value: false
+             label: "Use qcow format for images"
+             group: "storage"
+             description: "For most cases you will want qcow format. If it's disabled, raw image format will be used to run VMs. OpenStack with raw format currently does not support snapshotting."
+             weight: 60
+             type: "checkbox"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+           auth_key:
+             value: ""
+             label: "Public Key"
+@@ -1236,7 +1252,8 @@
+             weight: 10
+             type: "checkbox"
+             restrictions:
+-              - "settings:storage.volumes_ceph.value == true"
++              - condition: "true"
++                action: "disable"
+           iser:
+             value: false
+             label: "iSER protocol for volumes (Cinder)"
+@@ -1254,7 +1271,8 @@
+             weight: 15
+             type: "checkbox"
+             restrictions:
+-              - "settings:storage.volumes_ceph.value == true"
++              - condition: "true"
++                action: "disable"
+           volumes_ceph:
+             value: false
+             label: "Ceph RBD for volumes (Cinder)"
+@@ -1262,7 +1280,8 @@
+             weight: 20
+             type: "checkbox"
+             restrictions:
+-              - "settings:storage.volumes_lvm.value == true or settings:storage.volumes_block_device.value == true"
++              - condition: "true"
++                action: "disable"
+           images_ceph:
+             value: false
+             label: "Ceph RBD for images (Glance)"
+@@ -1270,7 +1289,8 @@
+             weight: 30
+             type: "checkbox"
+             restrictions:
+-              - "settings:storage.images_vcenter.value == true": "Only one Glance backend could be selected."
++              - condition: "true"
++                action: "disable"
+           images_vcenter:
+             value: false
+             label: "VMware vCenter/ESXi datastore for images (Glance)"
+@@ -1288,12 +1308,18 @@
+             description: "Configures Nova to store ephemeral volumes in RBD. This works best if Ceph is enabled for volumes and images, too. Enables live migration of all types of Ceph backed VMs (without this option, live migration will only work with VMs launched from Cinder volumes)."
+             weight: 75
+             type: "checkbox"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+           objects_ceph:
+             value: false
+             label: "Ceph RadosGW for objects (Swift API)"
+             description: "Configures RadosGW front end for Ceph RBD. This exposes S3 and Swift API Interfaces. If enabled, this option will prevent Swift from installing."
+             weight: 80
+             type: "checkbox"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+           osd_pool_size:
+             value: "3"
+             label: "Ceph object replication factor"
+@@ -1303,6 +1329,9 @@
+             regex:
+               source: '^[1-9]\d*$'
+               error: "Invalid number"
++            restrictions:
++              - condition: "true"
++                action: "disable"
+       generated:
+         mysql:
+           root_password:
+@@ -1680,21 +1709,20 @@
          bind: !!pairs
            - "settings:common.libvirt_type.value": "qemu"
          weight: 5
@@ -28,7 +174,7 @@
        - name: network:neutron:core:ml2
          default: true
          weight: 1000
-@@ -1728,8 +1727,9 @@
+@@ -1728,8 +1756,9 @@
          description: "dialog.create_cluster_wizard.network.neutron_tun_description"
          compatible:
            - name: network:neutron:core:ml2
@@ -39,7 +185,7 @@
            - name: network:neutron:ml2:vlan
              message: "dialog.create_cluster_wizard.network.vlan_tun_alert"
            - name: hypervisor:vmware
-@@ -1762,7 +1762,6 @@
+@@ -1762,7 +1791,6 @@
            - "settings:storage.volumes_ceph.value": true
            - "settings:storage.volumes_lvm.value": false
          compatible:
@@ -47,7 +193,7 @@
            - name: hypervisor:vmware
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
-@@ -1771,8 +1770,8 @@
+@@ -1771,8 +1799,8 @@
            - name: storage:ephemeral:ceph
            - name: storage:image:ceph
          incompatible:
@@ -58,7 +204,7 @@
        - name: storage:object:ceph
          label: "dialog.create_cluster_wizard.storage.ceph"
          description: "dialog.create_cluster_wizard.storage.ceph_object"
-@@ -1780,7 +1779,6 @@
+@@ -1780,7 +1808,6 @@
          bind:
            - "settings:storage.objects_ceph.value"
          compatible:
@@ -66,7 +212,7 @@
            - name: hypervisor:vmware
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
-@@ -1789,6 +1787,9 @@
+@@ -1789,6 +1816,9 @@
            - name: storage:block:ceph
            - name: storage:ephemeral:ceph
            - name: storage:image:ceph
@@ -76,7 +222,7 @@
        - name: storage:ephemeral:ceph
          label: "dialog.create_cluster_wizard.storage.ceph"
          description: "dialog.create_cluster_wizard.storage.ceph_ephemeral"
-@@ -1796,7 +1797,6 @@
+@@ -1796,7 +1826,6 @@
          bind:
            - "settings:storage.ephemeral_ceph.value"
          compatible:
@@ -84,7 +230,7 @@
            - name: hypervisor:vmware
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
-@@ -1805,6 +1805,9 @@
+@@ -1805,6 +1834,9 @@
            - name: storage:block:ceph
            - name: storage:object:ceph
            - name: storage:image:ceph
@@ -94,7 +240,7 @@
        - name: storage:image:ceph
          label: "dialog.create_cluster_wizard.storage.ceph"
          description: "dialog.create_cluster_wizard.storage.ceph_image"
-@@ -1812,7 +1815,6 @@
+@@ -1812,7 +1844,6 @@
          bind:
            - "settings:storage.images_ceph.value"
          compatible:
@@ -102,7 +248,7 @@
            - name: hypervisor:vmware
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
-@@ -1821,6 +1823,9 @@
+@@ -1821,6 +1852,9 @@
            - name: storage:block:ceph
            - name: storage:object:ceph
            - name: storage:ephemeral:ceph
@@ -112,7 +258,7 @@
        - name: additional_service:sahara
          bind:
            - "settings:additional_components.sahara.value"
-@@ -1828,7 +1833,6 @@
+@@ -1828,7 +1862,6 @@
          label: "dialog.create_cluster_wizard.additional.install_sahara"
          description: "dialog.create_cluster_wizard.additional.install_sahara_description"
          compatible:
@@ -120,7 +266,7 @@
            - name: hypervisor:vmware
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
-@@ -1842,6 +1846,9 @@
+@@ -1842,6 +1875,9 @@
            - name: additional_service:murano
            - name: additional_service:ceilometer
            - name: additional_service:ironic
@@ -130,7 +276,7 @@
        - name: additional_service:murano
          bind:
            - "settings:additional_components.murano.value"
-@@ -1849,7 +1856,6 @@
+@@ -1849,7 +1885,6 @@
          label: "dialog.create_cluster_wizard.additional.install_murano"
          description: "dialog.create_cluster_wizard.additional.install_murano_description"
          compatible:
@@ -138,7 +284,7 @@
            - name: hypervisor:vmware
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
-@@ -1862,6 +1868,9 @@
+@@ -1862,6 +1897,9 @@
            - name: additional_service:sahara
            - name: additional_service:ceilometer
            - name: additional_service:ironic
@@ -148,7 +294,7 @@
        - name: additional_service:ceilometer
          bind:
            - "settings:additional_components.ceilometer.value"
-@@ -1869,7 +1878,6 @@
+@@ -1869,7 +1907,6 @@
          label: "dialog.create_cluster_wizard.additional.install_ceilometer"
          description: "dialog.create_cluster_wizard.additional.install_ceilometer_description"
          compatible:
@@ -156,7 +302,7 @@
            - name: hypervisor:vmware
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
-@@ -1882,6 +1890,9 @@
+@@ -1882,6 +1919,9 @@
            - name: additional_service:sahara
            - name: additional_service:murano
            - name: additional_service:ironic
@@ -166,7 +312,7 @@
        - name: additional_service:ironic
          bind:
            - "settings:additional_components.ironic.value"
-@@ -1889,7 +1900,6 @@
+@@ -1889,7 +1929,6 @@
          label: "dialog.create_cluster_wizard.additional.install_ironic"
          description: "dialog.create_cluster_wizard.additional.install_ironic_description"
          compatible:
@@ -174,7 +320,7 @@
            - name: network:neutron:core:ml2
            - name: network:neutron:ml2:vlan
            - name: storage:block:lvm
-@@ -1903,86 +1913,14 @@
+@@ -1903,86 +1942,14 @@
          incompatible:
            - name: network:neutron:ml2:tun
              message: "dialog.create_cluster_wizard.additional.ironic_network_mode_alert"

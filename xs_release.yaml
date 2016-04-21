@@ -865,12 +865,18 @@
             description: "If selected, Sahara component will be installed"
             weight: 10
             type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: "disable"
           murano:
             value: false
             label: "Install Murano"
             description: "If selected, Murano component will be installed"
             weight: 20
             type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: "disable"
           murano-cfapi:
             value: false
             label: "Install Murano service broker for Cloud Foundry"
@@ -905,6 +911,9 @@
             description: "If selected, Ceilometer component will be installed"
             weight: 60
             type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: "disable"
           mongo:
             value: false
             label: "Use external Mongo DB"
@@ -912,7 +921,8 @@
             weight: 70
             type: "checkbox"
             restrictions:
-              - "settings:additional_components.ceilometer.value == false"
+              - condition: "true"
+                action: "disable"
           ironic:
             value: false
             label: "Install Ironic"
@@ -920,8 +930,8 @@
             weight: 80
             type: "checkbox"
             restrictions:
-              - "cluster:net_provider != 'neutron' or networking_parameters:segmentation_type != 'vlan'": "Ironic requires Neutron with VLAN segmentation."
-              - "settings:storage.images_ceph.value == true and settings:storage.objects_ceph.value == false": "Ironic requires Swift or RadosGW for Glance images."
+              - condition: "true"
+                action: "disable"
         common:
           metadata:
             label: "Common"
@@ -974,6 +984,9 @@
             group: "compute"
             weight: 30
             type: "radio"
+            restrictions:
+              - condition: "true"
+                action: "disable"
           resume_guests_state_on_host_boot:
             value: true
             label: "Resume guests state on host boot"
@@ -982,12 +995,15 @@
             weight: 50
             type: "checkbox"
           use_cow_images:
-            value: true
+            value: false
             label: "Use qcow format for images"
             group: "storage"
             description: "For most cases you will want qcow format. If it's disabled, raw image format will be used to run VMs. OpenStack with raw format currently does not support snapshotting."
             weight: 60
             type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: "disable"
           auth_key:
             value: ""
             label: "Public Key"
@@ -1236,7 +1252,8 @@
             weight: 10
             type: "checkbox"
             restrictions:
-              - "settings:storage.volumes_ceph.value == true"
+              - condition: "true"
+                action: "disable"
           iser:
             value: false
             label: "iSER protocol for volumes (Cinder)"
@@ -1254,7 +1271,8 @@
             weight: 15
             type: "checkbox"
             restrictions:
-              - "settings:storage.volumes_ceph.value == true"
+              - condition: "true"
+                action: "disable"
           volumes_ceph:
             value: false
             label: "Ceph RBD for volumes (Cinder)"
@@ -1262,7 +1280,8 @@
             weight: 20
             type: "checkbox"
             restrictions:
-              - "settings:storage.volumes_lvm.value == true or settings:storage.volumes_block_device.value == true"
+              - condition: "true"
+                action: "disable"
           images_ceph:
             value: false
             label: "Ceph RBD for images (Glance)"
@@ -1270,7 +1289,8 @@
             weight: 30
             type: "checkbox"
             restrictions:
-              - "settings:storage.images_vcenter.value == true": "Only one Glance backend could be selected."
+              - condition: "true"
+                action: "disable"
           images_vcenter:
             value: false
             label: "VMware vCenter/ESXi datastore for images (Glance)"
@@ -1288,12 +1308,18 @@
             description: "Configures Nova to store ephemeral volumes in RBD. This works best if Ceph is enabled for volumes and images, too. Enables live migration of all types of Ceph backed VMs (without this option, live migration will only work with VMs launched from Cinder volumes)."
             weight: 75
             type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: "disable"
           objects_ceph:
             value: false
             label: "Ceph RadosGW for objects (Swift API)"
             description: "Configures RadosGW front end for Ceph RBD. This exposes S3 and Swift API Interfaces. If enabled, this option will prevent Swift from installing."
             weight: 80
             type: "checkbox"
+            restrictions:
+              - condition: "true"
+                action: "disable"
           osd_pool_size:
             value: "3"
             label: "Ceph object replication factor"
@@ -1303,6 +1329,9 @@
             regex:
               source: '^[1-9]\d*$'
               error: "Invalid number"
+            restrictions:
+              - condition: "true"
+                action: "disable"
       generated:
         mysql:
           root_password:
