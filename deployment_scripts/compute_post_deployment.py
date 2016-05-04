@@ -277,6 +277,7 @@ def forward_from_himn(eth):
                 '-i', eth, '-o', endpoint_name,
                 '-j', 'ACCEPT')
 
+    execute('iptables', '-A', 'INPUT', '-i', eth, '-j', 'ACCEPT')
     execute('iptables', '-t', 'filter', '-S', 'FORWARD')
     execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
     execute('service', 'iptables-persistent', 'save')
