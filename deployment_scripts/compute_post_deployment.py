@@ -47,7 +47,9 @@ def execute(*cmd, **kwargs):
         out = proc.stdout.readlines()
         err = proc.stderr.readlines()
         (out, err) = map(' '.join, [out, err])
-        (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
+
+    # Both if/else need to deal with "\n" scenario
+    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
 
     if out:
         logging.debug(out)
@@ -401,6 +403,14 @@ def patch_neutron_ovs_agent():
     execute('patch', '-d', '/usr/', '-p1', '-i', patch_file)
 
 
+def apply_sm_patch(himn, username, password):
+    ver = ssh(himn, username, password,
+              ('xe host-param-get uuid=$(xe host-list --minimal) '
+               'param-name=software-version param-key=product_version_text'))
+    if ver == "6.5":
+        ssh(himn, username, password, "sed -i s/'phy'/'aio'/g /opt/xensource/sm/ISCSISR.py")
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -426,6 +436,9 @@ if __name__ == '__main__':
 
             # port forwarding for novnc
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
+
+            # apply sm patch
+            apply_sm_patch(HIMN_IP, username, password)
 
             create_novacompute_conf(HIMN_IP, username, password, public_ip, services_ssl)
             patch_compute_xenapi()
