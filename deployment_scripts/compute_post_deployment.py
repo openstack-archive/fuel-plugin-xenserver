@@ -343,12 +343,19 @@ def modify_neutron_ovs_agent_conf(int_br, br_mappings):
 
 
 def get_private_network_ethX():
-    # find out bridge which is used for private network
+    # find out ethX in DomU which connect to private network
+    # br-aux is the auxiliary bridge and in normal case there will be a patch
+    # between br-prv and br-aux
     values = astute['network_scheme']['transformations']
     for item in values:
         if item['action'] == 'add-port' and item['bridge'] == 'br-aux':
             return item['name']
-
+    # If cannot find br-aux, the network topo should be public and private
+    # connect to the same network and "Assign public network to all nodes"
+    # is checked, then we need to use br-ex to find ethX in domU
+    for item in values:
+        if item['action'] == 'add-port' and item['bridge'] == 'br-ex':
+            return item['name']
 
 def find_bridge_mappings(astute, himn, username, password):
     ethX = get_private_network_ethX()
