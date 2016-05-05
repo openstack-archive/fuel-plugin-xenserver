@@ -36,16 +36,16 @@ Prepare infrastructure
 One example deployment is shown below.
 
    .. image:: _static/topology00.png
-      :width: 80%
+      :width: 100%
 
 
 Select Environment
 ------------------
 
-#. Create a new environment with the Fuel UI wizard. Select "Liberty+Citrix XenServer on Ubuntu 14.04" from OpenStack Release dropdown list. At the moment you will see most of options are disabled in the wizard.
+#. Create a new environment with the Fuel UI wizard. Select "Liberty on Ubuntu 14.04" from OpenStack Release dropdown list, check off QEMU-KVM and check on XenServer. At the moment you will see most of options are disabled in the wizard.
 
    .. image:: _static/fmwizard00.png
-      :width: 80%
+      :width: 100%
 
 #. Create new VMs in XenCenter for the compute nodes
 
@@ -56,14 +56,14 @@ Select Environment
    Network to the compute virtual machines
 
     .. image:: _static/HIMN_dialog.jpg
-      :width: 80%
+      :width: 100%
 
 #. Add new VMs to the new environment according to `Fuel User Guide <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#add-nodes-to-the-environment>`_ and configure them properly. A typical topology of 3 controller nodes + 3 compute nodes + 1 storage node is recommended.
 
-#. Go to Settings tab and scroll down to "XenServer Plugin" section. You need to input the common access credentials to all XenServers that previously are used to create new VMs.
+#. Go to Settings tab and "Compute" section. You need to input the common access credentials to all XenServers that previously are used to create new VMs.
 
    .. image:: _static/fmsetting00.png
-      :width: 80%
+      :width: 100%
 
 #. If the XenServer host already has compatible Nova plugins installed, untick the checkbox to install the supplemental packs.  In normal cases, the XenServer host will not have compatible Nova plugins installed, so leave the checkbox enabled
 
@@ -78,4 +78,4 @@ Finish environment configuration
 #. After deployment is done, you will see in Horizon that all hypervisors are xen.
 
    .. image:: _static/fmhorizon00.png
-      :width: 80%
+      :width: 100%
