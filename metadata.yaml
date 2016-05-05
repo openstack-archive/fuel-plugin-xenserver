@@ -3,7 +3,7 @@ name: fuel-plugin-xenserver
 # Human-readable name for your plugin
 title: XenServer Plugin
 # Plugin version
-version: '3.0.0'
+version: '3.1.0'
 # Description
 description: Enable Mirantis OpenStack to integrate with Xenserver
 # Required fuel version
@@ -17,6 +17,9 @@ homepage: 'https://git.openstack.org/cgit/openstack/fuel-plugin-xenserver'
 # Specify a group which your plugin implements, possible options:
 # network, storage, storage::cinder, storage::glance, hypervisor
 groups: ['hypervisor']
+# Change `false` to `true` if the plugin can be installed in the environment
+# after the deployment.
+is_hotpluggable: false
 
 # The plugin is compatible with releases in the list
 releases:
@@ -27,5 +30,4 @@ releases:
     repository_path: repositories/ubuntu
 
 # Version of plugin package
-package_version: '3.0.0'
-
+package_version: '4.0.0'

@@ -1,4 +1,17 @@
 attributes:
+  metadata:
+    restrictions:
+      - "settings:common.libvirt_type.value == 'kvm'"
+      - "settings:storage.volumes_ceph.value == true"
+      - "settings:storage.images_ceph.value == true"
+      - "settings:storage.ephemeral_ceph.value == true"
+      - "settings:storage.objects_ceph.value == true"
+      - "settings:additional_components.sahara.value == true"
+      - "settings:additional_components.murano.value == true"
+      - "settings:additional_components.ceilometer.value == true"
+      - "settings:additional_components.mongo.value == true"
+      - "settings:additional_components.ironic.value == true"
+    group: 'compute'
   username:
     value: 'root'
     label: 'Username'
