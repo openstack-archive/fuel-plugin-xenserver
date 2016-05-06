@@ -408,7 +408,8 @@ def apply_sm_patch(himn, username, password):
               ('xe host-param-get uuid=$(xe host-list --minimal) '
                'param-name=software-version param-key=product_version_text'))
     if ver == "6.5":
-        ssh(himn, username, password, "sed -i s/'phy'/'aio'/g /opt/xensource/sm/ISCSISR.py")
+        ssh(himn, username, password,
+            "sed -i s/\\'phy\\'/\\'aio\\'/g /opt/xensource/sm/ISCSISR.py")
 
 
 if __name__ == '__main__':
