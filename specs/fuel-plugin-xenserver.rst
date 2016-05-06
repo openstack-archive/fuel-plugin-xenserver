@@ -12,11 +12,13 @@ Problem description
 ===================
 
 There is currently no supported way for Citrix Xenserver customers to
-use Mirantis OpenStack in their environments.  Further, Fuel does not
-provide sufficient flexibility to add a new hypervisor option to the
-wizard, meaning that any users of Citrix XenServer who wish to
-manually configure Fuel are required to select an incorrect hypervisor
-then made post-install changes to switch them over to using XenServer.
+use Mirantis OpenStack in their environments.
+
+Further, Fuel does not provide sufficient flexibility to add a new
+hypervisor option to the wizard, meaning that any users of Citrix
+XenServer who wish to manually configure Fuel are required to select
+an incorrect hypervisor then made post-install changes to switch them
+over to using XenServer.
 
 Proposed change
 ===============
