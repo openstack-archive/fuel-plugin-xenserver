@@ -58,7 +58,7 @@ Select Environment
     .. image:: _static/HIMN_dialog.jpg
       :width: 100%
 
-#. Add new VMs to the new environment according to `Fuel User Guide <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#add-nodes-to-the-environment>`_ and configure them properly. A typical topology of 3 controller nodes + 3 compute nodes + 1 storage node is recommended.
+#. Add new VMs to the new environment according to `Fuel User Guide <http://docs.openstack.org/developer/fuel-docs/userdocs/fuel-user-guide/configure-environment/add-nodes.html>`_ and configure them properly. A typical topology of 3 controller nodes + 3 compute nodes + 1 storage node is recommended.
 
 #. Go to Settings tab and "Compute" section. You need to input the common access credentials to all XenServers that previously are used to create new VMs.
 
@@ -71,9 +71,9 @@ Select Environment
 Finish environment configuration
 --------------------------------
 
-#. Run `network verification check <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#verify-networks>`_
+#. Run `network verification check <http://docs.openstack.org/developer/fuel-docs/userdocs/fuel-user-guide/configure-environment/verify-networks.html>`_
 
-#. Press `Deploy button <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#deploy-changes>`_ to once you are done with environment configuration.
+#. Press `Deploy button <http://docs.openstack.org/developer/fuel-docs/userdocs/fuel-user-guide/deploy-environment/deploy-changes.html>`_ to once you are done with environment configuration.
 
 #. After deployment is done, you will see in Horizon that all hypervisors are xen.
 

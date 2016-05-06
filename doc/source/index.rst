@@ -28,6 +28,7 @@ guide
 .. include:: terms.rst
 .. include:: installation.rst
 .. include:: guide.rst
+.. include:: troubleshooting.rst
 
 
 Further reading
