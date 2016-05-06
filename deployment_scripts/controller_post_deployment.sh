@@ -35,11 +35,7 @@ function create_image {
 
 function mod_novnc {
 	local public_ip
-	public_ip=$(python - <<EOF
-import sys
-import yaml
-astute=yaml.load(open('/etc/astute.yaml'))
-print astute['network_metadata']['vips']['public']['ipaddr']
+	public_ip=$(hiera "network_metadata.vips.public.ipaddr")
 EOF
 )
 	cat > /etc/nova/nova-compute.conf <<EOF
