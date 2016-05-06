@@ -61,6 +61,9 @@ be used by Neutron for VM traffic.
    .. image:: _static/topology00.png
       :width: 80%
 
+For the hardware configuration see Mirantis OpenStack Planning Guide at
+https://docs.mirantis.com/openstack/fuel/fuel-8.0/mos-planning-guide.html
+
 Product compatibility matrix
 ----------------------------
 
@@ -118,19 +121,15 @@ Install XenServer Fuel Plugin
        and the new OpenStack release is registered.
    * - Steps
      -
-       | ``[root@fuel-master ~]# fuel plugins``
+       | ``fuel plugins --install /tmp/fuel-plugin-xenserver-3.1-3.1.0-1.noarch.rpm``
+       | ``[root@fuel ~]# fuel plugins``
        | ``id | name                  | version | package_version``
-       | ``9  | fuel-plugin-xenserver | 3.0.0   | 3.0.0``
+       | ``1  | fuel-plugin-xenserver | 3.1.0   | 4.0.0``
    * - Expected Result
      -
        | ``fuel plugins``
        | ``id | name                  | version | package_version``
-       | ``2  | fuel-plugin-xenserver | 3.0.0   | 3.0.0``
-       | ``fuel rel``
-       | ``id | name                                     | state       | operating_system | version``
-       | ``2  | Liberty on Ubuntu 14.04                  | available   | Ubuntu           | liberty-8.0``
-       | ``3  | Liberty+Citrix XenServer on Ubuntu 14.04 | available   | Ubuntu           | liberty-8.0``
-       | ``1  | Liberty on CentOS 6.5                    | unavailable | CentOS           | liberty-8.0``
+       | ``1  | fuel-plugin-xenserver | 3.1.0   | 4.0.0``
 
 Prepare Nodes
 -------------
@@ -224,11 +223,11 @@ Create an OpenStack environment with XenServer Fuel Plugin
    * - Steps
      -
        #. Create new OpenStack environment Fuel Web UI and select
-          “Liberty+Citrix XenServer on Ubuntu 14.04” in the OpenStack release
+          “Liberty on Ubuntu 14.04” in the OpenStack release
           dropdown list
-       #. Hypervisor is default to QEMU, Network is default to “Neutron with
-          VLAN segmentation” and Storage is default to Cinder. Other options
-          are disabled.
+       #. Check off QEMU and check on XenServer, Network is default to “Neutron
+          with VLAN segmentation” and Storage is default to Cinder. Other
+          options are disabled.
        #. In Nodes Tab, add all 3 Controller Nodes, 3 Compute Nodes and 1
           Storage Node.
        #. Select all Compute Nodes and click “Configure Interfaces”, drag
@@ -242,8 +241,10 @@ Create an OpenStack environment with XenServer Fuel Plugin
           interfaces previous set and make sure network range will not be
           conflicting with other systems in the same lab. Then click “Verify
           Networks” button.
-       #. In the Settings Tab under the side tab “Others”, input the
-          credential applied to all your XenServer hosts.
+       #. In the Settings Tab under the side tab “Compute”, input the
+          credential applied to all your XenServer hosts. You can also provide
+          a SSH private key or leave it blank then an RSA keypair will be
+          automatically generated.
        #. Click “Deploy Changes” button
    * - Expected Result
      - Deploy of nodes all succeed
@@ -375,6 +376,29 @@ Modifying env with enabled plugin (removing/adding controller nodes)
        running” fail. “Some nova services have not been started.. Please
        refer to OpenStack logs for more details.”
 
+Create mirror and update (setup) of core repos
+---------------------------------------------------
+
+.. tabularcolumns:: |p{3cm}|p{13cm}|
+
+.. list-table::
+   :header-rows: 0
+
+   * - Test Case ID
+     - create_mirror_update_core_repos
+   * - Description
+     - Fuel create mirror and update (setup) of core repos
+   * - Steps
+     -
+       #. Create a new environment
+       #. Launch the following command on the Fuel Master node: ``fuel-createmirror -M``
+       #. Launch the following command on the Fuel Master node: ``fuel --env <ENV_ID> node --node-id <NODE_ID1> <NODE_ID2> <NODE_ID_N> --tasks setup_repositories``
+       #. Check with fuel nodes command that all nodes are remain in ready status.
+       #. Deploy the new environment
+       #. Run Health Check
+   * - Expected Result
+     - Plugin is still enabled and configured in the Fuel Web UI. Health Checks are passed.
+
 Uninstall of plugin with deployed environment
 ---------------------------------------------
 
@@ -389,7 +413,7 @@ Uninstall of plugin with deployed environment
      - Verify XenServer Fuel Plugin cannot be uninstalled before all
        dependant environments are removed.
    * - Steps
-     - ``fuel plugins --remove fuel-plugin-xenserver==3.0.0``
+     - ``fuel plugins --remove fuel-plugin-xenserver==3.1.0``
    * - Expected Result
      - 400 Client Error: Bad Request (Can't delete plugin which is enabled
        for some environment.)
@@ -408,19 +432,15 @@ Uninstall of plugin
      - Verify XenServer Fuel Plugin can be uninstalled as well as XenServer
        OpenStack release after all dependant environments are removed.
    * - Steps
-     - | ``fuel plugins --remove fuel-plugin-xenserver==3.0.0``
-       | ``fuel rel``
-       | ``id | name                                     | state       | operating_system | version``
-       | ``2  | Liberty on Ubuntu 14.04                  | available   | Ubuntu           | liberty-8.0``
-       | ``3  | Liberty+Citrix XenServer on Ubuntu 14.04 | available   | Ubuntu           | liberty-8.0``
-       | ``1  | Liberty on CentOS 6.5                    | unavailable | CentOS           | liberty-8.0``
+     - | ``fuel plugins --remove fuel-plugin-xenserver==3.1.0``
+       | ``fuel plugins``
    * - Expected Result
-     - Both of plugin and release are removed.
+     - Plugin is removed.
 
 Appendix
 ========
 
-* XenServer Fuel Plugin GitHub: https://git.openstack.org/openstack/fuel-plugin-xenserver
+* XenServer Fuel Plugin Repository: https://git.openstack.org/cgit/openstack/fuel-plugin-xenserver
 * XenCenter HIMN Plugin GitHub: https://github.com/citrix-openstack/xencenter-himn-plugin
 * Plugin download server: http://ca.downloads.xensource.com/OpenStack/Plugins/
 
@@ -446,3 +466,7 @@ Revision history
      - 22.03.2016
      - John Hua (john.hua@citrix.com)
      - Revised for Fuel 8.0
+   * - 3.1
+     - 22.03.2016
+     - John Hua (john.hua@citrix.com)
+     - Revised for plugin 3.1.0

@@ -14,7 +14,7 @@ To install the XenServer Fuel plugin:
       [root@home ~]# scp fuel-plugin-xenserver-3.1-3.1.0-1.noarch.rpm root@fuel:/tmp
 
 #. Log into Fuel Master node and install the plugin using the
-   `Fuel CLI <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html#using-fuel-cli>`_:
+   `Fuel CLI <http://docs.openstack.org/developer/fuel-docs/userdocs/fuel-user-guide/cli.html>`_:
 
    ::
 
@@ -39,4 +39,4 @@ Add Management Network tool
 
 #. Re-start XenCenter
 
-.. _Fuel Plugins Catalog: https://www.mirantis.com/products/openstack-drivers-and-plugins/fuel-plugins/
+.. _Fuel Plugins Catalog: https://www.mirantis.com/validated-solution-integrations/fuel-plugins/

@@ -30,12 +30,16 @@ Revision history
      - 19.04.2016
      - John Hua(john.hua@citrix.com)
      - Rewrite in RST
+   * - 3.2
+     - 12.05.2016
+     - John Hua(john.hua@citrix.com)
+     - Revised for plugin 3.1.0
 
 Document purpose
 ================
 
 This document provides test run results for the XenServer Fuel Plugin version
-3.0.0 on Mirantis OpenStack 8.0.
+3.1.0 on Mirantis OpenStack 8.0.
 
 Test environment
 ================
@@ -85,7 +89,7 @@ System Testing
    * - Parameter
      - Value
    * - Total quantity of executed test cases
-     - 12
+     - 13
    * - Total quantity of not executed test cases
      - 0
    * - Quantity of automated test cases
@@ -172,12 +176,18 @@ Detailed test run results
        required services are running” fail. “Some nova services have not been
        started.. Please refer to OpenStack logs for more details.”
    * - 11
-     - Uninstall of plugin with deployed environment
+     - Create mirror and update (setup) of core repos
      - Yes
      -
      -
      -
    * - 12
+     - Uninstall of plugin with deployed environment
+     - Yes
+     -
+     -
+     -
+   * - 13
      - Uninstall of plugin
      - Yes
      -
@@ -185,7 +195,7 @@ Detailed test run results
      -
    * - Total
      -
-     - 12
+     - 13
      - 0
      - 0
      -
