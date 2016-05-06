@@ -420,7 +420,7 @@ Uninstall of plugin
 Appendix
 ========
 
-* XenServer Fuel Plugin GitHub: https://git.openstack.org/openstack/fuel-plugin-xenserver
+* XenServer Fuel Plugin Repository: https://git.openstack.org/cgit/openstack/fuel-plugin-xenserver
 * XenCenter HIMN Plugin GitHub: https://github.com/citrix-openstack/xencenter-himn-plugin
 * Plugin download server: http://ca.downloads.xensource.com/OpenStack/Plugins/
 
