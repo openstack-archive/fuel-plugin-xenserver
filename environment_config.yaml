@@ -14,9 +14,19 @@ attributes:
     regex:
       source: '\S'
       error: "Password cannot be empty"
+  ssh_priv_key:
+    value: ''
+    label: 'SSH private key'
+    description: >
+                 The SSH private key will be used for communication between
+                 the compute node and the XenServer host during installation.
+                 Add the private key here if you wish to use an existing key.
+                 If left blank, an RSA keypair will be automatically generated.
+    weight: 30
+    type: "text"
   install_xapi:
     value: true
     label: 'Install Nova Plugins'
     description: ''
-    weight: 30
+    weight: 40
     type: "checkbox"
