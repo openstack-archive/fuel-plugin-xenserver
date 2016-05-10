@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 
-import ConfigParser
-import logging
-import netifaces
 import os
 import re
-from socket import inet_ntoa
-from struct import pack
-import subprocess
 import sys
+import stat
+import subprocess
+import logging
+import ConfigParser
+import netifaces
 import yaml
 
+from socket import inet_ntoa
+from struct import pack
 
+
+XS_RSA = 'xs.rsa'
 ASTUTE_PATH = '/etc/astute.yaml'
 ASTUTE_SECTION = 'fuel-plugin-xenserver'
 LOG_ROOT = '/var/log/fuel-plugin-xenserver'
@@ -37,7 +40,7 @@ def execute(*cmd, **kwargs):
     cmd = map(str, cmd)
     logging.info(' '.join(cmd))
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                 stderr=subprocess.PIPE)
+                            stderr=subprocess.PIPE)
 
     if 'prompt' in kwargs:
         prompt = kwargs.get('prompt')
@@ -47,9 +50,7 @@ def execute(*cmd, **kwargs):
         out = proc.stdout.readlines()
         err = proc.stderr.readlines()
         (out, err) = map(' '.join, [out, err])
-
-    # Both if/else need to deal with "\n" scenario
-    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
+        (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
 
     if out:
         logging.debug(out)
@@ -60,19 +61,33 @@ def execute(*cmd, **kwargs):
     return out
 
 
-def ssh(host, username, password, *cmd, **kwargs):
+def ssh(host, username, *cmd, **kwargs):
     cmd = map(str, cmd)
 
-    return execute('sshpass', '-p', password, 'ssh',
+    return execute('ssh', '-i', XS_RSA,
                    '-o', 'StrictHostKeyChecking=no',
                    '%s@%s' % (username, host), *cmd,
                    prompt=kwargs.get('prompt'))
 
 
-def scp(host, username, password, target_path, filename):
-    return execute('sshpass', '-p', password, 'scp',
+def scp(host, username, target_path, filename):
+    return execute('scp', '-i', XS_RSA,
                    '-o', 'StrictHostKeyChecking=no', filename,
                    '%s@%s:%s' % (username, host, target_path))
+
+def ssh_copy_id(host, username, password):
+    ssh_askpass = "askpass.sh"
+
+    s = ('#!/bin/sh\n'
+         'echo "{password}"').format(password=password)
+    with open(ssh_askpass, 'w') as f:
+        f.write(s)
+    os.chmod(ssh_askpass, stat.S_IEXEC)
+    os.putenv('SSH_ASKPASS', os.path.abspath(ssh_askpass))
+    os.putenv('DISPLAY', ":0")
+    execute('ssh-keygen', '-f', XS_RSA, '-t', 'rsa', '-N', '')
+    execute('setsid', 'ssh-copy-id', '-o', 'StrictHostKeyChecking=no',
+            '-i', XS_RSA, '%s@%s' % (username, host))
 
 
 def get_astute(astute_path):
@@ -171,11 +186,11 @@ def init_eth():
     reportError('HIMN failed to get IP address from XenServer')
 
 
-def check_host_compatibility(himn, username, password):
+def check_host_compatibility(himn, username):
     hotfix = 'XS65ESP1013'
-    installed = ssh(himn, username, password,
+    installed = ssh(himn, username,
                     'xe patch-list name-label=%s --minimal' % hotfix)
-    ver = ssh(himn, username, password,
+    ver = ssh(himn, username,
               ('xe host-param-get uuid=$(xe host-list --minimal) '
                'param-name=software-version param-key=product_version_text'))
 
@@ -222,9 +237,9 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
     logging.info('%s created' % filename)
 
 
-def route_to_compute(endpoints, himn_xs, himn_local, username, password):
+def route_to_compute(endpoints, himn_xs, himn_local, username):
     """Route storage/mgmt requests to compute nodes. """
-    out = ssh(himn_xs, username, password, 'route', '-n')
+    out = ssh(himn_xs, username, 'route', '-n')
     _net = lambda ip: '.'.join(ip.split('.')[:-1] + ['0'])
     _mask = lambda cidr: inet_ntoa(pack(
         '>I', 0xffffffff ^ (1 << 32 - int(cidr)) - 1))
@@ -243,22 +258,22 @@ def route_to_compute(endpoints, himn_xs, himn_local, username, password):
             if not _routed(net, mask, himn_local):
                 params = ['route', 'add', '-net', net, 'netmask',
                           mask, 'gw', himn_local]
-                ssh(himn_xs, username, password, *params)
+                ssh(himn_xs, username, *params)
                 sh = 'echo \'%s\' >> /etc/sysconfig/static-routes' \
                     % ' '.join(params)
-                ssh(himn_xs, username, password, sh)
+                ssh(himn_xs, username, sh)
         else:
             logging.info('%s network ip is missing' % endpoint_name)
 
 
-def install_suppack(himn, username, password):
+def install_suppack(himn, username):
     """Install xapi driver supplemental pack. """
     # TODO(Johnhua): check if installed
-    scp(himn, username, password, '/tmp/', XS_PLUGIN_ISO)
+    scp(himn, username, '/tmp/', XS_PLUGIN_ISO)
     ssh(
-        himn, username, password, 'xe-install-supplemental-pack',
+        himn, username, 'xe-install-supplemental-pack',
         '/tmp/%s' % XS_PLUGIN_ISO, prompt='Y\n')
-    ssh(himn, username, password, 'rm', '/tmp/%s' % XS_PLUGIN_ISO)
+    ssh(himn, username, 'rm', '/tmp/%s' % XS_PLUGIN_ISO)
 
 
 def forward_from_himn(eth):
@@ -303,11 +318,11 @@ def forward_port(eth_in, eth_out, target_host, target_port):
     execute('service', 'iptables-persistent', 'save')
 
 
-def install_logrotate_script(himn, username, password):
+def install_logrotate_script(himn, username):
     "Install console logrotate script"
-    scp(himn, username, password, '/root/', 'rotate_xen_guest_logs.sh')
-    ssh(himn, username, password, 'mkdir -p /var/log/xen/guest')
-    ssh(himn, username, password, '''crontab - << CRONTAB
+    scp(himn, username, '/root/', 'rotate_xen_guest_logs.sh')
+    ssh(himn, username, 'mkdir -p /var/log/xen/guest')
+    ssh(himn, username, '''crontab - << CRONTAB
 * * * * * /root/rotate_xen_guest_logs.sh
 CRONTAB''')
 
@@ -352,7 +367,7 @@ def get_private_network_ethX():
             return item['name']
 
 
-def find_bridge_mappings(astute, himn, username, password):
+def find_bridge_mappings(astute, himn, username):
     ethX = get_private_network_ethX()
     if not ethX:
         reportError("Cannot find eth used for private network")
@@ -361,10 +376,10 @@ def find_bridge_mappings(astute, himn, username, password):
     fo = open('/sys/class/net/%s/address' % ethX, 'r')
     mac = fo.readline()
     fo.close()
-    network_uuid = ssh(himn, username, password,
-            'xe vif-list params=network-uuid minimal=true MAC=%s' % mac)
-    bridge = ssh(himn, username, password,
-            'xe network-param-get param-name=bridge uuid=%s' % network_uuid)
+    network_uuid = ssh(himn, username,
+                       'xe vif-list params=network-uuid minimal=true MAC=%s' % mac)
+    bridge = ssh(himn, username,
+                 'xe network-param-get param-name=bridge uuid=%s' % network_uuid)
 
     # find physical network name
     phynet_setting = astute['quantum_settings']['L2']['phys_nets']
@@ -377,11 +392,11 @@ def restart_services(service_name):
     execute('start', service_name)
 
 
-def enable_linux_bridge(himn, username, password):
+def enable_linux_bridge(himn, username):
     # When using OVS under XS6.5, it will prevent use of Linux bridge in
     # Dom0, but neutron-openvswitch-agent in compute node will use Linux
     # bridge, so we remove this restriction here
-    ssh(himn, username, password, 'rm -f /etc/modprobe.d/blacklist-bridge*')
+    ssh(himn, username, 'rm -f /etc/modprobe.d/blacklist-bridge*')
 
 
 def patch_compute_xenapi():
@@ -389,10 +404,10 @@ def patch_compute_xenapi():
     # TODO(huanxie): need to confirm the overall patchset list
     patchset_dir = sys.path[0]
     patchfile_list = ['%s/patchset/vif-plug.patch' % patchset_dir,
-            '%s/patchset/nova-neutron-race-condition.patch' % patchset_dir,
-            '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
-            '%s/patchset/neutron-security-group.patch' % patchset_dir,
-            '%s/patchset/speed-up-writing-config-drive.patch' % patchset_dir]
+                      '%s/patchset/nova-neutron-race-condition.patch' % patchset_dir,
+                      '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
+                      '%s/patchset/neutron-security-group.patch' % patchset_dir,
+                      '%s/patchset/speed-up-writing-config-drive.patch' % patchset_dir]
     for patch_file in patchfile_list:
         execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
 
@@ -401,15 +416,6 @@ def patch_neutron_ovs_agent():
     patchset_dir = sys.path[0]
     patch_file = '%s/patchset/neutron-rootwrap-xen-dom0.patch' % patchset_dir
     execute('patch', '-d', '/usr/', '-p1', '-i', patch_file)
-
-
-def apply_sm_patch(himn, username, password):
-    ver = ssh(himn, username, password,
-              ('xe host-param-get uuid=$(xe host-list --minimal) '
-               'param-name=software-version param-key=product_version_text'))
-    if ver == "6.5":
-        ssh(himn, username, password,
-            "sed -i s/\\'phy\\'/\\'aio\\'/g /opt/xensource/sm/ISCSISR.py")
 
 
 if __name__ == '__main__':
@@ -427,30 +433,29 @@ if __name__ == '__main__':
             astute, ('public_ssl', 'services'))
 
         if username and password and endpoints and himn_local:
-            check_host_compatibility(HIMN_IP, username, password)
+            ssh_copy_id(HIMN_IP, username, password)
+            check_host_compatibility(HIMN_IP, username)
             route_to_compute(
-                endpoints, HIMN_IP, himn_local, username, password)
+                endpoints, HIMN_IP, himn_local, username)
             if install_xapi:
-                install_suppack(HIMN_IP, username, password)
-            enable_linux_bridge(HIMN_IP, username, password)
+                install_suppack(HIMN_IP, username)
+            enable_linux_bridge(HIMN_IP, username)
             forward_from_himn(himn_eth)
 
             # port forwarding for novnc
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
 
-            # apply sm patch
-            apply_sm_patch(HIMN_IP, username, password)
-
-            create_novacompute_conf(HIMN_IP, username, password, public_ip, services_ssl)
+            create_novacompute_conf(
+                HIMN_IP, username, password, public_ip, services_ssl)
             patch_compute_xenapi()
             restart_services('nova-compute')
 
-            install_logrotate_script(HIMN_IP, username, password)
+            install_logrotate_script(HIMN_IP, username)
 
             # neutron-l2-agent in compute node
             modify_neutron_rootwrap_conf(HIMN_IP, username, password)
             br_mappings = find_bridge_mappings(astute, HIMN_IP,
-                                               username, password)
+                                               username)
             modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings)
             patch_neutron_ovs_agent()
             restart_services('neutron-plugin-openvswitch-agent')
