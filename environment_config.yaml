@@ -14,9 +14,27 @@ attributes:
     regex:
       source: '\S'
       error: "Password cannot be empty"
+  ssh_priv_key:
+    value: ''
+    label: 'SSH private key'
+    description: >
+                 The SSH private key will be used for communication between
+                 compute node and XenServer host, leave it blank we will
+                 create one for you
+    weight: 30
+    type: "text"
+  ssh_pub_key:
+    value: ''
+    label: 'SSH public key'
+    description: >
+                 The SSH public key will be used for communication between
+                 compute node and XenServer host, leave it blank we will create
+                 one for you
+    weight: 40
+    type: "text"
   install_xapi:
     value: true
     label: 'Install Nova Plugins'
     description: ''
-    weight: 30
+    weight: 50
     type: "checkbox"
