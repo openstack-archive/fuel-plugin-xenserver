@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 
 LOG_ROOT="/var/log/fuel-plugin-xenserver/"
 mkdir -p $LOG_ROOT
