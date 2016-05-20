@@ -388,14 +388,13 @@ Create mirror and update (setup) of core repos
      - Fuel create mirror and update (setup) of core repos
    * - Steps
      -
+       #. Launch the following command on the Fuel Master node: ``fuel-mirror create -G mos -P ubuntu``
        #. Create a new environment
-       #. Launch the following command on the Fuel Master node: ``fuel-createmirror -M``
-       #. Launch the following command on the Fuel Master node: ``fuel --env <ENV_ID> node --node-id <NODE_ID1> <NODE_ID2> <NODE_ID_N> --tasks setup_repositories``
-       #. Check with fuel nodes command that all nodes are remain in ready status.
+       #. Check if MOS repositories has been changed to local
        #. Deploy the new environment
        #. Run Health Check
    * - Expected Result
-     - Plugin is still enabled and configured in the Fuel Web UI. Health Checks are passed.
+     - Health Checks are passed.
 
 Uninstall of plugin with deployed environment
 ---------------------------------------------
