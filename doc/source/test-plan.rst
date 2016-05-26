@@ -389,12 +389,14 @@ Create mirror and update (setup) of core repos
    * - Steps
      -
        #. Launch the following command on the Fuel Master node: ``fuel-mirror create -G mos -P ubuntu``
-       #. Create a new environment
-       #. Check if MOS repositories has been changed to local
-       #. Deploy the new environment
+       #. Launch the following command on the Fuel Master node: ``fuel-mirror apply -G mos -P ubuntu -e ENV_ID``, ENV_ID is the id of the deployed cluster
+       #. Check if MOS repositories have been changed to local
        #. Run Health Check
    * - Expected Result
-     - Health Checks are passed.
+     -
+       #. Health Checks are passed.
+       #. MOS repositories have been changed to local
+       #. XenServer Fuel plugin doesn't launch any services, so the check of process PID and status can be skipped
 
 Uninstall of plugin with deployed environment
 ---------------------------------------------
