@@ -271,6 +271,8 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
         mask
     ), out)
 
+    ssh(himn_xs, username,
+        'printf "#!/bin/bash\nsleep\n" > /etc/udev/scripts/reroute.sh')
     endpoint_names = ['storage', 'mgmt']
     for endpoint_name in endpoint_names:
         endpoint = endpoints.get(endpoint_name)
@@ -281,11 +283,17 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
                 params = ['route', 'add', '-net', net, 'netmask',
                           mask, 'gw', himn_local]
                 ssh(himn_xs, username, *params)
-                sh = 'echo \'%s\' >> /etc/sysconfig/static-routes' \
-                    % ' '.join(params)
+                cmd = ("echo 'if !(/sbin/route -n | /bin/grep -q {net}); "
+                "then /sbin/route add -net {net} netmask {mask} gw {himn_local}; "
+                "fi' >> /etc/udev/scripts/reroute.sh")
+                cmd = cmd.format(net=net, mask=mask, himn_local=himn_local)
                 ssh(himn_xs, username, sh)
         else:
             logging.info('%s network ip is missing' % endpoint_name)
+    ssh(himn_xs, username, 'chmod +x /etc/udev/scripts/reroute.sh')
+    ssh(himn_xs, username, ('echo \'SUBSYSTEM=="net" ACTION=="add" '
+        'KERNEL=="xenapi" RUN+="/etc/udev/scripts/reroute.sh"\' '
+        '> /etc/udev/rules.d/90-reroute.rules'))
 
 
 def install_suppack(himn, username):
