@@ -436,7 +436,8 @@ def patch_compute_xenapi():
             '%s/patchset/nova-neutron-race-condition.patch' % patchset_dir,
             '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
             '%s/patchset/neutron-security-group.patch' % patchset_dir,
-            '%s/patchset/speed-up-writing-config-drive.patch' % patchset_dir]
+            '%s/patchset/speed-up-writing-config-drive.patch' % patchset_dir,
+            '%s/patchset/support-disable-image-cache.patch' % patchset_dir]
     for patch_file in patchfile_list:
         execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
 
