@@ -60,6 +60,11 @@ Select Environment
 
 #. Add new VMs to the new environment according to `Fuel User Guide <http://docs.openstack.org/developer/fuel-docs/userdocs/fuel-user-guide/configure-environment/add-nodes.html>`_ and configure them properly. A typical topology of 3 controller nodes + 3 compute nodes + 1 storage node is recommended.
 
+#. Check the MAC address of the networks assigned in the "Interface Configuration"
+   tab correspond to the correct physical or virtual interface.
+   Note that no networks should be assigned to the HIMN interface on compute nodes,
+   which will normally show as the last interface for these nodes.
+
 #. Go to Settings tab and "Compute" section. You need to input the common access credentials to all XenServers that previously are used to create new VMs.
 
    .. image:: _static/fmsetting00.png
