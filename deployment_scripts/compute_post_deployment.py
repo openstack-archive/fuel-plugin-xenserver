@@ -253,6 +253,7 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
         cf.set('xenserver', 'vif_driver',
                'nova.virt.xenapi.vif.XenAPIOpenVswitchDriver')
         cf.set('xenserver', 'ovs_integration_bridge', INT_BRIDGE)
+        cf.set('xenserver', 'cache_images', 'none')
         cf.write(open(filename, 'w'))
     except Exception:
         reportError('Cannot set configurations to %s' % filename)
@@ -446,7 +447,8 @@ def patch_compute_xenapi():
             '%s/patchset/nova-neutron-race-condition.patch' % patchset_dir,
             '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
             '%s/patchset/neutron-security-group.patch' % patchset_dir,
-            '%s/patchset/speed-up-writing-config-drive.patch' % patchset_dir]
+            '%s/patchset/speed-up-writing-config-drive.patch' % patchset_dir,
+            '%s/patchset/support-disable-image-cache.patch' % patchset_dir]
     for patch_file in patchfile_list:
         execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
 
