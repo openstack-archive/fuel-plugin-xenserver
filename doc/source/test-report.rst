@@ -33,13 +33,13 @@ Revision history
    * - 3.2
      - 12.05.2016
      - John Hua(john.hua@citrix.com)
-     - Revised for plugin 3.1.0
+     - Revised for plugin 3.1.2
 
 Document purpose
 ================
 
 This document provides test run results for the XenServer Fuel Plugin version
-3.1.0 on Mirantis OpenStack 8.0.
+3.1.2 on Mirantis OpenStack 8.0.
 
 Test environment
 ================
