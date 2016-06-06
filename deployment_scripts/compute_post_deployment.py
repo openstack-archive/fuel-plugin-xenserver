@@ -283,13 +283,14 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
                 params = ['route', 'add', '-net', net, 'netmask',
                           mask, 'gw', himn_local]
                 ssh(himn_xs, username, *params)
-                cmd = (
-                    "printf 'if !(/sbin/route -n | /bin/grep -q {net}); then\n"
-                    "/sbin/route add -net {net} netmask {mask} gw {himn_local};\n"
-                    "fi\n' >> /etc/udev/scripts/reroute.sh"
-                )
-                cmd = cmd.format(net=net, mask=mask, himn_local=himn_local)
-                ssh(himn_xs, username, cmd)
+            # Always add the route to the udev, even if it's currently active
+            cmd = (
+                "printf 'if !(/sbin/route -n | /bin/grep -q {net}); then\n"
+                "/sbin/route add -net {net} netmask {mask} gw {himn_local};\n"
+                "fi\n' >> /etc/udev/scripts/reroute.sh"
+            )
+            cmd = cmd.format(net=net, mask=mask, himn_local=himn_local)
+            ssh(himn_xs, username, cmd)
         else:
             logging.info('%s network ip is missing' % endpoint_name)
     ssh(himn_xs, username, 'chmod +x /etc/udev/scripts/reroute.sh')
