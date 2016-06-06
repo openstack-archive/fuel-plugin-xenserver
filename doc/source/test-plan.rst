@@ -393,9 +393,10 @@ Create mirror and update (setup) of core repos
        #. Check if MOS repositories have been changed to local
        #. Run Health Check
    * - Expected Result
-     - Health Checks are passed.
-     - MOS repositories have been changed to local
-     - XenServer Fuel plugin doesn't launch any services, so the check of process PID and status can be skipped
+     -
+       #. Health Checks are passed.
+       #. MOS repositories have been changed to local
+       #. XenServer Fuel plugin doesn't launch any services, so the check of process PID and status can be skipped
 
 Uninstall of plugin with deployed environment
 ---------------------------------------------
