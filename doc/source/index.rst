@@ -29,6 +29,7 @@ guide
 .. include:: installation.rst
 .. include:: guide.rst
 .. include:: troubleshooting.rst
+.. include:: relnotes.rst
 
 
 Further reading
