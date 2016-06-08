@@ -47,7 +47,7 @@ def execute(*cmd, **kwargs):
     else:
         env = None
     logging.info(env_prefix + ' '.join(cmd))
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                  stderr=subprocess.PIPE, env=env)
 
     if 'prompt' in kwargs:
@@ -117,7 +117,7 @@ def get_astute(astute_path):
     if not os.path.exists(astute_path):
         reportError('%s not found' % astute_path)
 
-    astute = yaml.load(open(astute_path))
+    astute = yaml.safe_load(open(astute_path))
     return astute
 
 
@@ -303,11 +303,10 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
 def install_suppack(himn, username):
     """Install xapi driver supplemental pack. """
     # TODO(Johnhua): check if installed
-    scp(himn, username, '/tmp/', XS_PLUGIN_ISO)
-    ssh(
-        himn, username, 'xe-install-supplemental-pack',
-        '/tmp/%s' % XS_PLUGIN_ISO, prompt='Y\n')
-    ssh(himn, username, 'rm', '/tmp/%s' % XS_PLUGIN_ISO)
+    tmp = '/tmp/%s' % random.getrandbits(32)
+    scp(himn, username, tmp, XS_PLUGIN_ISO)
+    ssh(himn, username, 'xe-install-supplemental-pack', tmp, prompt='Y\n')
+    ssh(himn, username, 'rm', tmp)
 
 
 def forward_from_himn(eth):
