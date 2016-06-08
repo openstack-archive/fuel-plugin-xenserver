@@ -7,7 +7,7 @@ import os
 import re
 from socket import inet_ntoa
 from struct import pack
-import subprocess
+import subprocess # nosec
 import sys
 import stat
 import yaml
@@ -47,7 +47,7 @@ def execute(*cmd, **kwargs):
     else:
         env = None
     logging.info(env_prefix + ' '.join(cmd))
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, # nosec
                  stderr=subprocess.PIPE, env=env)
 
     if 'prompt' in kwargs:
@@ -117,7 +117,7 @@ def get_astute(astute_path):
     if not os.path.exists(astute_path):
         reportError('%s not found' % astute_path)
 
-    astute = yaml.load(open(astute_path))
+    astute = yaml.safe_load(open(astute_path))
     return astute
 
 
@@ -281,13 +281,13 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
             ip, cidr = endpoint.split('/')
             net, mask = _net(ip), _mask(cidr)
             if not _routed(net, mask, himn_local):
-                params = ['route', 'add', '-net', net, 'netmask',
-                          mask, 'gw', himn_local]
+                params = ['route', 'add', '-net', '"%s"' % net, 'netmask',
+                          '"%s"' % mask, 'gw', himn_local]
                 ssh(himn_xs, username, *params)
             # Always add the route to the udev, even if it's currently active
             cmd = (
-                "printf 'if !(/sbin/route -n | /bin/grep -q -F {net}); then\n"
-                "/sbin/route add -net {net} netmask {mask} gw {himn_local};\n"
+                "printf 'if !(/sbin/route -n | /bin/grep -q -F \"{net}\"); then\n"
+                "/sbin/route add -net \"{net}\" netmask \"{mask}\" gw {himn_local};\n"
                 "fi\n' >> /etc/udev/scripts/reroute.sh"
             )
             cmd = cmd.format(net=net, mask=mask, himn_local=himn_local)
@@ -302,12 +302,11 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
 
 def install_suppack(himn, username):
     """Install xapi driver supplemental pack. """
-    # TODO(Johnhua): check if installed
-    scp(himn, username, '/tmp/', XS_PLUGIN_ISO)
-    ssh(
-        himn, username, 'xe-install-supplemental-pack',
-        '/tmp/%s' % XS_PLUGIN_ISO, prompt='Y\n')
-    ssh(himn, username, 'rm', '/tmp/%s' % XS_PLUGIN_ISO)
+    tmp = ssh(himn, username, 'mktemp', '-d')
+    scp(himn, username, tmp, XS_PLUGIN_ISO)
+    ssh(himn, username, 'xe-install-supplemental-pack', tmp + '/' + XS_PLUGIN_ISO,
+        prompt='Y\n')
+    ssh(himn, username, 'rm', tmp, '-rf')
 
 
 def forward_from_himn(eth):
