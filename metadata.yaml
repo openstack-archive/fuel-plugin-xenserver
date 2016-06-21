@@ -3,7 +3,7 @@ name: fuel-plugin-xenserver
 # Human-readable name for your plugin
 title: XenServer Plugin
 # Plugin version
-version: '3.90.3'
+version: '3.90.4'
 # Description
 description: Enable Mirantis OpenStack to integrate with Xenserver
 # Required fuel version
