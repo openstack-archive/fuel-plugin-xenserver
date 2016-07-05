@@ -376,7 +376,7 @@ def modify_neutron_rootwrap_conf(himn, username, password):
 
 
 def modify_neutron_ovs_agent_conf(int_br, br_mappings):
-    filename = '/etc/neutron/plugins/ml2/ml2_conf.ini'
+    filename = '/etc/neutron/plugins/ml2/openvswitch_agent.ini'
     cf = ConfigParser.ConfigParser()
     try:
         cf.read(filename)
@@ -498,7 +498,7 @@ if __name__ == '__main__':
             apply_sm_patch(HIMN_IP, username)
 
             create_novacompute_conf(HIMN_IP, username, password, public_ip, services_ssl)
-            patch_compute_xenapi()
+            # patch_compute_xenapi()
             restart_services('nova-compute')
 
             install_logrotate_script(HIMN_IP, username)
@@ -507,5 +507,5 @@ if __name__ == '__main__':
             modify_neutron_rootwrap_conf(HIMN_IP, username, password)
             br_mappings = find_bridge_mappings(astute, HIMN_IP, username)
             modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings)
-            patch_neutron_ovs_agent()
+            # patch_neutron_ovs_agent()
             restart_services('neutron-plugin-openvswitch-agent')
