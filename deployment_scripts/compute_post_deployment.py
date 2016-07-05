@@ -377,7 +377,7 @@ def modify_neutron_rootwrap_conf(himn, username, password):
 
 
 def modify_neutron_ovs_agent_conf(int_br, br_mappings):
-    filename = '/etc/neutron/plugins/ml2/ml2_conf.ini'
+    filename = '/etc/neutron/plugins/ml2/openvswitch_agent.ini'
     cf = ConfigParser.ConfigParser()
     try:
         cf.read(filename)
@@ -466,15 +466,6 @@ def patch_neutron_ovs_agent():
     pass
 
 
-def apply_sm_patch(himn, username):
-    ver = ssh(himn, username,
-              ('xe host-param-get uuid=$(xe host-list --minimal) '
-               'param-name=software-version param-key=platform_version'))
-    if ver[:3] == PLATFORM_VERSION:
-        ssh(himn, username,
-            "sed -i s/\\'phy\\'/\\'aio\\'/g /opt/xensource/sm/ISCSISR.py")
-
-
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -500,9 +491,6 @@ if __name__ == '__main__':
 
             # port forwarding for novnc
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
-
-            # apply sm patch
-            apply_sm_patch(HIMN_IP, username)
 
             create_novacompute_conf(HIMN_IP, username, password, public_ip, services_ssl)
             patch_compute_xenapi()
