@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 4.0.0
+-------------
+
+* Works with Fuel 9.0
+
 Version 3.1.2
 -------------
 

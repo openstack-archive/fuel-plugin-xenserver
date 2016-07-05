@@ -1,4 +1,4 @@
-XenServer Plugin for Fuel 8.0
+XenServer Plugin for Fuel 9.0
 =============================
 
 Requirements
@@ -7,9 +7,8 @@ Requirements
 ========================= ============================
 Requirement               Version/Comment
 ========================= ============================
-Fuel                      8.0
-XenServer                 6.5 SP1 + Hotfix XS65ESP1013
-                          7.0
+Fuel                      9.0
+XenServer                 7.0
 XenServer plugin for Fuel @PLUGIN_VERSION@
 ========================= ============================
 

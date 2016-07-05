@@ -62,7 +62,7 @@ be used by Neutron for VM traffic.
       :width: 80%
 
 For the hardware configuration see Mirantis OpenStack Planning Guide at
-https://docs.mirantis.com/openstack/fuel/fuel-8.0/mos-planning-guide.html
+https://docs.mirantis.com/openstack/fuel/fuel-9.0/mos-planning-guide.html
 
 Product compatibility matrix
 ----------------------------
@@ -121,15 +121,15 @@ Install XenServer Fuel Plugin
        and the new OpenStack release is registered.
    * - Steps
      -
-       | ``fuel plugins --install /tmp/fuel-plugin-xenserver-3.1-3.1.2-1.noarch.rpm``
+       | ``fuel plugins --install /tmp/fuel-plugin-xenserver-4.0-4.0.0-1.noarch.rpm``
        | ``fuel plugins``
        | ``id | name                  | version | package_version``
-       | ``1  | fuel-plugin-xenserver | 3.1.2   | 4.0.0``
+       | ``1  | fuel-plugin-xenserver | 4.0.0   | 4.0.0``
    * - Expected Result
      -
        | ``fuel plugins``
        | ``id | name                  | version | package_version``
-       | ``1  | fuel-plugin-xenserver | 3.1.2   | 4.0.0``
+       | ``1  | fuel-plugin-xenserver | 4.0.0   | 4.0.0``
 
 Prepare Nodes
 -------------
@@ -412,7 +412,7 @@ Uninstall of plugin with deployed environment
      - Verify XenServer Fuel Plugin cannot be uninstalled before all
        dependant environments are removed.
    * - Steps
-     - ``fuel plugins --remove fuel-plugin-xenserver==3.1.2``
+     - ``fuel plugins --remove fuel-plugin-xenserver==4.0.0``
    * - Expected Result
      - 400 Client Error: Bad Request (Can't delete plugin which is enabled
        for some environment.)
@@ -431,7 +431,7 @@ Uninstall of plugin
      - Verify XenServer Fuel Plugin can be uninstalled as well as XenServer
        OpenStack release after all dependant environments are removed.
    * - Steps
-     - | ``fuel plugins --remove fuel-plugin-xenserver==3.1.2``
+     - | ``fuel plugins --remove fuel-plugin-xenserver==4.0.0``
        | ``fuel plugins``
    * - Expected Result
      - Plugin is removed.
@@ -468,4 +468,8 @@ Revision history
    * - 3.1
      - 22.03.2016
      - John Hua (john.hua@citrix.com)
-     - Revised for plugin 3.1.2
+     - Revised for plugin 4.0.0
+   * - 4.0
+     - 12.08.2016
+     - John Hua (john.hua@citrix.com)
+     - Revised for Fuel 9.0

@@ -30,16 +30,16 @@ Revision history
      - 19.04.2016
      - John Hua(john.hua@citrix.com)
      - Rewrite in RST
-   * - 3.2
-     - 12.05.2016
+   * - 4.0
+     - 12.08.2016
      - John Hua(john.hua@citrix.com)
-     - Revised for plugin 3.1.2
+     - Revised for Mirantis Fuel 9.0
 
 Document purpose
 ================
 
 This document provides test run results for the XenServer Fuel Plugin version
-3.1.2 on Mirantis OpenStack 8.0.
+4.0.0 on Mirantis OpenStack 9.0.
 
 Test environment
 ================

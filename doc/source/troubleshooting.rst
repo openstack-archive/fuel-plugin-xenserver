@@ -13,9 +13,8 @@ Troubleshooting
    they are requested. `Writing Good Bug Reports for XenServer`_ might be a
    good reference to follow.
 
-#. XenServer hotfixes
+#. XenServer version
 
-   If you are using XenServer 6.5, please install SP1 and all hotfixes before
-   attempting to deploy.
+   Please use XenServer 7.0. XenServer 6.5 is no longer supported in MOS 9.
 
 .. _Writing Good Bug Reports for XenServer: https://www.citrix.com/blogs/2012/07/16/writing-good-bug-reports-for-xenserver/
