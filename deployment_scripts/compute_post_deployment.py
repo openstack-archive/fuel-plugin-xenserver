@@ -377,7 +377,7 @@ def modify_neutron_rootwrap_conf(himn, username, password):
 
 
 def modify_neutron_ovs_agent_conf(int_br, br_mappings):
-    filename = '/etc/neutron/plugins/ml2/ml2_conf.ini'
+    filename = '/etc/neutron/plugins/ml2/openvswitch_agent.ini'
     cf = ConfigParser.ConfigParser()
     try:
         cf.read(filename)
@@ -460,13 +460,25 @@ def patch_neutron_ovs_agent():
     execute('patch', '-d', '/usr/', '-p1', '-i', patch_file)
 
 
-def apply_sm_patch(himn, username):
-    ver = ssh(himn, username,
-              ('xe host-param-get uuid=$(xe host-list --minimal) '
-               'param-name=software-version param-key=platform_version'))
-    if ver[:3] == PLATFORM_VERSION:
-        ssh(himn, username,
-            "sed -i s/\\'phy\\'/\\'aio\\'/g /opt/xensource/sm/ISCSISR.py")
+def reconfig_multipath():
+    """
+    Ignore local disks for multipathd by changing devnode rule from
+    "^hd[a-z]" to "^(hd|xvd)[a-z]"
+    """
+    execute('sed', '-i', r's/"\^hd\[a-z\]"/"^(hd|xvd)[a-z]"/', '/etc/multipath.conf')
+    execute('service', 'multipath-tools', 'restart')
+
+
+def overwrite_root_helper():
+    filename = '/etc/neutron/neutron.conf'
+    cf = ConfigParser.ConfigParser()
+    try:
+        cf.read(filename)
+        cf.remove_option('agent', 'root_helper')
+        cf.write(open(filename, 'w'))
+    except Exception:
+        reportError("Fail to modify file %s", filename)
+    logging.info('Modify file %s successfully', filename)
 
 
 if __name__ == '__main__':
@@ -495,9 +507,6 @@ if __name__ == '__main__':
             # port forwarding for novnc
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
 
-            # apply sm patch
-            apply_sm_patch(HIMN_IP, username)
-
             create_novacompute_conf(HIMN_IP, username, password, public_ip, services_ssl)
             patch_compute_xenapi()
             restart_services('nova-compute')
@@ -510,3 +519,8 @@ if __name__ == '__main__':
             modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings)
             patch_neutron_ovs_agent()
             restart_services('neutron-plugin-openvswitch-agent')
+
+            reconfig_multipath()
+
+            overwrite_root_helper()
+            restart_services('neutron-openvswitch-agent')
