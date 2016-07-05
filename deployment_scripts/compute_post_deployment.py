@@ -377,7 +377,7 @@ def modify_neutron_rootwrap_conf(himn, username, password):
 
 
 def modify_neutron_ovs_agent_conf(int_br, br_mappings):
-    filename = '/etc/neutron/plugins/ml2/ml2_conf.ini'
+    filename = '/etc/neutron/plugins/ml2/openvswitch_agent.ini'
     cf = ConfigParser.ConfigParser()
     try:
         cf.read(filename)
