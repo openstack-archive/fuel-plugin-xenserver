@@ -4,12 +4,13 @@ LOG_ROOT="/var/log/fuel-plugin-xenserver/"
 mkdir -p $LOG_ROOT
 LOG_FILE=$LOG_ROOT"controller_post_deployment.log"
 
-function clear_images {
-	for ID in $(glance image-list | awk 'NR>2{print $2}' | grep -v '^$');
-	do
-		glance image-delete $ID &>> $LOG_FILE
-	done
+function delete_image {
+	local image_name
+	image_name="$1"
+	image_id=$(glance image-list | grep "$image_name" | awk -F "|" '{print $2}' | grep -v '^$')
+	glance image-delete $image_id &>> $LOG_FILE
 }
+
 
 function create_image {
 	local image_name
@@ -53,7 +54,7 @@ EOF
 
 source /root/openrc admin
 
-clear_images
+delete_image "TestVM"
 create_image "TestVM" "xen" cirros-0.3.4-x86_64-disk.vhd.tgz
 glance image-list >> $LOG_FILE
 
