@@ -20,7 +20,7 @@ LOG_ROOT = '/var/log/@PLUGIN_NAME@'
 LOG_FILE = 'compute_post_deployment.log'
 HIMN_IP = '169.254.0.1'
 INT_BRIDGE = 'br-int'
-XS_PLUGIN_ISO = 'xenapi-plugins-liberty.iso'
+XS_PLUGIN_ISO = 'xenapi-plugins-mitaka.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
 PLATFORM_VERSION = '1.9'
 
@@ -450,23 +450,29 @@ def enable_linux_bridge(himn, username):
 
 
 def patch_compute_xenapi():
-    """replace folder xenapi to add patches which are not merged to upstream"""
-    # TODO(huanxie): need to confirm the overall patchset list
+    """
+    Add patches which are not merged to upstream with order:
+        support-disable-image-cache.patch
+        speed-up-config-drive.patch
+        ovs-interim-bridge.patch
+        neutron-security-group.patch
+    """
     patchset_dir = sys.path[0]
-    patchfile_list = ['%s/patchset/vif-plug.patch' % patchset_dir,
-            '%s/patchset/nova-neutron-race-condition.patch' % patchset_dir,
+    patchfile_list = [
+            '%s/patchset/support-disable-image-cache.patch' % patchset_dir,
+            '%s/patchset/speed-up-config-drive.patch' % patchset_dir,
             '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
-            '%s/patchset/neutron-security-group.patch' % patchset_dir,
-            '%s/patchset/speed-up-writing-config-drive.patch' % patchset_dir,
-            '%s/patchset/support-disable-image-cache.patch' % patchset_dir]
+            '%s/patchset/neutron-security-group.patch' % patchset_dir
+            ]
     for patch_file in patchfile_list:
         execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
 
 
 def patch_neutron_ovs_agent():
-    patchset_dir = sys.path[0]
-    patch_file = '%s/patchset/neutron-rootwrap-xen-dom0.patch' % patchset_dir
-    execute('patch', '-d', '/usr/', '-p1', '-i', patch_file)
+    """
+    MO8's patch is not needed, keep the func here to add conntrack patch later
+    """
+    pass
 
 
 def apply_sm_patch(himn, username):
