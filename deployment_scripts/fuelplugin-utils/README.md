@@ -8,7 +8,7 @@ and then make them in one ISO.
 
 ## usage:
 
-#####./build-xenserver-suppack.sh $xs-version $xs-build $os-git-branch $os-plugin-version
+#####./build-xenserver-suppack.sh $xs-version $xs-build $os-git-branch $os-plugin-version $os-release
 
 * xs-version: XenServer version which can be used for this plugin
 
@@ -29,5 +29,7 @@ and then make them in one ISO.
 *os-git-branch: stable/liberty*
 
 *os-plugin-version: 2015.1*
+
+*os-release: liberty*
 
 
