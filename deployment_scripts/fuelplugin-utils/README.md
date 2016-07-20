@@ -30,4 +30,6 @@ and then make them in one ISO.
 
 *os-plugin-version: 2015.1*
 
+*os-release: liberty*
+
 
