@@ -64,7 +64,7 @@ rm -rf nova
 git clone "$NOVA_GITREPO" nova
 cd nova
 git checkout -b mos_nova "$GITBRANCH"
-# patch xenhost as this file is not merged to liberty
+# patch xenhost as this file is not merged into this release
 cp $DEPLOYMENT_SCRIPT_ROOT/patchset/xenhost plugins/xenserver/xenapi/etc/xapi.d/plugins/
 cd ..
 
@@ -81,10 +81,6 @@ rm -rf neutron
 git clone "$NEUTRON_GITREPO" neutron
 cd neutron
 git checkout -b mos_neutron "$GITBRANCH"
-# patch netwrap as this file is not merged to liberty
-cp $DEPLOYMENT_SCRIPT_ROOT/patchset/netwrap \
-    neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/
-chmod +x neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/netwrap
 cd ..
 
 cp -r xenserver-nova-suppack-builder/neutron/* \
