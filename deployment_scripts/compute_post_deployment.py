@@ -22,6 +22,7 @@ HIMN_IP = '169.254.0.1'
 INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenserverplugins-liberty.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
+PLATFORM_VERSION = '1.9'
 
 if not os.path.exists(LOG_ROOT):
     os.mkdir(LOG_ROOT)
@@ -216,7 +217,7 @@ def check_host_compatibility(himn, username):
               ('xe host-param-get uuid=$(xe host-list --minimal) '
                'param-name=software-version param-key=platform_version'))
 
-    if not installed and ver[:3] == "1.8":
+    if not installed and ver[:3] == PLATFORM_VERSION:
         reportError(('Hotfix %s has not been installed '
                      'and product version is %s') % (hotfix, ver))
 
@@ -463,7 +464,7 @@ def apply_sm_patch(himn, username):
     ver = ssh(himn, username,
               ('xe host-param-get uuid=$(xe host-list --minimal) '
                'param-name=software-version param-key=platform_version'))
-    if ver[:3] == "1.8":
+    if ver[:3] == PLATFORM_VERSION:
         ssh(himn, username,
             "sed -i s/\\'phy\\'/\\'aio\\'/g /opt/xensource/sm/ISCSISR.py")
 

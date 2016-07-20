@@ -8,9 +8,9 @@ and then make them in one ISO.
 
 ## usage:
 
-#####./build-xenserver-suppack.sh $xs-version $xs-build $os-git-branch $os-plugin-version
+#####./build-xenserver-suppack.sh $xcp-version $xs-build $os-git-branch $os-plugin-version
 
-* xs-version: XenServer version which can be used for this plugin
+* xcp-version: Xen cloud platform version which can be used for this plugin
 
 * xs-build: XenServer build number
 
@@ -22,7 +22,7 @@ and then make them in one ISO.
 
 *NOTE: If no input parameters given, default values are used*
 
-*xs-version: 6.5*
+*xcp-version: 1.9.0
 
 *xs-build: 90233c*
 
