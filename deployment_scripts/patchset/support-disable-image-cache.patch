@@ -1,8 +1,8 @@
 diff --git a/nova/tests/unit/virt/xenapi/test_vm_utils.py b/nova/tests/unit/virt/xenapi/test_vm_utils.py
-index e15cc53..77a1968 100644
+index 1305d05..174b5cf 100644
 --- a/nova/tests/unit/virt/xenapi/test_vm_utils.py
 +++ b/nova/tests/unit/virt/xenapi/test_vm_utils.py
-@@ -1437,6 +1437,46 @@ class CreateKernelRamdiskTestCase(VMUtilsTestBase):
+@@ -1455,6 +1455,46 @@ class CreateKernelRamdiskTestCase(VMUtilsTestBase):
                      self.session, self.instance, self.name_label)
          self.assertEqual(("k", None), result)
  
@@ -50,10 +50,10 @@ index e15cc53..77a1968 100644
  class ScanSrTestCase(VMUtilsTestBase):
      @mock.patch.object(vm_utils, "_scan_sr")
 diff --git a/nova/virt/xenapi/vm_utils.py b/nova/virt/xenapi/vm_utils.py
-index c8fdc52..5312467 100644
+index 583a913..f88cb3a 100644
 --- a/nova/virt/xenapi/vm_utils.py
 +++ b/nova/virt/xenapi/vm_utils.py
-@@ -1182,7 +1182,7 @@ def _create_kernel_image(context, session, instance, name_label, image_id,
+@@ -1179,7 +1179,7 @@ def _create_kernel_image(context, session, instance, name_label, image_id,
      Returns: A list of dictionaries that describe VDIs
      """
      filename = ""
@@ -62,7 +62,7 @@ index c8fdc52..5312467 100644
          args = {}
          args['cached-image'] = image_id
          args['new-image-uuid'] = str(uuid.uuid4())
-@@ -1572,7 +1572,7 @@ def _fetch_disk_image(context, session, instance, name_label, image_id,
+@@ -1569,7 +1569,7 @@ def _fetch_disk_image(context, session, instance, name_label, image_id,
  
              # Let the plugin copy the correct number of bytes.
              args['image-size'] = str(vdi_size)

@@ -31,13 +31,13 @@ XS_VERSION=${1:-"6.5"}
 XS_BUILD=${2:-"90233c"}
 
 # branch info
-GITBRANCH=${3:-"stable/liberty"}
+GITBRANCH=${3:-"origin/stable/liberty"}
 
 # nova and neutron xenserver dom0 plugin version
 XS_PLUGIN_VERSION=${4:-"2015.1"}
 
 # OpenStack release
-OS_RELEASE=liberty
+OS_RELEASE=${5:-"liberty"}
 
 # repository info
 NOVA_GITREPO="https://git.openstack.org/openstack/nova"
@@ -52,7 +52,10 @@ export DEBIAN_FRONTEND=noninteractive
 # =============================================
 # Check out rpm packaging repo
 rm -rf xenserver-nova-suppack-builder
-git clone $RPM_BUILDER_REPO
+git clone $RPM_BUILDER_REPO xenserver-nova-suppack-builder
+cd xenserver-nova-suppack-builder
+git checkout -b mos_suppack_builder "$GITBRANCH"
+cd ..
 
 
 # =============================================
@@ -60,9 +63,8 @@ git clone $RPM_BUILDER_REPO
 rm -rf nova
 git clone "$NOVA_GITREPO" nova
 cd nova
-git fetch origin "$GITBRANCH"
-git checkout FETCH_HEAD
-# patch xenhost as this file is not merged to liberty
+git checkout -b mos_nova "$GITBRANCH"
+# patch xenhost as this file is not merged into this release
 cp $DEPLOYMENT_SCRIPT_ROOT/patchset/xenhost plugins/xenserver/xenapi/etc/xapi.d/plugins/
 cd ..
 
@@ -78,12 +80,7 @@ RPMFILE=$(find -name "openstack-xen-plugins-*.noarch.rpm" -print)
 rm -rf neutron
 git clone "$NEUTRON_GITREPO" neutron
 cd neutron
-git fetch origin "$GITBRANCH"
-git checkout FETCH_HEAD
-# patch netwrap as this file is not merged to liberty
-cp $DEPLOYMENT_SCRIPT_ROOT/patchset/netwrap \
-    neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/
-chmod +x neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/netwrap
+git checkout -b mos_neutron "$GITBRANCH"
 cd ..
 
 cp -r xenserver-nova-suppack-builder/neutron/* \
