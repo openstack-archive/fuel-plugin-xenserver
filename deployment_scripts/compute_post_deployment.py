@@ -475,6 +475,13 @@ def apply_sm_patch(himn, username):
             "sed -i s/\\'phy\\'/\\'aio\\'/g /opt/xensource/sm/ISCSISR.py")
 
 
+def reconfig_multipath():
+    """
+    Ignore local disks(/dev/xvdX) for multipathd
+    """
+    execute('sed', '-i', r's|hd|(hd\|xvd)|', '/etc/multipath.conf')
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -516,3 +523,6 @@ if __name__ == '__main__':
             modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings)
             patch_neutron_ovs_agent()
             restart_services('neutron-plugin-openvswitch-agent')
+
+            reconfig_multipath()
+            restart_services('multipath-tools')
