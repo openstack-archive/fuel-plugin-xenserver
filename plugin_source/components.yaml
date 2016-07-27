@@ -1,6 +1,6 @@
 - name: 'hypervisor:xen'
-  label: 'XenServer'
-  description: 'Select this option if you run OpenStack on XenServer Hypervisor'
+  label: '@HYPERVISOR_NAME'
+  description: 'Select this option if you run OpenStack on @HYPERVISOR_NAME Hypervisor'
   incompatible:
     - name: 'hypervisor:vmware'
       description: ''
