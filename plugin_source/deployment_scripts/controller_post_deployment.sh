@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_ROOT="/var/log/fuel-plugin-xenserver/"
+LOG_ROOT="/var/log/@PLUGIN_NAME@/"
 mkdir -p $LOG_ROOT
 LOG_FILE=$LOG_ROOT"controller_post_deployment.log"
 

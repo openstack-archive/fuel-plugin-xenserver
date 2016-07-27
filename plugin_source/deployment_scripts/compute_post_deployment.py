@@ -15,12 +15,12 @@ import yaml
 
 XS_RSA = '/root/.ssh/xs_rsa'
 ASTUTE_PATH = '/etc/astute.yaml'
-ASTUTE_SECTION = 'fuel-plugin-xenserver'
-LOG_ROOT = '/var/log/fuel-plugin-xenserver'
+ASTUTE_SECTION = '@PLUGIN_NAME@'
+LOG_ROOT = '/var/log/@PLUGIN_NAME@'
 LOG_FILE = 'compute_post_deployment.log'
 HIMN_IP = '169.254.0.1'
 INT_BRIDGE = 'br-int'
-XS_PLUGIN_ISO = 'xenserverplugins-liberty.iso'
+XS_PLUGIN_ISO = 'xenapi-plugins-liberty.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
 PLATFORM_VERSION = '1.9'
 
@@ -166,7 +166,7 @@ def init_eth():
     """Initialize the net interface connected to HIMN
 
     Returns:
-        the IP addresses of local host and XenServer.
+        the IP addresses of local host and hypervisor.
     """
 
     domid = execute('xenstore-read', 'domid')
@@ -206,7 +206,7 @@ def init_eth():
             logging.info('himn_local: %s' % himn_local)
             return eth, himn_local
 
-    reportError('HIMN failed to get IP address from XenServer')
+    reportError('HIMN failed to get IP address from Hypervisor')
 
 
 def check_host_compatibility(himn, username):
