@@ -1,11 +1,11 @@
 # Plugin name
-name: fuel-plugin-xenserver
+name: @PLUGIN_NAME@
 # Human-readable name for your plugin
-title: XenServer Plugin
+title: @HYPERVISOR_NAME@ Plugin
 # Plugin version
-version: '3.90.5'
+version: '@PLUGIN_VERSION@.@PLUGIN_REVISION@'
 # Description
-description: Enable Mirantis OpenStack to integrate with Xenserver
+description: Enable Mirantis OpenStack to integrate with @HYPERVISOR_NAME@
 # Required fuel version
 fuel_version: ['8.0']
 # Specify license of your plugin

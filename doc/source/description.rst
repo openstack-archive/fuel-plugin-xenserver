@@ -9,7 +9,8 @@ Requirement               Version/Comment
 ========================= ============================
 Fuel                      8.0
 XenServer                 6.5 SP1 + Hotfix XS65ESP1013
-XenServer plugin for Fuel 3.1.2
+                          7.0
+XenServer plugin for Fuel @PLUGIN_VERSION@
 ========================= ============================
 
 * This plugin will not install XenServer or configure the Virtual

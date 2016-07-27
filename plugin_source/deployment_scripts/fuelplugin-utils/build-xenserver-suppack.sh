@@ -122,7 +122,7 @@ xcp = Requires(originator='xcp', name='main', test='ge',
                product='XenServer', version='$PLATFORM_VERSION',
                build='$XS_BUILD')
 
-setup(originator='xcp', name='xenserverplugins-$OS_RELEASE', product='XenServer',
+setup(originator='xcp', name='xenapi-plugins-$OS_RELEASE', product='XenServer',
       version=options.product_version, build=options.build, vendor='Citrix Systems, Inc.',
       description="OpenStack XenServer Plugins", packages=args, requires=[xcp],
       outdir=options.outdir, output=['iso'])
