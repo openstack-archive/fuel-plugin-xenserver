@@ -20,5 +20,5 @@ How to build plugin
 	pip show fuel-plugin-builder | grep ^Version # make sure here >= 4.0.1
 
 	git clone https://git.openstack.org/openstack/fuel-plugin-xenserver
-	fpb --check fuel-plugin-xenserver
-	fpb --build fuel-plugin-xenserver
+	cd fuel-plugin-xenserver
+	make

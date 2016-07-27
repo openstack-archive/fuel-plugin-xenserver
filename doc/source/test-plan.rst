@@ -67,8 +67,8 @@ https://docs.mirantis.com/openstack/fuel/fuel-8.0/mos-planning-guide.html
 Product compatibility matrix
 ----------------------------
 
-The plugin is compatible with MOS 8.0 and XenServer 6.5 SP1, with all
-hotfixes applied (Especially hotfix XS65ESP1013).
+The plugin is compatible with MOS 8.0 and XenServer versions 6.5 SP1
+and 7.0, with all hotfixes applied.
 
 
 Prerequirements
