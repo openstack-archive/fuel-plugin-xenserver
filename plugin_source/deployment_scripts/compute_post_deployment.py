@@ -405,6 +405,19 @@ def enable_linux_bridge(himn, username):
     ssh(himn, username, 'rm -f /etc/modprobe.d/blacklist-bridge*')
 
 
+def patch_ceilometer():
+    """
+    Add patches which are not MOS with order:
+        ceilometer-poll-cpu-util.patch
+    """
+    patchset_dir = sys.path[0]
+    patchfile_list = [
+            '%s/patchset/ceilometer-poll-cpu-util.patch' % patchset_dir,
+            ]       
+    for patch_file in patchfile_list:
+        execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
+
+
 def patch_compute_xenapi():
     """
     Add patches which are not merged to upstream with order:
@@ -438,6 +451,31 @@ def reconfig_multipath():
     """
     execute('sed', '-i', r's/"\^hd\[a-z\]"/"^(hd|xvd)[a-z]"/', '/etc/multipath.conf')
     execute('service', 'multipath-tools', 'restart')
+
+
+def check_and_setup_ceilometer(himn, username, password):
+    """Set xenapi configurations if service is enabled"""
+    filename = '/etc/ceilometer/ceilometer.conf'
+    if not os.path.exists(filename):
+        logging.info('Skip Ceilometer')
+        return
+
+    patch_ceilometer()
+
+    cf = ConfigParser.ConfigParser()
+    try:
+        cf.read(filename)
+        cf.set('DEFAULT', 'hypervisor_inspector', 'xenapi')
+        cf.set('xenapi', 'connection_url', 'http://%s' % himn)
+        cf.set('xenapi', 'connection_username', username)
+        cf.set('xenapi', 'connection_password', password)
+        with open(filename, 'w') as configfile:
+            cf.write(configfile)
+        logging.info('Modify file %s successfully', filename)
+    except Exception:
+        reportError("Fail to modify file %s", filename)
+        return
+    restart_services('ceilometer-polling')
 
 
 if __name__ == '__main__':
@@ -478,3 +516,6 @@ if __name__ == '__main__':
             restart_services('neutron-openvswitch-agent')
 
             reconfig_multipath()
+
+            # Add xenapi specific setup for ceilometer if service is enabled.
+            check_and_setup_ceilometer(HIMN_IP, username, password)
