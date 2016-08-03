@@ -222,6 +222,16 @@ def check_host_compatibility(himn, username):
                      'and product version is %s') % (hotfix, ver))
 
 
+def check_local_sr(himn, username):
+    sr_type = ssh(himn, username,
+                  ('xe sr-list params=type content-type=user '
+                   'name-label="Local storage" --minimal'))
+
+    if sr_type != "ext":
+        reportError(('Local storage type should be ext3. Please make sure thin'
+                     ' provisioning is enabled on your host.'))
+
+
 def install_xenapi_sdk():
     """Install XenAPI Python SDK"""
     execute('cp', 'XenAPI.py', DIST_PACKAGES_DIR)
@@ -486,6 +496,7 @@ if __name__ == '__main__':
         if username and password and endpoints and himn_local:
             ssh_copy_id(HIMN_IP, username, password)
             check_host_compatibility(HIMN_IP, username)
+            check_local_sr(HIMN_IP, username)
             route_to_compute(endpoints, HIMN_IP, himn_local, username)
             if install_xapi:
                 install_suppack(HIMN_IP, username)
