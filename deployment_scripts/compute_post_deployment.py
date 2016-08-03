@@ -361,6 +361,23 @@ def install_logrotate_script(himn, username):
 CRONTAB''')
 
 
+def modify_ceilometer_conf(himn, username, password):
+    """Set xenapi configurations"""
+    filename = '/etc/ceilometer/ceilometer.conf'
+    cf = ConfigParser.ConfigParser()
+    try:
+        cf.read(filename)
+        cf.set('DEFAULT', 'hypervisor_inspector', 'xenapi')
+        cf.set('xenapi', 'connection_url', 'http://%s' % himn)
+        cf.set('xenapi', 'connection_username', username)
+        cf.set('xenapi', 'connection_password', password)
+        with open(filename, 'w') as configfile:
+            cf.write(configfile)
+    except Exception:
+        reportError("Fail to modify file %s", filename)
+    logging.info('Modify file %s successfully', filename)
+
+
 def modify_neutron_rootwrap_conf(himn, username, password):
     """Set xenapi configurations"""
     filename = '/etc/neutron/rootwrap.conf'
@@ -515,3 +532,7 @@ if __name__ == '__main__':
             restart_services('neutron-openvswitch-agent')
 
             reconfig_multipath()
+
+            # Add xenapi specific setup for ceilometer
+            modify_ceilometer_conf(HIMN_IP, username, password)
+            restart_services('ceilometer-polling')
