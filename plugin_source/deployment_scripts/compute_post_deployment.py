@@ -440,6 +440,29 @@ def reconfig_multipath():
     execute('service', 'multipath-tools', 'restart')
 
 
+def check_and_setup_ceilometer(himn, username, password):
+    """Set xenapi configurations if service is enabled"""
+    filename = '/etc/ceilometer/ceilometer.conf'
+    if not os.path.exists(filename):
+        logging.info('Skip Ceilometer')
+        return
+
+    cf = ConfigParser.ConfigParser()
+    try:
+        cf.read(filename)
+        cf.set('DEFAULT', 'hypervisor_inspector', 'xenapi')
+        cf.set('xenapi', 'connection_url', 'http://%s' % himn)
+        cf.set('xenapi', 'connection_username', username)
+        cf.set('xenapi', 'connection_password', password)
+        with open(filename, 'w') as configfile:
+            cf.write(configfile)
+        logging.info('Modify file %s successfully', filename)
+    except Exception:
+        reportError("Fail to modify file %s", filename)
+        return
+    restart_services('ceilometer-polling')
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -478,3 +501,6 @@ if __name__ == '__main__':
             restart_services('neutron-openvswitch-agent')
 
             reconfig_multipath()
+
+            # Add xenapi specific setup for ceilometer if service is enabled.
+            check_and_setup_ceilometer(HIMN_IP, username, password)
