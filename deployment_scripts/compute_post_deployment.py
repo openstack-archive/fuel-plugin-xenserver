@@ -117,8 +117,8 @@ def get_astute(astute_path):
     """Return the root object read from astute.yaml"""
     if not os.path.exists(astute_path):
         reportError('%s not found' % astute_path)
-
-    astute = yaml.safe_load(open(astute_path))
+    with open(astute_path) as f:
+        astute = yaml.safe_load(f)
     return astute
 
 
@@ -255,7 +255,8 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
                'nova.virt.xenapi.vif.XenAPIOpenVswitchDriver')
         cf.set('xenserver', 'ovs_integration_bridge', INT_BRIDGE)
         cf.set('xenserver', 'cache_images', 'none')
-        cf.write(open(filename, 'w'))
+        with open(filename, 'w') as configfile:
+            cf.write(configfile)
     except Exception:
         reportError('Cannot set configurations to %s' % filename)
     logging.info('%s created' % filename)
@@ -370,7 +371,8 @@ def modify_neutron_rootwrap_conf(himn, username, password):
         cf.set('xenapi', 'xenapi_connection_url', 'http://%s' % himn)
         cf.set('xenapi', 'xenapi_connection_username', username)
         cf.set('xenapi', 'xenapi_connection_password', password)
-        cf.write(open(filename, 'w'))
+        with open(filename, 'w') as configfile:
+            cf.write(configfile)
     except Exception:
         reportError("Fail to modify file %s", filename)
     logging.info('Modify file %s successfully', filename)
@@ -387,7 +389,8 @@ def modify_neutron_ovs_agent_conf(int_br, br_mappings):
         cf.set('agent', 'minimize_polling', False)
         cf.set('ovs', 'integration_bridge', int_br)
         cf.set('ovs', 'bridge_mappings', br_mappings)
-        cf.write(open(filename, 'w'))
+        with open(filename, 'w') as configfile:
+            cf.write(configfile)
     except Exception:
         reportError("Fail to modify %s", filename)
     logging.info('Modify %s successfully', filename)
@@ -414,9 +417,8 @@ def find_bridge_mappings(astute, himn, username):
         reportError("Cannot find eth used for private network")
 
     # find the ethX mac in /sys/class/net/ethX/address
-    fo = open('/sys/class/net/%s/address' % ethX, 'r')
-    mac = fo.readline()
-    fo.close()
+    with open('/sys/class/net/%s/address' % ethX, 'r') as fo:
+        mac = fo.readline()
     network_uuid = ssh(himn, username,
             'xe vif-list params=network-uuid minimal=true MAC=%s' % mac)
     bridge = ssh(himn, username,
