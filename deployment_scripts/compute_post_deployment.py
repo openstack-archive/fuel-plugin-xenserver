@@ -214,9 +214,9 @@ def check_host_compatibility(himn, username):
                     'xe patch-list name-label=%s --minimal' % hotfix)
     ver = ssh(himn, username,
               ('xe host-param-get uuid=$(xe host-list --minimal) '
-               'param-name=software-version param-key=platform_version'))
+               'param-name=software-version param-key=product_version_text'))
 
-    if not installed and ver[:3] == "1.8":
+    if not installed and ver == "6.5":
         reportError(('Hotfix %s has not been installed '
                      'and product version is %s') % (hotfix, ver))
 
@@ -462,8 +462,8 @@ def patch_neutron_ovs_agent():
 def apply_sm_patch(himn, username):
     ver = ssh(himn, username,
               ('xe host-param-get uuid=$(xe host-list --minimal) '
-               'param-name=software-version param-key=platform_version'))
-    if ver[:3] == "1.8":
+               'param-name=software-version param-key=product_version_text'))
+    if ver == "6.5":
         ssh(himn, username,
             "sed -i s/\\'phy\\'/\\'aio\\'/g /opt/xensource/sm/ISCSISR.py")
 

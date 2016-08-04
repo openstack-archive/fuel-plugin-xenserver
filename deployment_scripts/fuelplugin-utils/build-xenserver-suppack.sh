@@ -27,7 +27,7 @@ mkdir -p xenserver-suppack && cd xenserver-suppack
 # Configurable items
 
 # xenserver version info
-PLATFORM_VERSION=${1:-"1.8"}
+XS_VERSION=${1:-"6.5"}
 XS_BUILD=${2:-"90233c"}
 
 # branch info
@@ -117,13 +117,13 @@ parser.add_option('--bld', dest="build")
 parser.add_option('--out', dest="outdir")
 (options, args) = parser.parse_args()
 
-xcp = Requires(originator='xcp', name='main', test='ge',
-               product='XenServer', version='$PLATFORM_VERSION',
+xs = Requires(originator='xs', name='main', test='ge',
+               product='XenServer', version='$XS_VERSION',
                build='$XS_BUILD')
 
-setup(originator='xcp', name='xenserverplugins-$OS_RELEASE', product='XenServer',
+setup(originator='xs', name='xenserverplugins-$OS_RELEASE', product='XenServer',
       version=options.product_version, build=options.build, vendor='Citrix Systems, Inc.',
-      description="OpenStack XenServer Plugins", packages=args, requires=[xcp],
+      description="OpenStack XenServer Plugins", packages=args, requires=[xs],
       outdir=options.outdir, output=['iso'])
 EOF
 
