@@ -91,6 +91,7 @@ rm -rf neutron
 git clone "$NEUTRON_GITREPO" neutron
 cd neutron
 git checkout -b mos_neutron "$GITBRANCH"
+cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/netwrap neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/
 cd ..
 
 cp -r xenserver-nova-suppack-builder/neutron/* \
