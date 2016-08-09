@@ -35,6 +35,7 @@ ${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING} iso
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g {} \
 			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {}
 	cp suppack/xenapi-plugins-*.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
+	cp suppack/conntrack-tools.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
 
 ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
 	mkdir -p ${BUILDROOT}/doc
