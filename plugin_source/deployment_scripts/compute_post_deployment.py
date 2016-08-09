@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import ConfigParser
+from distutils.version import LooseVersion
 import logging
 import netifaces
 import os
@@ -9,7 +10,6 @@ from socket import inet_ntoa
 from struct import pack
 import subprocess # nosec
 import sys
-import stat
 import yaml
 
 
@@ -23,6 +23,8 @@ INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenapi-plugins-mitaka.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
 PLATFORM_VERSION = '1.9'
+CONNTRACK_ISO = 'conntrack-tools.iso'
+CONNTRACK_CONF_SAMPLE = '/usr/share/doc/conntrack-tools-1.4.2/doc/stats/conntrackd.conf'
 
 if not os.path.exists(LOG_ROOT):
     os.mkdir(LOG_ROOT)
@@ -265,11 +267,11 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
                             '> /etc/udev/rules.d/90-reroute.rules'))
 
 
-def install_suppack(himn, username):
-    """Install xapi driver supplemental pack. """
+def install_suppack(himn, username, package):
+    """Install supplemental pack. """
     tmp = ssh(himn, username, 'mktemp', '-d')
-    scp(himn, username, tmp, XS_PLUGIN_ISO)
-    ssh(himn, username, 'xe-install-supplemental-pack', tmp + '/' + XS_PLUGIN_ISO,
+    scp(himn, username, tmp, package)
+    ssh(himn, username, 'xe-install-supplemental-pack', tmp + '/' + package,
         prompt='Y\n')
     ssh(himn, username, 'rm', tmp, '-rf')
 
@@ -439,9 +441,11 @@ def patch_compute_xenapi():
 
 def patch_neutron_ovs_agent():
     """
-    MO8's patch is not needed, keep the func here to add conntrack patch later
+    Apply patch to support conntrack-tools
     """
-    pass
+    patchset_dir = sys.path[0]
+    patch_file = '%s/patchset/support-conntrack-tools.patch' % patchset_dir
+    execute('patch', '-d', '/usr/bin', '-p2', '-i', patch_file)
 
 
 def reconfig_multipath():
@@ -478,6 +482,32 @@ def check_and_setup_ceilometer(himn, username, password):
     restart_services('ceilometer-polling')
 
 
+def enable_conntrack_service(himn, username):
+    xcp_ver = ssh(himn, username,
+                 ('xe host-param-get uuid=$(xe host-list --minimal) '
+                  'param-name=software-version param-key=platform_version'))
+    if LooseVersion(xcp_ver) < LooseVersion('2.1.0'):
+        # Only support conntrack-tools since XS7.0(XCP2.1.0) and above
+        logging.info('No need to enable conntrack-tools with XCP %s' % xcp_ver)
+        return
+
+    conn_installed = ssh(himn, username,
+                         'find', '/usr/sbin', '-name', 'conntrackd')
+    if not conn_installed:
+        install_suppack(himn, username, CONNTRACK_ISO)
+        ssh(himn, username,
+            'mv',
+            '/etc/conntrackd/conntrackd.conf',
+            '/etc/conntrackd/conntrackd.conf.back')
+        ssh(himn, username,
+            'cp',
+            CONNTRACK_CONF_SAMPLE,
+            '/etc/conntrackd/conntrackd.conf')
+
+    # Restart conntrackd service
+    ssh(himn, username, 'service', 'conntrackd', 'restart')
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = get_astute(ASTUTE_PATH)
@@ -495,7 +525,7 @@ if __name__ == '__main__':
         if username and password and endpoints and himn_local:
             route_to_compute(endpoints, HIMN_IP, himn_local, username)
             if install_xapi:
-                install_suppack(HIMN_IP, username)
+                install_suppack(HIMN_IP, username, XS_PLUGIN_ISO)
             enable_linux_bridge(HIMN_IP, username)
             forward_from_himn(himn_eth)
 
@@ -507,6 +537,9 @@ if __name__ == '__main__':
             restart_services('nova-compute')
 
             install_logrotate_script(HIMN_IP, username)
+
+            # enable conntrackd service in Dom0
+            enable_conntrack_service(HIMN_IP, username)
 
             # neutron-l2-agent in compute node
             modify_neutron_rootwrap_conf(HIMN_IP, username, password)
