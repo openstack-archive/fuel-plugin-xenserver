@@ -23,6 +23,7 @@ INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenapi-plugins-liberty.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
 PLATFORM_VERSION = '1.9'
+CONNTRACK_ISO = "conntrack-tools.iso"
 
 if not os.path.exists(LOG_ROOT):
     os.mkdir(LOG_ROOT)
@@ -301,13 +302,22 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
                             '> /etc/udev/rules.d/90-reroute.rules'))
 
 
-def install_suppack(himn, username):
-    """Install xapi driver supplemental pack. """
+def install_suppack(himn, username, package):
+    """Install supplemental pack. """
     tmp = ssh(himn, username, 'mktemp', '-d')
-    scp(himn, username, tmp, XS_PLUGIN_ISO)
-    ssh(himn, username, 'xe-install-supplemental-pack', tmp + '/' + XS_PLUGIN_ISO,
+    scp(himn, username, tmp, package)
+    ssh(himn, username, 'xe-install-supplemental-pack', tmp + '/' + package,
         prompt='Y\n')
     ssh(himn, username, 'rm', tmp, '-rf')
+
+
+def start_conntrack_service(himn, username):
+    scp(himn, username, "/etc/conntrackd/", "conntrack-rpms/conntrackd.conf")
+    ssh(himn, username,
+        '/usr/sbin/conntrackd',
+        '-d',
+        '-C',
+        '/etc/conntrackd/conntrackd.conf')
 
 
 def forward_from_himn(eth):
@@ -488,7 +498,7 @@ if __name__ == '__main__':
             check_host_compatibility(HIMN_IP, username)
             route_to_compute(endpoints, HIMN_IP, himn_local, username)
             if install_xapi:
-                install_suppack(HIMN_IP, username)
+                install_suppack(HIMN_IP, username, XS_PLUGIN_ISO)
             enable_linux_bridge(HIMN_IP, username)
             forward_from_himn(himn_eth)
 
@@ -503,6 +513,12 @@ if __name__ == '__main__':
             restart_services('nova-compute')
 
             install_logrotate_script(HIMN_IP, username)
+
+            # install conntrack-tools in Dom0
+            install_suppack(HIMN_IP, username, CONNTRACK_ISO)
+
+            # start conntrackd service in Dom0
+            start_conntrack_service(HIMN_IP, username)
 
             # neutron-l2-agent in compute node
             modify_neutron_rootwrap_conf(HIMN_IP, username, password)
