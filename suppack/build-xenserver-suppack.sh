@@ -108,6 +108,7 @@ rm -rf neutron
 git clone "$NEUTRON_GITREPO" neutron
 pushd neutron
 git checkout -b mos_neutron "$GITBRANCH"
+cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/netwrap neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/
 popd
 
 cp -r xenserver-nova-suppack-builder/neutron/* \
@@ -117,6 +118,14 @@ pushd neutron/neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/contrib
 popd
 
 NEUTRON_RPMFILE=$(find $FUELPLUG_UTILS_ROOT -name "openstack-neutron-xen-plugins-*.noarch.rpm" -print)
+
+# =============================================
+# Find conntrack-tools related RPMs
+EXTRA_RPMS=""
+EXTRA_RPMS="$EXTRA_RPMS $(find $FUELPLUG_UTILS_ROOT -name "conntrack-tools-*.rpm" -print)"
+EXTRA_RPMS="$EXTRA_RPMS $(find $FUELPLUG_UTILS_ROOT -name "libnetfilter_cthelper-*.rpm" -print)"
+EXTRA_RPMS="$EXTRA_RPMS $(find $FUELPLUG_UTILS_ROOT -name "libnetfilter_cttimeout-*.rpm" -print)"
+EXTRA_RPMS="$EXTRA_RPMS $(find $FUELPLUG_UTILS_ROOT -name "libnetfilter_queue-*.rpm" -print)"
 
 
 # =============================================
@@ -133,24 +142,35 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('--pdn', dest="product_name")
 parser.add_option('--pdv', dest="product_version")
+parser.add_option('--desc', dest="description")
 parser.add_option('--bld', dest="build")
 parser.add_option('--out', dest="outdir")
 (options, args) = parser.parse_args()
 
 xcp = Requires(originator='xcp', name='main', test='ge',
-               product='XenServer', version='$PLATFORM_VERSION',
-               build='$XS_BUILD')
+               product='XenServer', version=options.product_version,
+               build=options.build)
 
-setup(originator='xcp', name='xenapi-plugins-$OS_RELEASE', product='XenServer',
+
+setup(originator='xcp', name=options.product_name, product='XenServer',
       version=options.product_version, build=options.build, vendor='Citrix Systems, Inc.',
-      description="OpenStack XenServer Plugins", packages=args, requires=[xcp],
+      description=options.description, packages=args, requires=[xcp],
       outdir=options.outdir, output=['iso'])
 EOF
 
 python buildscript.py \
---pdn=xenserverplugins \
---pdv=$OS_RELEASE \
+--pdn=xenapi-plugins-$OS_RELEASE \
+--pdv=$PLATFORM_VERSION \
+--desc="OpenStack XenServer Plugins" \
 --bld=0 \
 --out=$FUELPLUG_UTILS_ROOT \
 $RPMFILE \
 $NEUTRON_RPMFILE
+
+python buildscript.py \
+--pdn=conntrack-tools \
+--pdv=$PLATFORM_VERSION \
+--desc="XenServer Dom0 conntrack-tools" \
+--bld=0 \
+--out=$FUELPLUG_UTILS_ROOT \
+$EXTRA_RPMS
