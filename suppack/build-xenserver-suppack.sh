@@ -91,6 +91,7 @@ rm -rf neutron
 git clone "$NEUTRON_GITREPO" neutron
 cd neutron
 git checkout -b mos_neutron "$GITBRANCH"
+cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/netwrap neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/
 cd ..
 
 cp -r xenserver-nova-suppack-builder/neutron/* \
@@ -101,37 +102,34 @@ cd $FUELPLUG_UTILS_ROOT/
 
 NEUTRON_RPMFILE=$(find -name "openstack-neutron-xen-plugins-*.noarch.rpm" -print)
 
+# =============================================
+# Find conntrack-tools related RPMs
+RPM_CONNTRACKTOOLS=$(find -name "conntrack-tools-*.rpm" -print)
+RPM_CTHELPER=$(find -name "libnetfilter_cthelper-*.rpm" -print)
+RPM_CTTIMEOUT=$(find -name "libnetfilter_cttimeout-*.rpm" -print)
+RPM_QUEUE=$(find -name "libnetfilter_queue-*.rpm" -print)
 
 # =============================================
 # Create Supplemental pack
 rm -rf suppack
 mkdir -p suppack
 
-tee buildscript.py << EOF
-from xcp.supplementalpack import *
-from optparse import OptionParser
-
-parser = OptionParser()
-parser.add_option('--pdn', dest="product_name")
-parser.add_option('--pdv', dest="product_version")
-parser.add_option('--bld', dest="build")
-parser.add_option('--out', dest="outdir")
-(options, args) = parser.parse_args()
-
-xcp = Requires(originator='xcp', name='main', test='ge',
-               product='XenServer', version='$PLATFORM_VERSION',
-               build='$XS_BUILD')
-
-setup(originator='xcp', name='xenapi-plugins-$OS_RELEASE', product='XenServer',
-      version=options.product_version, build=options.build, vendor='Citrix Systems, Inc.',
-      description="OpenStack XenServer Plugins", packages=args, requires=[xcp],
-      outdir=options.outdir, output=['iso'])
-EOF
-
 python buildscript.py \
---pdn=xenserverplugins \
---pdv=$OS_RELEASE \
+--pdn=xenapi-plugins-$OS_RELEASE \
+--pdv=$PLATFORM_VERSION \
+--desc="OpenStack XenServer Plugins" \
 --bld=0 \
 --out=$FUELPLUG_UTILS_ROOT \
 $FUELPLUG_UTILS_ROOT/$RPMFILE \
 $FUELPLUG_UTILS_ROOT/$NEUTRON_RPMFILE
+
+python buildscript.py \
+--pdn=conntrack-tools \
+--pdv=$PLATFORM_VERSION \
+--desc="XenServer Dom0 conntrack-tools" \
+--bld=0 \
+--out=$FUELPLUG_UTILS_ROOT \
+$FUELPLUG_UTILS_ROOT/$RPM_QUEUE \
+$FUELPLUG_UTILS_ROOT/$RPM_CTTIMEOUT \
+$FUELPLUG_UTILS_ROOT/$RPM_CTHELPER \
+$FUELPLUG_UTILS_ROOT/$RPM_CONNTRACKTOOLS
