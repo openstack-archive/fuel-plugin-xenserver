@@ -17,6 +17,8 @@ XenServer plugin for Fuel @PLUGIN_VERSION@
   Machines used to run the OpenStack services.  Installation of
   XenServer and configuration of these Virtual Machines must be
   performed manually.
+* File-based storage (EXT / NFS) must be used.  If using local storage
+  then select "Enable thin provisioning" at host installation time
 * Each hypervisor must have the same access credentials as Fuel
   does not support per-node settings.
 * One Virtual Machine, which will be used to run Nova (the compute
