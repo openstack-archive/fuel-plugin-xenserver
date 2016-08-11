@@ -17,7 +17,10 @@ rpm: output/${RPM_NAME}
 
 docs: $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
 
-${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING}
+iso: plugin_source/deployment_scripts/patchset/xenhost
+	suppack/build-xenserver-suppack.sh
+
+${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING} iso
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}
 	cp -r plugin_source/* ${BUILDROOT}/${PLUGIN_NAME}
 	find ${BUILDROOT}/${PLUGIN_NAME} -type f -print0 | \
@@ -27,6 +30,7 @@ ${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING}
 			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g {} \
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g {} \
 			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {}
+	cp suppack/xenapi-plugins-*.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
 
 ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
 	mkdir -p ${BUILDROOT}/doc
