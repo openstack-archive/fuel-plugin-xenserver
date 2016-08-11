@@ -5,4 +5,5 @@
 *.sublime-workspace
 BUILD/*
 output
+suppack/xenserver-suppack
 *~
