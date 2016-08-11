@@ -9,11 +9,16 @@ DOC_NAMES=user-guide test-plan test-report
 
 .SUFFIXES:
 
-build: rpm docs
+build: iso rpm docs
 
 rpm: output/${RPM_NAME}
 
 docs: $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
+
+iso:
+	suppack/build-xenserver-suppack.sh
+	cp suppack/xenserver-suppack/suppack/xenapi-plugins-*.iso plugin_source/deployment_scripts
+	rm -rf suppack/xenserver-suppack
 
 ${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING}
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}

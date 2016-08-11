@@ -26,18 +26,18 @@ mkdir -p xenserver-suppack && cd xenserver-suppack
 # =============================================
 # Configurable items
 
-# xenserver version info
-PLATFORM_VERSION=${1:-"1.9"}
-XS_BUILD=${2:-"90233c"}
+# OpenStack release
+OS_RELEASE=${1:-"mitaka"}
 
-# branch info
-GITBRANCH=${3:-"origin/stable/liberty"}
+# xenserver version info
+PLATFORM_VERSION=${2:-"1.9"}
+XS_BUILD=${3:-"90233c"}
 
 # nova and neutron xenserver dom0 plugin version
 XS_PLUGIN_VERSION=${4:-"2015.1"}
 
-# OpenStack release
-OS_RELEASE=${5:-"liberty"}
+# branch info
+GITBRANCH="origin/stable/$OS_RELEASE"
 
 # repository info
 NOVA_GITREPO="https://git.openstack.org/openstack/nova"
@@ -65,7 +65,7 @@ git clone "$NOVA_GITREPO" nova
 cd nova
 git checkout -b mos_nova "$GITBRANCH"
 # patch xenhost as this file is not merged into this release
-cp $DEPLOYMENT_SCRIPT_ROOT/patchset/xenhost plugins/xenserver/xenapi/etc/xapi.d/plugins/
+cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/xenhost plugins/xenserver/xenapi/etc/xapi.d/plugins/
 cd ..
 
 cp -r xenserver-nova-suppack-builder/plugins/xenserver/xenapi/* nova/plugins/xenserver/xenapi/
