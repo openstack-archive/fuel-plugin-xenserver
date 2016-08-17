@@ -89,30 +89,6 @@ def scp(host, username, target_path, filename):
                    '%s@%s:%s' % (username, host, target_path))
 
 
-def ssh_copy_id(host, username, password):
-    ssh_askpass = "askpass.sh"
-
-    s = ('#!/bin/sh\n'
-         'echo "{password}"').format(password=password)
-    with open(ssh_askpass, 'w') as f:
-        f.write(s)
-    os.chmod(ssh_askpass, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-    if os.path.exists(XS_RSA):
-        os.remove(XS_RSA)
-    if os.path.exists(XS_RSA + ".pub"):
-        os.remove(XS_RSA + ".pub")
-    execute('ssh-keygen', '-f', XS_RSA, '-t', 'rsa', '-N', '')
-
-    env = {
-        "HOME": "/root",
-        "SSH_ASKPASS": os.path.abspath(ssh_askpass),
-        "DISPLAY": ":.",
-    }
-    execute("setsid", "ssh-copy-id", "-o", "StrictHostKeyChecking=no",
-            "-i", XS_RSA, "%s@%s" % (username, host), env=env)
-
-
 def get_astute(astute_path):
     """Return the root object read from astute.yaml"""
     if not os.path.exists(astute_path):
@@ -207,28 +183,6 @@ def init_eth():
             return eth, himn_local
 
     reportError('HIMN failed to get IP address from Hypervisor')
-
-
-def check_host_compatibility(himn, username):
-    hotfix = 'XS65ESP1013'
-    installed = ssh(himn, username,
-                    'xe patch-list name-label=%s --minimal' % hotfix)
-    ver = ssh(himn, username,
-              ('xe host-param-get uuid=$(xe host-list --minimal) '
-               'param-name=software-version param-key=platform_version'))
-
-    if not installed and ver[:3] == PLATFORM_VERSION:
-        reportError(('Hotfix %s has not been installed '
-                     'and product version is %s') % (hotfix, ver))
-
-
-def check_local_sr(himn, username):
-    sr_type = ssh(himn, username,
-                  ('xe sr-param-get param-name=type uuid=`xe pool-list params=default-SR --minimal`'))
-
-    if sr_type != "ext" and sr_type != "nfs":
-        reportError(('Default SR type should be EXT or NFS.  If using local storage, Please make sure thin'
-                     ' provisioning is enabled on your host during installation.'))
 
 
 def install_xenapi_sdk():
@@ -501,9 +455,6 @@ if __name__ == '__main__':
             astute, ('public_ssl', 'services'))
 
         if username and password and endpoints and himn_local:
-            ssh_copy_id(HIMN_IP, username, password)
-            check_host_compatibility(HIMN_IP, username)
-            check_local_sr(HIMN_IP, username)
             route_to_compute(endpoints, HIMN_IP, himn_local, username)
             if install_xapi:
                 install_suppack(HIMN_IP, username)
