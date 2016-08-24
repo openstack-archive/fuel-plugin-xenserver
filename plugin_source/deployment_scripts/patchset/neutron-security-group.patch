@@ -1,72 +1,9 @@
-diff --git a/nova/tests/unit/virt/xenapi/test_vif.py b/nova/tests/unit/virt/xenapi/test_vif.py
-index ebd3a9a..320a92a 100644
---- a/nova/tests/unit/virt/xenapi/test_vif.py
-+++ b/nova/tests/unit/virt/xenapi/test_vif.py
-@@ -22,6 +22,7 @@ from nova.tests.unit.virt.xenapi import stubs
- from nova.virt.xenapi import network_utils
- from nova.virt.xenapi import vif
- 
-+
- fake_vif = {
-     'created_at': None,
-     'updated_at': None,
-@@ -190,6 +191,10 @@ class XenAPIOpenVswitchDriverTestCase(XenVIFDriverTestBase):
-         self.assertTrue(mock_create_vif.called)
-         self.assertEqual('fake_vif_ref', ret_vif_ref)
- 
-+    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_delete_linux_bridge')
-+    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_delete_linux_port')
-+    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_device_exists',
-+                       return_value=True)
-     @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_ovs_del_br')
-     @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_ovs_del_port')
-     @mock.patch.object(network_utils, 'find_network_with_name_label',
-@@ -198,7 +203,10 @@ class XenAPIOpenVswitchDriverTestCase(XenVIFDriverTestBase):
-     def test_unplug(self, mock_super_unplug,
-                     mock_find_network_with_name_label,
-                     mock_ovs_del_port,
--                    mock_ovs_del_br):
-+                    mock_ovs_del_br,
-+                    mock_device_exists,
-+                    mock_delete_linux_port,
-+                    mock_delete_linux_bridge):
-         instance = {'name': "fake_instance"}
-         vm_ref = "fake_vm_ref"
- 
-@@ -241,10 +249,12 @@ class XenAPIOpenVswitchDriverTestCase(XenVIFDriverTestBase):
-                           self.ovs_driver.unplug, instance, fake_vif,
-                           vm_ref)
- 
--    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_ovs_add_patch_port')
--    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_ovs_map_external_ids')
--    def test_post_start_actions(self, mock_ovs_map_external_ids,
--                                mock_ovs_add_patch_port):
-+    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_brctl_add_if')
-+    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_create_linux_bridge')
-+    @mock.patch.object(vif.XenAPIOpenVswitchDriver, '_ovs_add_port')
-+    def test_post_start_actions(self, mock_ovs_add_port,
-+                                mock_create_linux_bridge,
-+                                mock_brctl_add_if):
-         vif_ref = "fake_vif_ref"
-         instance = {'name': 'fake_instance_name'}
-         fake_vif_rec = {'uuid': fake_vif['uuid'],
-@@ -267,8 +277,8 @@ class XenAPIOpenVswitchDriverTestCase(XenVIFDriverTestBase):
-         self.assertTrue(mock_VIF_get_record.called)
-         self.assertTrue(mock_network_get_bridge.called)
-         self.assertTrue(mock_network_get_uuid.called)
--        self.assertEqual(mock_ovs_add_patch_port.call_count, 2)
--        self.assertTrue(mock_ovs_map_external_ids.called)
-+        self.assertEqual(mock_ovs_add_port.call_count, 1)
-+        self.assertTrue(mock_brctl_add_if.called)
- 
-     @mock.patch.object(network_utils, 'find_network_with_name_label',
-                        return_value="exist_network_ref")
 diff --git a/nova/virt/xenapi/vif.py b/nova/virt/xenapi/vif.py
 index b9660be..a474d23 100644
 --- a/nova/virt/xenapi/vif.py
 +++ b/nova/virt/xenapi/vif.py
 @@ -230,11 +230,11 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
- 
+
      def unplug(self, instance, vif, vm_ref):
          """unplug vif:
 -        1. unplug and destroy vif.
@@ -81,7 +18,7 @@ index b9660be..a474d23 100644
 +        4. delete linux bridge qbr and related ports if exist
          """
          super(XenAPIOpenVswitchDriver, self).unplug(instance, vif, vm_ref)
- 
+
 @@ -253,12 +253,10 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
          LOG.debug('destroying patch port pair for vif: vif_id=%(vif_id)s',
                    {'vif_id': vif['id']})
@@ -118,7 +55,7 @@ index b9660be..a474d23 100644
 @@ -284,6 +294,88 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
              raise exception.VirtualInterfaceUnplugException(
                  reason=_("Failed to delete bridge"))
- 
+
 +    def _get_qbr_name(self, iface_id):
 +        return ("qbr" + iface_id)[:network_model.NIC_NAME_LEN]
 +
@@ -218,7 +155,7 @@ index b9660be..a474d23 100644
          if bridge_name is None:
              raise exception.VirtualInterfacePlugException(
                        _("Failed to find bridge for vif"))
- 
+
 -        self._ovs_add_patch_port(bridge_name, patch_port1, patch_port2)
 -        self._ovs_add_patch_port(CONF.xenserver.ovs_integration_bridge,
 -                                 patch_port2, patch_port1)
@@ -233,18 +170,18 @@ index b9660be..a474d23 100644
 +        self._brctl_add_if(linux_br_name, tap_name)
 +        # Add port to interim bridge
 +        self._ovs_add_port(bridge_name, patch_port1)
- 
+
      def get_vif_interim_net_name(self, vif):
          return ("net-" + vif['id'])[:network_model.NIC_NAME_LEN]
 @@ -335,14 +433,13 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
          return network_ref
- 
+
      def _get_patch_port_pair_names(self, iface_id):
 -        return (("pp1-%s" % iface_id)[:network_model.NIC_NAME_LEN],
 -                ("pp2-%s" % iface_id)[:network_model.NIC_NAME_LEN])
 +        return (("vif%s" % iface_id)[:network_model.NIC_NAME_LEN],
 +                ("tap%s" % iface_id)[:network_model.NIC_NAME_LEN])
- 
+
 -    def _ovs_add_patch_port(self, bridge_name, port_name, peer_port_name):
 -        cmd = 'ovs_add_patch_port'
 +    def _ovs_add_port(self, bridge_name, port_name):
@@ -255,11 +192,11 @@ index b9660be..a474d23 100644
 +                'port_name': port_name
                 }
          self._exec_dom0_cmd(cmd, args)
- 
+
 @@ -378,6 +475,40 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
          self._ovs_set_if_external_id(interface, 'xs-vif-uuid', vif_uuid)
          self._ovs_set_if_external_id(interface, 'iface-status', status)
- 
+
 +    def _brctl_add_if(self, bridge_name, interface_name):
 +        cmd = 'brctl_add_if'
 +        args = {'bridge_name': bridge_name,
@@ -297,114 +234,3 @@ index b9660be..a474d23 100644
      def _exec_dom0_cmd(self, cmd, cmd_args):
          args = {'cmd': cmd,
                  'args': cmd_args
-diff --git a/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost b/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
-index ed0ff0f..045f362 100755
---- a/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
-+++ b/plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost
-@@ -252,12 +252,105 @@ def _ovs_set_if_external_id(args):
-     return _run_command(cmd_args)
- 
- 
-+def _ovs_add_port(args):
-+    bridge_name = pluginlib.exists(args, 'bridge_name')
-+    port_name = pluginlib.exists(args, 'port_name')
-+    cmd_args = ['ovs-vsctl', '--', '--if-exists', 'del-port', port_name,
-+                '--', 'add-port', bridge_name, port_name]
-+    return _run_command(cmd_args)
-+
-+
-+def _ip_link_get_dev(args):
-+    device_name = pluginlib.exists(args, 'device_name')
-+    cmd_args = ['ip', 'link', 'show', device_name]
-+    return _run_command(cmd_args)
-+
-+
-+def _ip_link_del_dev(args):
-+    device_name = pluginlib.exists(args, 'device_name')
-+    cmd_args = ['ip', 'link', 'delete', device_name]
-+    return _run_command(cmd_args)
-+
-+def _ip_link_add_veth_pair(args):
-+    dev1_name = pluginlib.exists(args, 'dev1_name')
-+    dev2_name = pluginlib.exists(args, 'dev2_name')
-+    cmd_args = ['ip', 'link', 'add', dev1_name, 'type', 'veth', 'peer',
-+                'name', dev2_name]
-+    return _run_command(cmd_args)
-+
-+
-+def _ip_link_set_dev(args):
-+    device_name = pluginlib.exists(args, 'device_name')
-+    option = pluginlib.exists(args, 'option')
-+    cmd_args = ['ip', 'link', 'set', device_name, option]
-+    return _run_command(cmd_args)
-+
-+
-+def _ip_link_set_promisc(args):
-+    device_name = pluginlib.exists(args, 'device_name')
-+    option = pluginlib.exists(args, 'option')
-+    cmd_args = ['ip', 'link', 'set', device_name, 'promisc', option]
-+    return _run_command(cmd_args)
-+
-+
-+def _brctl_add_br(args):
-+    bridge_name = pluginlib.exists(args, 'bridge_name')
-+    cmd_args = ['brctl', 'addbr', bridge_name]
-+    return _run_command(cmd_args)
-+
-+
-+def _brctl_del_br(args):
-+    bridge_name = pluginlib.exists(args, 'bridge_name')
-+    cmd_args = ['brctl', 'delbr', bridge_name]
-+    return _run_command(cmd_args)
-+
-+
-+def _brctl_set_fd(args):
-+    bridge_name = pluginlib.exists(args, 'bridge_name')
-+    fd = pluginlib.exists(args, 'fd')
-+    cmd_args = ['brctl', 'setfd', bridge_name, fd]
-+    return _run_command(cmd_args)
-+
-+
-+def _brctl_set_stp(args):
-+    bridge_name = pluginlib.exists(args, 'bridge_name')
-+    option = pluginlib.exists(args, 'option')
-+    cmd_args = ['brctl', 'stp', bridge_name, option]
-+    return _run_command(cmd_args)
-+
-+
-+def _brctl_add_if(args):
-+    bridge_name = pluginlib.exists(args, 'bridge_name')
-+    if_name = pluginlib.exists(args, 'interface_name')
-+    cmd_args = ['brctl', 'addif', bridge_name, if_name]
-+    return _run_command(cmd_args)
-+
-+
-+def _brctl_del_if(args):
-+    bridge_name = pluginlib.exists(args, 'bridge_name')
-+    if_name = pluginlib.exists(args, 'interface_name')
-+    cmd_args = ['brctl', 'delif', bridge_name, if_name]
-+    return _run_command(cmd_args)
-+
-+
- ALLOWED_NETWORK_CMDS = {
-     # allowed cmds to config OVS bridge
-     'ovs_add_patch_port': _ovs_add_patch_port,
-+    'ovs_add_port': _ovs_add_port,
-     'ovs_del_port': _ovs_del_port,
-     'ovs_del_br': _ovs_del_br,
--    'ovs_set_if_external_id': _ovs_set_if_external_id
-+    'ovs_set_if_external_id': _ovs_set_if_external_id,
-+    'ip_link_add_veth_pair': _ip_link_add_veth_pair,
-+    'ip_link_del_dev': _ip_link_del_dev,
-+    'ip_link_get_dev': _ip_link_get_dev,
-+    'ip_link_set_dev': _ip_link_set_dev,
-+    'ip_link_set_promisc': _ip_link_set_promisc,
-+    'brctl_add_br': _brctl_add_br,
-+    'brctl_add_if': _brctl_add_if,
-+    'brctl_del_br': _brctl_del_br,
-+    'brctl_del_if': _brctl_del_if,
-+    'brctl_set_fd': _brctl_set_fd,
-+    'brctl_set_stp': _brctl_set_stp
-     }
- 
- 
