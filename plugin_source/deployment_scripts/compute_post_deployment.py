@@ -63,7 +63,7 @@ def execute(*cmd, **kwargs):
     # Both if/else need to deal with "\n" scenario
     (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
 
-    if out:
+    if out and 'silent' not in kwargs:
         logging.debug(out)
     if err:
         logging.error(err)
@@ -421,7 +421,8 @@ def patch_compute_xenapi():
             '%s/patchset/neutron-security-group.patch' % patchset_dir
             ]
     for patch_file in patchfile_list:
-        execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
+        execute('patch', '-sfd', DIST_PACKAGES_DIR, '-p1', '-i', patch_file,
+                silent=True)
 
 
 def patch_neutron_ovs_agent():
