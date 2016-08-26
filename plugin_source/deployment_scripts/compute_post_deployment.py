@@ -7,126 +7,25 @@ import os
 import re
 from socket import inet_ntoa
 from struct import pack
-import subprocess # nosec
 import sys
-import stat
-import yaml
+import utils
+from utils import HIMN_IP
 
 
-XS_RSA = '/root/.ssh/xs_rsa'
-ASTUTE_PATH = '/etc/astute.yaml'
-ASTUTE_SECTION = '@PLUGIN_NAME@'
-LOG_ROOT = '/var/log/@PLUGIN_NAME@'
-LOG_FILE = 'compute_post_deployment.log'
-HIMN_IP = '169.254.0.1'
+LOG_FILE = os.path.join(utils.LOG_ROOT, 'compute_pre_deployment.log')
 INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenapi-plugins-mitaka.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
-PLATFORM_VERSION = '1.9'
 
-if not os.path.exists(LOG_ROOT):
-    os.mkdir(LOG_ROOT)
+if not os.path.exists(utils.LOG_ROOT):
+    os.mkdir(utils.LOG_ROOT)
 
-logging.basicConfig(filename=os.path.join(LOG_ROOT, LOG_FILE),
+logging.basicConfig(filename=LOG_FILE,
                     level=logging.DEBUG)
 
 
-def reportError(err):
-    logging.error(err)
-    raise Exception(err)
-
-
-def execute(*cmd, **kwargs):
-    cmd = map(str, cmd)
-    _env = kwargs.get('env')
-    env_prefix = ''
-    if _env:
-        env_prefix = ''.join(['%s=%s ' % (k, _env[k]) for k in _env])
-
-        env = dict(os.environ)
-        env.update(_env)
-    else:
-        env = None
-    logging.info(env_prefix + ' '.join(cmd))
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, # nosec
-                 stderr=subprocess.PIPE, env=env)
-
-    if 'prompt' in kwargs:
-        prompt = kwargs.get('prompt')
-        proc.stdout.flush()
-        (out, err) = proc.communicate(prompt)
-    else:
-        out = proc.stdout.readlines()
-        err = proc.stderr.readlines()
-        (out, err) = map(' '.join, [out, err])
-
-    # Both if/else need to deal with "\n" scenario
-    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
-
-    if out:
-        logging.debug(out)
-    if err:
-        logging.error(err)
-
-    if proc.returncode is not None and proc.returncode != 0:
-        raise Exception(err)
-
-    return out
-
-
-def ssh(host, username, *cmd, **kwargs):
-    cmd = map(str, cmd)
-
-    return execute('ssh', '-i', XS_RSA,
-                   '-o', 'StrictHostKeyChecking=no',
-                   '%s@%s' % (username, host), *cmd,
-                   prompt=kwargs.get('prompt'))
-
-
-def scp(host, username, target_path, filename):
-    return execute('scp', '-i', XS_RSA,
-                   '-o', 'StrictHostKeyChecking=no', filename,
-                   '%s@%s:%s' % (username, host, target_path))
-
-
-def get_astute(astute_path):
-    """Return the root object read from astute.yaml"""
-    if not os.path.exists(astute_path):
-        reportError('%s not found' % astute_path)
-    with open(astute_path) as f:
-        astute = yaml.safe_load(f)
-    return astute
-
-
-def astute_get(dct, keys, default=None, fail_if_missing=True):
-    """A safe dictionary getter"""
-    for key in keys:
-        if key in dct:
-            dct = dct[key]
-        else:
-            if fail_if_missing:
-                reportError('Value of "%s" is missing' % key)
-            return default
-    return dct
-
-
-def get_options(astute, astute_section):
-    """Return username and password filled in plugin."""
-    if astute_section not in astute:
-        reportError('%s not found' % astute_section)
-
-    options = astute[astute_section]
-    logging.info('username: {username}'.format(**options))
-    logging.info('password: {password}'.format(**options))
-    logging.info('install_xapi: {install_xapi}'.format(**options))
-    return options['username'], options['password'], \
-        options['install_xapi']
-
-
 def get_endpoints(astute):
-    """Return the IP addresses of the endpoints connected to
-    storage/mgmt network.
-    """
+    """Return the IP addresses of the storage/mgmt endpoints."""
     endpoints = astute['network_scheme']['endpoints']
     endpoints = dict([(
         k.replace('br-', ''),
@@ -138,56 +37,9 @@ def get_endpoints(astute):
     return endpoints
 
 
-def init_eth():
-    """Initialize the net interface connected to HIMN
-
-    Returns:
-        the IP addresses of local host and hypervisor.
-    """
-
-    domid = execute('xenstore-read', 'domid')
-    himn_mac = execute(
-        'xenstore-read',
-        '/local/domain/%s/vm-data/himn_mac' % domid)
-    logging.info('himn_mac: %s' % himn_mac)
-
-    _mac = lambda eth: \
-        netifaces.ifaddresses(eth).get(netifaces.AF_LINK)[0]['addr']
-    eths = [eth for eth in netifaces.interfaces() if _mac(eth) == himn_mac]
-    if len(eths) != 1:
-        reportError('Cannot find eth matches himn_mac')
-
-    eth = eths[0]
-    logging.info('himn_eth: %s' % eth)
-
-    ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
-
-    if not ip:
-        execute('dhclient', eth)
-        fname = '/etc/network/interfaces.d/ifcfg-' + eth
-        s = ('auto {eth}\n'
-             'iface {eth} inet dhcp\n'
-             'post-up route del default dev {eth}').format(eth=eth)
-        with open(fname, 'w') as f:
-            f.write(s)
-        logging.info('%s created' % fname)
-        execute('ifdown', eth)
-        execute('ifup', eth)
-        ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
-
-    if ip:
-        himn_local = ip[0]['addr']
-        himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
-        if HIMN_IP == himn_xs:
-            logging.info('himn_local: %s' % himn_local)
-            return eth, himn_local
-
-    reportError('HIMN failed to get IP address from Hypervisor')
-
-
 def install_xenapi_sdk():
     """Install XenAPI Python SDK"""
-    execute('cp', 'XenAPI.py', DIST_PACKAGES_DIR)
+    utils.execute('cp', 'XenAPI.py', DIST_PACKAGES_DIR)
 
 
 def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
@@ -197,7 +49,7 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
             and mgmt_if.get(netifaces.AF_INET)[0]['addr']:
         mgmt_ip = mgmt_if.get(netifaces.AF_INET)[0]['addr']
     else:
-        reportError('Cannot get IP Address on Management Network')
+        utils.reportError('Cannot get IP Address on Management Network')
 
     filename = '/etc/nova/nova-compute.conf'
     cf = ConfigParser.ConfigParser()
@@ -221,24 +73,31 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
         with open(filename, 'w') as configfile:
             cf.write(configfile)
     except Exception:
-        reportError('Cannot set configurations to %s' % filename)
+        utils.reportError('Cannot set configurations to %s' % filename)
     logging.info('%s created' % filename)
 
 
 def route_to_compute(endpoints, himn_xs, himn_local, username):
     """Route storage/mgmt requests to compute nodes. """
-    out = ssh(himn_xs, username, 'route', '-n')
-    _net = lambda ip: '.'.join(ip.split('.')[:-1] + ['0'])
-    _mask = lambda cidr: inet_ntoa(pack(
-        '>I', 0xffffffff ^ (1 << 32 - int(cidr)) - 1))
-    _routed = lambda net, mask, gw: re.search(r'%s\s+%s\s+%s\s+' % (
-        net.replace('.', r'\.'),
-        gw.replace('.', r'\.'),
-        mask
-    ), out)
 
-    ssh(himn_xs, username,
-        'printf "#!/bin/bash\nsleep 5\n" > /etc/udev/scripts/reroute.sh')
+    def _net(ip):
+        return '.'.join(ip.split('.')[:-1] + ['0'])
+
+    def _mask(cidr):
+        return inet_ntoa(pack('>I', 0xffffffff ^ (1 << 32 - int(cidr)) - 1))
+
+    def _routed(net, mask, gw):
+        return re.search(r'%s\s+%s\s+%s\s+' % (
+            net.replace('.', r'\.'),
+            gw.replace('.', r'\.'),
+            mask
+        ), out)
+
+    out = utils.ssh(himn_xs, username, 'route', '-n')
+
+    utils.ssh(himn_xs, username,
+              ('printf "#!/bin/bash\nsleep 5\n" >'
+               '/etc/udev/scripts/reroute.sh'))
     endpoint_names = ['storage', 'mgmt']
     for endpoint_name in endpoint_names:
         endpoint = endpoints.get(endpoint_name)
@@ -248,79 +107,82 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
             if not _routed(net, mask, himn_local):
                 params = ['route', 'add', '-net', '"%s"' % net, 'netmask',
                           '"%s"' % mask, 'gw', himn_local]
-                ssh(himn_xs, username, *params)
+                utils.ssh(himn_xs, username, *params)
             # Always add the route to the udev, even if it's currently active
             cmd = (
-                "printf 'if !(/sbin/route -n | /bin/grep -q -F \"{net}\"); then\n"
-                "/sbin/route add -net \"{net}\" netmask \"{mask}\" gw {himn_local};\n"
+                "printf 'if !(/sbin/route -n | /bin/grep -q -F \"{net}\");"
+                "then\n"
+                "/sbin/route add -net \"{net}\" netmask "
+                "\"{mask}\" gw {himn_local};\n"
                 "fi\n' >> /etc/udev/scripts/reroute.sh"
             )
             cmd = cmd.format(net=net, mask=mask, himn_local=himn_local)
-            ssh(himn_xs, username, cmd)
+            utils.ssh(himn_xs, username, cmd)
         else:
             logging.info('%s network ip is missing' % endpoint_name)
-    ssh(himn_xs, username, 'chmod +x /etc/udev/scripts/reroute.sh')
-    ssh(himn_xs, username, ('echo \'SUBSYSTEM=="net" ACTION=="add" '
-                            'KERNEL=="xenapi" RUN+="/etc/udev/scripts/reroute.sh"\' '
-                            '> /etc/udev/rules.d/90-reroute.rules'))
+    utils.ssh(himn_xs, username, 'chmod +x /etc/udev/scripts/reroute.sh')
+    utils.ssh(himn_xs, username,
+              ('echo \'SUBSYSTEM=="net" ACTION=="add" '
+               'KERNEL=="xenapi" RUN+="/etc/udev/scripts/reroute.sh"\' '
+               '> /etc/udev/rules.d/90-reroute.rules'))
 
 
 def install_suppack(himn, username):
     """Install xapi driver supplemental pack. """
-    tmp = ssh(himn, username, 'mktemp', '-d')
-    scp(himn, username, tmp, XS_PLUGIN_ISO)
-    ssh(himn, username, 'xe-install-supplemental-pack', tmp + '/' + XS_PLUGIN_ISO,
-        prompt='Y\n')
-    ssh(himn, username, 'rm', tmp, '-rf')
+    tmp = utils.ssh(himn, username, 'mktemp', '-d')
+    utils.scp(himn, username, tmp, XS_PLUGIN_ISO)
+    utils.ssh(himn, username, 'xe-install-supplemental-pack',
+              tmp + '/' + XS_PLUGIN_ISO, prompt='Y\n')
+    utils.ssh(himn, username, 'rm', tmp, '-rf')
 
 
 def forward_from_himn(eth):
     """Forward packets from HIMN to storage/mgmt network. """
-    execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
-            '/etc/sysctl.conf')
-    execute('sysctl', '-p', '/etc/sysctl.conf')
+    utils.execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
+                  '/etc/sysctl.conf')
+    utils.execute('sysctl', '-p', '/etc/sysctl.conf')
 
     endpoint_names = ['br-storage', 'br-mgmt']
     for endpoint_name in endpoint_names:
-        execute('iptables', '-t', 'nat', '-A', 'POSTROUTING',
-                '-o', endpoint_name, '-j', 'MASQUERADE')
-        execute('iptables', '-A', 'FORWARD',
-                '-i', endpoint_name, '-o', eth,
-                '-m', 'state', '--state', 'RELATED,ESTABLISHED',
-                '-j', 'ACCEPT')
-        execute('iptables', '-A', 'FORWARD',
-                '-i', eth, '-o', endpoint_name,
-                '-j', 'ACCEPT')
+        utils.execute('iptables', '-t', 'nat', '-A', 'POSTROUTING',
+                      '-o', endpoint_name, '-j', 'MASQUERADE')
+        utils.execute('iptables', '-A', 'FORWARD',
+                      '-i', endpoint_name, '-o', eth,
+                      '-m', 'state', '--state', 'RELATED,ESTABLISHED',
+                      '-j', 'ACCEPT')
+        utils.execute('iptables', '-A', 'FORWARD',
+                      '-i', eth, '-o', endpoint_name,
+                      '-j', 'ACCEPT')
 
-    execute('iptables', '-A', 'INPUT', '-i', eth, '-j', 'ACCEPT')
-    execute('iptables', '-t', 'filter', '-S', 'FORWARD')
-    execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
-    execute('service', 'iptables-persistent', 'save')
+    utils.execute('iptables', '-A', 'INPUT', '-i', eth, '-j', 'ACCEPT')
+    utils.execute('iptables', '-t', 'filter', '-S', 'FORWARD')
+    utils.execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    utils.execute('service', 'iptables-persistent', 'save')
 
 
 def forward_port(eth_in, eth_out, target_host, target_port):
     """Forward packets from eth_in to eth_out on target_host:target_port. """
-    execute('iptables', '-t', 'nat', '-A', 'PREROUTING',
-            '-i', eth_in, '-p', 'tcp', '--dport', target_port,
-            '-j', 'DNAT', '--to', target_host)
-    execute('iptables', '-A', 'FORWARD',
-            '-i', eth_out, '-o', eth_in,
-            '-m', 'state', '--state', 'RELATED,ESTABLISHED',
-            '-j', 'ACCEPT')
-    execute('iptables', '-A', 'FORWARD',
-            '-i', eth_in, '-o', eth_out,
-            '-j', 'ACCEPT')
+    utils.execute('iptables', '-t', 'nat', '-A', 'PREROUTING',
+                  '-i', eth_in, '-p', 'tcp', '--dport', target_port,
+                  '-j', 'DNAT', '--to', target_host)
+    utils.execute('iptables', '-A', 'FORWARD',
+                  '-i', eth_out, '-o', eth_in,
+                  '-m', 'state', '--state', 'RELATED,ESTABLISHED',
+                  '-j', 'ACCEPT')
+    utils.execute('iptables', '-A', 'FORWARD',
+                  '-i', eth_in, '-o', eth_out,
+                  '-j', 'ACCEPT')
 
-    execute('iptables', '-t', 'filter', '-S', 'FORWARD')
-    execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
-    execute('service', 'iptables-persistent', 'save')
+    utils.execute('iptables', '-t', 'filter', '-S', 'FORWARD')
+    utils.execute('iptables', '-t', 'nat', '-S', 'POSTROUTING')
+    utils.execute('service', 'iptables-persistent', 'save')
 
 
 def install_logrotate_script(himn, username):
     "Install console logrotate script"
-    scp(himn, username, '/root/', 'rotate_xen_guest_logs.sh')
-    ssh(himn, username, 'mkdir -p /var/log/xen/guest')
-    ssh(himn, username, '''crontab - << CRONTAB
+    utils.scp(himn, username, '/root/', 'rotate_xen_guest_logs.sh')
+    utils.ssh(himn, username, 'mkdir -p /var/log/xen/guest')
+    utils.ssh(himn, username, '''crontab - << CRONTAB
 * * * * * /root/rotate_xen_guest_logs.sh
 CRONTAB''')
 
@@ -337,7 +199,7 @@ def modify_neutron_rootwrap_conf(himn, username, password):
         with open(filename, 'w') as configfile:
             cf.write(configfile)
     except Exception:
-        reportError("Fail to modify file %s", filename)
+        utils.reportError("Fail to modify file %s", filename)
     logging.info('Modify file %s successfully', filename)
 
 
@@ -355,7 +217,7 @@ def modify_neutron_ovs_agent_conf(int_br, br_mappings):
         with open(filename, 'w') as configfile:
             cf.write(configfile)
     except Exception:
-        reportError("Fail to modify %s", filename)
+        utils.reportError("Fail to modify %s", filename)
     logging.info('Modify %s successfully', filename)
 
 
@@ -374,18 +236,21 @@ def get_private_network_ethX():
         if item['action'] == 'add-port' and item['bridge'] == 'br-ex':
             return item['name']
 
+
 def find_bridge_mappings(astute, himn, username):
     ethX = get_private_network_ethX()
     if not ethX:
-        reportError("Cannot find eth used for private network")
+        utils.reportError("Cannot find eth used for private network")
 
     # find the ethX mac in /sys/class/net/ethX/address
     with open('/sys/class/net/%s/address' % ethX, 'r') as fo:
         mac = fo.readline()
-    network_uuid = ssh(himn, username,
-            'xe vif-list params=network-uuid minimal=true MAC=%s' % mac)
-    bridge = ssh(himn, username,
-            'xe network-param-get param-name=bridge uuid=%s' % network_uuid)
+    network_uuid = utils.ssh(himn, username,
+                             ('xe vif-list params=network-uuid '
+                              'minimal=true MAC=%s') % mac)
+    bridge = utils.ssh(himn, username,
+                       ('xe network-param-get param-name=bridge'
+                        'uuid=%s') % network_uuid)
 
     # find physical network name
     phynet_setting = astute['quantum_settings']['L2']['phys_nets']
@@ -394,33 +259,35 @@ def find_bridge_mappings(astute, himn, username):
 
 
 def restart_services(service_name):
-    execute('stop', service_name)
-    execute('start', service_name)
+    utils.execute('stop', service_name)
+    utils.execute('start', service_name)
 
 
 def enable_linux_bridge(himn, username):
     # When using OVS under XS6.5, it will prevent use of Linux bridge in
     # Dom0, but neutron-openvswitch-agent in compute node will use Linux
     # bridge, so we remove this restriction here
-    ssh(himn, username, 'rm -f /etc/modprobe.d/blacklist-bridge*')
+    utils.ssh(himn, username, 'rm -f /etc/modprobe.d/blacklist-bridge*')
 
 
 def patch_ceilometer():
-    """
-    Add patches which are not MOS with order:
+    """Add patches which are not merged to upstream
+
+    Order of patches applied:
         ceilometer-poll-cpu-util.patch
     """
     patchset_dir = sys.path[0]
     patchfile_list = [
-            '%s/patchset/ceilometer-poll-cpu-util.patch' % patchset_dir,
-            ]
+        '%s/patchset/ceilometer-poll-cpu-util.patch' % patchset_dir,
+    ]
     for patch_file in patchfile_list:
-        execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
+        utils.execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
 
 
 def patch_compute_xenapi():
-    """
-    Add patches which are not merged to upstream with order:
+    """Add patches which are not merged to upstream
+
+    Order of patches applied:
         support-disable-image-cache.patch
         speed-up-config-drive.patch
         ovs-interim-bridge.patch
@@ -428,36 +295,36 @@ def patch_compute_xenapi():
     """
     patchset_dir = sys.path[0]
     patchfile_list = [
-            '%s/patchset/support-disable-image-cache.patch' % patchset_dir,
-            '%s/patchset/speed-up-config-drive.patch' % patchset_dir,
-            '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
-            '%s/patchset/neutron-security-group.patch' % patchset_dir
-            ]
+        '%s/patchset/support-disable-image-cache.patch' % patchset_dir,
+        '%s/patchset/speed-up-config-drive.patch' % patchset_dir,
+        '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
+        '%s/patchset/neutron-security-group.patch' % patchset_dir]
     for patch_file in patchfile_list:
-        execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i', patch_file)
+        utils.execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i',
+                      patch_file)
 
 
 def patch_neutron_ovs_agent():
-    """
-    MO8's patch is not needed, keep the func here to add conntrack patch later
-    """
+    # MO8's patch is not needed, keep the func here to add
+    # conntrack patch later
     pass
 
 
 def reconfig_multipath():
+    """Ignore local disks for multipathd
+
+    Change devnode rule from "^hd[a-z]" to "^(hd|xvd)[a-z]"
     """
-    Ignore local disks for multipathd by changing devnode rule from
-    "^hd[a-z]" to "^(hd|xvd)[a-z]"
-    """
-    execute('sed', '-i', r's/"\^hd\[a-z\]"/"^(hd|xvd)[a-z]"/', '/etc/multipath.conf')
-    execute('service', 'multipath-tools', 'restart')
+    utils.execute('sed', '-i', r's/"\^hd\[a-z\]"/"^(hd|xvd)[a-z]"/',
+                  '/etc/multipath.conf')
+    utils.execute('service', 'multipath-tools', 'restart')
 
 
 def check_and_setup_ceilometer(himn, username, password):
     """Set xenapi configuration for ceilometer service"""
     filename = '/etc/ceilometer/ceilometer.conf'
     if not os.path.exists(filename):
-        reportError("The file: %s doesn't exist" % filename)
+        utils.reportError("The file: %s doesn't exist" % filename)
         return
 
     patch_ceilometer()
@@ -473,23 +340,23 @@ def check_and_setup_ceilometer(himn, username, password):
             cf.write(configfile)
         logging.info('Modify file %s successfully', filename)
     except Exception:
-        reportError("Fail to modify file %s", filename)
+        utils.reportError("Fail to modify file %s", filename)
         return
     restart_services('ceilometer-polling')
 
 
 if __name__ == '__main__':
     install_xenapi_sdk()
-    astute = get_astute(ASTUTE_PATH)
+    astute = utils.get_astute()
     if astute:
-        username, password, install_xapi = get_options(astute, ASTUTE_SECTION)
+        username, password, install_xapi = utils.get_options(astute)
         endpoints = get_endpoints(astute)
-        himn_eth, himn_local = init_eth()
+        himn_eth, himn_local = utils.init_eth()
 
-        public_ip = astute_get(
+        public_ip = utils.astute_get(
             astute, ('network_metadata', 'vips', 'public', 'ipaddr'))
 
-        services_ssl = astute_get(
+        services_ssl = utils.astute_get(
             astute, ('public_ssl', 'services'))
 
         if username and password and endpoints and himn_local:
@@ -502,7 +369,8 @@ if __name__ == '__main__':
             # port forwarding for novnc
             forward_port('br-mgmt', himn_eth, HIMN_IP, '80')
 
-            create_novacompute_conf(HIMN_IP, username, password, public_ip, services_ssl)
+            create_novacompute_conf(HIMN_IP, username, password, public_ip,
+                                    services_ssl)
             patch_compute_xenapi()
             restart_services('nova-compute')
 
@@ -518,8 +386,8 @@ if __name__ == '__main__':
             reconfig_multipath()
 
             # Add xenapi specific setup for ceilometer if service is enabled.
-            is_ceilometer_enabled = astute_get(astute,
-                                               ('ceilometer', 'enabled'))
+            is_ceilometer_enabled = utils.astute_get(astute,
+                                                     ('ceilometer', 'enabled'))
             if is_ceilometer_enabled:
                 check_and_setup_ceilometer(HIMN_IP, username, password)
             else:
