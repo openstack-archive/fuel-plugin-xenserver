@@ -1,6 +1,8 @@
 BRANDING=branding.inc
 
 include ${BRANDING}
+PLUGIN_VERSION:=$(shell ./get_plugin_version.sh ${BRANDING} | cut -d' ' -f1)
+PLUGIN_REVISION:=$(shell ./get_plugin_version.sh ${BRANDING} | cut -d' ' -f2)
 
 RPM_NAME=${PLUGIN_NAME}-${PLUGIN_VERSION}-${PLUGIN_VERSION}.${PLUGIN_REVISION}-1.noarch.rpm
 BUILDROOT=BUILD
