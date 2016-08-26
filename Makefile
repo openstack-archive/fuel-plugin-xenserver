@@ -1,6 +1,8 @@
 BRANDING=branding.inc
 
 include ${BRANDING}
+OPENSTACK_RELEASE:=mitaka
+
 PLUGIN_VERSION:=$(shell ./get_plugin_version.sh ${BRANDING} | cut -d' ' -f1)
 PLUGIN_REVISION:=$(shell ./get_plugin_version.sh ${BRANDING} | cut -d' ' -f2)
 
@@ -17,8 +19,10 @@ rpm: output/${RPM_NAME}
 
 docs: $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
 
-iso: plugin_source/deployment_scripts/patchset/xenhost
-	suppack/build-xenserver-suppack.sh
+iso: suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso
+
+suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso: plugin_source/deployment_scripts/patchset/xenhost
+	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE}
 
 ${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING} iso
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}
@@ -44,6 +48,7 @@ ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
 
 output/${RPM_NAME}: ${BUILDROOT}/${PLUGIN_NAME}
 	mkdir -p output
+	(cd ${BUILDROOT}; which flake8 > /dev/null && flake8 ${PLUGIN_NAME}/deployment_scripts --exclude=XenAPI.py)
 	(cd ${BUILDROOT}; fpb --check ${PLUGIN_NAME})
 	(cd ${BUILDROOT}; fpb --build ${PLUGIN_NAME})
 	cp ${BUILDROOT}/${PLUGIN_NAME}/${RPM_NAME} $@
@@ -56,4 +61,4 @@ output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf: ${BUILDROOT}/doc/build/latex/%.pd
 	cp $^ $@
 
 clean:
-	rm -rf ${BUILDROOT} output
+	rm -rf ${BUILDROOT} output suppack/xenapi-plugins-${OPENSTACK_RELEASE}* suppack/build
