@@ -44,6 +44,7 @@ ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
 
 output/${RPM_NAME}: ${BUILDROOT}/${PLUGIN_NAME}
 	mkdir -p output
+	(cd ${BUILDROOT}; which flake8 > /dev/null && flake8 ${PLUGIN_NAME}/deployment_scripts --exclude=XenAPI.py)
 	(cd ${BUILDROOT}; fpb --check ${PLUGIN_NAME})
 	(cd ${BUILDROOT}; fpb --build ${PLUGIN_NAME})
 	cp ${BUILDROOT}/${PLUGIN_NAME}/${RPM_NAME} $@
