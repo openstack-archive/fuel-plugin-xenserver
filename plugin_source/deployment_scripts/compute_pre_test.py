@@ -22,7 +22,8 @@ HIMN_IP = '169.254.0.1'
 INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenapi-plugins-mitaka.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
-PLATFORM_VERSION = '1.9'
+PLATFORM_VERSION = '@PLATFORM_VERSION@'
+PRODUCT_HOTFIXES = '@PRODUCT_HOTFIXES@'
 
 if not os.path.exists(LOG_ROOT):
     os.mkdir(LOG_ROOT)
@@ -195,16 +196,24 @@ def init_eth():
 
 
 def check_host_compatibility(himn, username):
-    hotfix = 'XS65ESP1013'
-    installed = ssh(himn, username,
-                    'xe patch-list name-label=%s --minimal' % hotfix)
     ver = ssh(himn, username,
               ('xe host-param-get uuid=$(xe host-list --minimal) '
                'param-name=software-version param-key=platform_version'))
 
-    if not installed and ver[:3] == PLATFORM_VERSION:
-        reportError(('Hotfix %s has not been installed '
-                     'and product version is %s') % (hotfix, ver))
+    if ver[:3] != PLATFORM_VERSION:
+        reportError('The platform version of host should be %s' % ver)
+
+
+    hotfixes = PRODUCT_HOTFIXES.split(',')
+    for hotfix in hotfixes:
+        if not hotfix:
+            continue
+
+        installed = ssh(himn, username,
+                        'xe patch-list name-label=%s --minimal' % hotfix)
+
+        if not installed:
+            reportError('Hotfix %s has not been installed ' % ver)
 
 
 def check_local_sr(himn, username):

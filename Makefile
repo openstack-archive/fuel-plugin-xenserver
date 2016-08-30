@@ -26,7 +26,9 @@ ${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING}
 			-e s/@HYPERVISOR_LOWER@/${HYPERVISOR_LOWER}/g \
 			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g {} \
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g {} \
-			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {}
+			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {} \
+			-e s/@PLATFORM_VERSION@/${PLATFORM_VERSION}/g {} \
+			-e s/@PRODUCT_HOTFIXES@/${PRODUCT_HOTFIXES}/g {}
 
 ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
 	mkdir -p ${BUILDROOT}/doc
@@ -36,7 +38,9 @@ ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
 			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
 			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g {} \
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g {} \
-			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {}
+			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {} \
+			-e s/@PLATFORM_VERSION@/${PLATFORM_VERSION}/g {} \
+			-e s/@PRODUCT_HOTFIXES@/${PRODUCT_HOTFIXES}/g {}
 
 output/${RPM_NAME}: ${BUILDROOT}/${PLUGIN_NAME}
 	mkdir -p output
