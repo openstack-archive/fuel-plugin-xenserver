@@ -1,16 +1,3 @@
-diff --git a/nova/tests/unit/virt/xenapi/test_vm_utils.py b/nova/tests/unit/virt/xenapi/test_vm_utils.py
-index 174b5cf..d65385e 100644
---- a/nova/tests/unit/virt/xenapi/test_vm_utils.py
-+++ b/nova/tests/unit/virt/xenapi/test_vm_utils.py
-@@ -190,7 +190,7 @@ class GenerateConfigDriveTestCase(VMUtilsTestBase):
-                       '-publisher', mox.IgnoreArg(), '-quiet',
-                       '-J', '-r', '-V', 'config-2', mox.IgnoreArg(),
-                       attempts=1, run_as_root=False).AndReturn(None)
--        utils.execute('dd', mox.IgnoreArg(), mox.IgnoreArg(),
-+        utils.execute('dd', mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                       mox.IgnoreArg(), run_as_root=True).AndReturn(None)
- 
-         self.mox.StubOutWithMock(vm_utils, 'create_vbd')
 diff --git a/nova/virt/xenapi/vm_utils.py b/nova/virt/xenapi/vm_utils.py
 index f88cb3a..982ad37 100644
 --- a/nova/virt/xenapi/vm_utils.py
@@ -20,7 +7,7 @@ index f88cb3a..982ad37 100644
  MAX_VDI_CHAIN_SIZE = 16
  PROGRESS_INTERVAL_SECONDS = 300
 +DD_BLOCKSIZE = 65536
- 
+
  # Fudge factor to allow for the VHD chain to be slightly larger than
  # the partitioned space. Otherwise, legitimate images near their
 @@ -1159,6 +1160,7 @@ def generate_configdrive(session, instance, vm_ref, userdevice,
@@ -30,7 +17,7 @@ index f88cb3a..982ad37 100644
 +                                  'bs=%d' % DD_BLOCKSIZE,
                                    'oflag=direct,sync',
                                    run_as_root=True)
- 
+
 @@ -2426,6 +2428,7 @@ def _copy_partition(session, src_ref, dst_ref, partition, virtual_size):
                  utils.execute('dd',
                                'if=%s' % src_path,
