@@ -44,7 +44,8 @@ ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
 			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
 			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g {} \
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g {} \
-			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {}
+			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {} \
+			-e s/@VERSION_HOTFIXES@/${VERSION_HOTFIXES}/g {}
 
 output/${RPM_NAME}: ${BUILDROOT}/${PLUGIN_NAME}
 	mkdir -p output
