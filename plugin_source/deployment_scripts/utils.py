@@ -57,7 +57,7 @@ def execute(*cmd, **kwargs):
     if out:
         logging.debug(out)
     if err:
-        logging.error(err)
+        logging.info(err)
 
     if proc.returncode is not None and proc.returncode != 0:
         raise ExecutionError(err)
