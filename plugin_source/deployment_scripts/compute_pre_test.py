@@ -8,7 +8,8 @@ from utils import HIMN_IP
 
 XS_RSA = '/root/.ssh/xs_rsa'
 LOG_FILE = os.path.join(utils.LOG_ROOT, 'compute_pre_deployment.log')
-PLATFORM_VERSION = '1.9'
+PLATFORM_VERSION = '@PLATFORM_VERSION@'
+PRODUCT_HOTFIXES = '@PRODUCT_HOTFIXES@'
 
 if not os.path.exists(utils.LOG_ROOT):
     os.mkdir(utils.LOG_ROOT)
@@ -49,9 +50,20 @@ def check_host_compatibility(himn, username):
                     ('xe host-param-get uuid=$(xe host-list --minimal) '
                      'param-name=software-version param-key=platform_version'))
 
-    if not installed and ver[:3] == PLATFORM_VERSION:
-        utils.reportError(('Hotfix %s has not been installed '
-                           'and product version is %s') % (hotfix, ver))
+    if ver[:3] != PLATFORM_VERSION:
+        utils.reportError('The platform version of host should be %s' % ver)
+
+
+    hotfixes = PRODUCT_HOTFIXES.split(',')
+    for hotfix in hotfixes:
+        if not hotfix:
+            continue
+
+        installed = utils.ssh(himn, username,
+                              'xe patch-list name-label=%s --minimal' % hotfix)
+
+        if not installed:
+            utils.reportError('Hotfix %s has not been installed ' % ver)
 
 
 def check_local_sr(himn, username):
