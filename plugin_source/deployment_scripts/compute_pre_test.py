@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import logging
 import os
 import stat
@@ -8,7 +9,7 @@ from utils import HIMN_IP
 
 XS_RSA = '/root/.ssh/xs_rsa'
 LOG_FILE = os.path.join(utils.LOG_ROOT, 'compute_pre_deployment.log')
-PLATFORM_VERSION = '1.9'
+VERSION_HOTFIXES = '@VERSION_HOTFIXES@'
 
 if not os.path.exists(utils.LOG_ROOT):
     os.mkdir(utils.LOG_ROOT)
@@ -42,16 +43,24 @@ def ssh_copy_id(host, username, password):
 
 
 def check_host_compatibility(himn, username):
-    hotfix = 'XS65ESP1013'
-    installed = utils.ssh(himn, username,
-                          'xe patch-list name-label=%s --minimal' % hotfix)
+    version_hotfixes = json.loads(VERSION_HOTFIXES)
+
     ver = utils.ssh(himn, username,
                     ('xe host-param-get uuid=$(xe host-list --minimal) '
-                     'param-name=software-version param-key=platform_version'))
+                     'param-name=software-version param-key=product_version'))
+    hotfixes = version_hotfixes.get(ver)
+    if not hotfixes:
+        return
 
-    if not installed and ver[:3] == PLATFORM_VERSION:
-        utils.reportError(('Hotfix %s has not been installed '
-                           'and product version is %s') % (hotfix, ver))
+    for hotfix in hotfixes:
+        if not hotfix:
+            continue
+
+        installed = utils.ssh(himn, username,
+                              'xe patch-list name-label=%s --minimal' % hotfix)
+
+        if not installed:
+            utils.reportError('Hotfix %s has not been installed ' % ver)
 
 
 def check_local_sr(himn, username):
