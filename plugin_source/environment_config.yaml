@@ -6,6 +6,7 @@ attributes:
       - "settings:storage.ephemeral_ceph.value == true"
       - "settings:additional_components.sahara.value == true"
       - "settings:additional_components.murano.value == true"
+      - "settings:additional_components.ceilometer.value == true"
       - "settings:additional_components.mongo.value == true"
       - "settings:additional_components.ironic.value == true"
     group: 'compute'

@@ -12,6 +12,8 @@
       description: ''
     - name: 'additional_service:murano'
       description: ''
+    - name: 'additional_service:ceilometer'
+      description: ''
     - name: 'additional_service:mongo'
       description: ''
     - name: 'additional_service:ironic'
