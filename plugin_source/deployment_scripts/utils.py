@@ -60,7 +60,11 @@ def execute(*cmd, **kwargs):
         logging.info(err)
 
     if proc.returncode is not None and proc.returncode != 0:
-        raise ExecutionError(err)
+        if proc.returncode in kwargs.get('allowed_return_codes', [0]):
+            logging.info('Swallowed acceptable return code of %d',
+                         proc.returncode)
+        else:
+            raise ExecutionError(err)
 
     return out
 
@@ -114,6 +118,57 @@ def get_options(astute, astute_section=ASTUTE_SECTION):
         options['install_xapi']
 
 
+def eth_to_mac(eth):
+    return netifaces.ifaddresses(eth).get(netifaces.AF_LINK)[0]['addr']
+
+
+def detect_himn_ip(eths=None):
+    if eths is None:
+        eths = netifaces.interfaces()
+    for eth in eths:
+        ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
+        if ip is None:
+            continue
+        himn_local = ip[0]['addr']
+        himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
+        if HIMN_IP == himn_xs:
+            return eth, ip
+    return None, None
+
+
+def find_eth_xenstore():
+    domid = execute('xenstore-read', 'domid')
+    himn_mac = execute(
+        'xenstore-read',
+        '/local/domain/%s/vm-data/himn_mac' % domid)
+    logging.info('himn_mac: %s' % himn_mac)
+
+    eths = [eth for eth in netifaces.interfaces()
+            if eth_to_mac(eth) == himn_mac]
+    if len(eths) != 1:
+        reportError('Cannot find eth matches himn_mac')
+
+    return eths[0]
+
+
+def detect_eth_dhclient():
+    for eth in netifaces.interfaces():
+        # Don't try and dhclient for devices an IP address already
+        ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
+        if ip:
+            continue
+
+        # DHCP replies from HIMN should be super fast
+        execute('timeout', '2s', 'dhclient', eth,
+                allowed_return_codes=[0, 124])
+        try:
+            _, ip = detect_himn_ip([eth])
+            if ip is not None:
+                return eth
+        finally:
+            execute('dhclient', '-r', eth)
+
+
 def init_eth():
     """Initialize the net interface connected to HIMN
 
@@ -121,26 +176,23 @@ def init_eth():
         the IP addresses of local host and hypervisor.
     """
 
-    def _mac(eth):
-        return netifaces.ifaddresses(eth).get(netifaces.AF_LINK)[0]['addr']
-
-    domid = execute('xenstore-read', 'domid')
-    himn_mac = execute(
-        'xenstore-read',
-        '/local/domain/%s/vm-data/himn_mac' % domid)
-    logging.info('himn_mac: %s' % himn_mac)
-
-    eths = [eth for eth in netifaces.interfaces() if _mac(eth) == himn_mac]
-    if len(eths) != 1:
-        reportError('Cannot find eth matches himn_mac')
-
-    eth = eths[0]
-
-    logging.info('himn_eth: %s' % eth)
-
-    ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
+    eth, ip = detect_himn_ip()
 
     if not ip:
+        eth = None
+        try:
+            eth = find_eth_xenstore()
+        except Exception:
+            logging.debug('Failed to find MAC through xenstore', exc_info=True)
+
+        if eth is None:
+            eth = detect_eth_dhclient()
+
+        if eth is None:
+            reportError('Failed to detect HIMN ethernet device')
+
+        logging.info('himn_eth: %s' % eth)
+
         execute('dhclient', eth)
         fname = '/etc/network/interfaces.d/ifcfg-' + eth
         s = ('auto {eth}\n'
@@ -151,13 +203,18 @@ def init_eth():
         logging.info('%s created' % fname)
         execute('ifdown', eth)
         execute('ifup', eth)
-        ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
 
-    if ip:
+        ip = netifaces.ifaddresses(eth).get(netifaces.AF_INET)
         himn_local = ip[0]['addr']
         himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
-        if HIMN_IP == himn_xs:
-            logging.info('himn_local: %s' % himn_local)
-            return eth, himn_local
+        if HIMN_IP != himn_xs:
+            # Not on the HIMN - we failed here.
+            logging.info('himn_local: DHCP returned incorrect IP %s' %
+                         ip[0]['addr'])
+            ip = None
 
-    reportError('HIMN failed to get IP address from Hypervisor')
+    if not ip:
+        reportError('HIMN failed to get IP address from Hypervisor')
+
+    logging.info('himn_local: %s' % ip[0]['addr'])
+    return eth, ip[0]['addr']
