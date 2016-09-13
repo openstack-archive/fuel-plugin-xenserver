@@ -8,14 +8,14 @@ Requirements
 Requirement               Version/Comment
 ========================= ============================
 Fuel                      9.0
-XenServer                 7.0
+XenServer                 6.5+XS65ESP013 and 7.0
 XenServer plugin for Fuel @PLUGIN_VERSION@
 ========================= ============================
 
 * This plugin will not install XenServer or configure the Virtual
   Machines used to run the OpenStack services.  Installation of
   XenServer and configuration of these Virtual Machines must be
-  performed manually.
+  performed manually. We recommend all hotfixes are applied.
 * File-based storage (EXT / NFS) must be used.  If using local storage
   then select "Enable thin provisioning" at host installation time
 * Each hypervisor must have the same access credentials as Fuel

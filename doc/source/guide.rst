@@ -18,7 +18,7 @@ Prepare infrastructure
 
    - Other service nodes (e.g. storage node) can also be created as virtual machines, but this is not required
 
-2. Download and install XenServer 7.0 and HIMN tool, a XenServer plugin, as install guide mentioned. Use it for future VM creation and network configuration.
+2. Download and install XenServer 6.5/7.0 and HIMN tool, a XenServer plugin, as install guide mentioned. Use it for future VM creation and network configuration.
 
 3. While many networking setups are expected to work, the following setup is known to work:
 
@@ -42,7 +42,7 @@ One example deployment is shown below.
 Select Environment
 ------------------
 
-#. Create a new environment with the Fuel UI wizard. Select "Liberty on Ubuntu 14.04" from OpenStack Release dropdown list, check off QEMU-KVM and check on XenServer. At the moment you will see most of options are disabled in the wizard.
+#. Create a new environment with the Fuel UI wizard. Select "Mitaka on Ubuntu 14.04" from OpenStack Release dropdown list, check off QEMU-KVM and check on XenServer. At the moment you will see most of options are disabled in the wizard.
 
    .. image:: _static/fmwizard00.png
       :width: 100%

@@ -158,23 +158,21 @@ Detailed test run results
      - Yes
      -
      -
-     -
+     - "Update stack actions: inplace, replace and update whole template"
+       is failed because vif hot plug/unplug is not supported by the
+       XenServer driver in Mitaka.
    * - 9
      - Add/Remove compute node
      - Yes
      -
      -
-     - Removing a compute node will cause “Sanity tests-Check that required
-       services are running” fail. “Some nova services have not been
-       started.. Please refer to OpenStack logs for more details.”
+     -
    * - 10
-     - Add/Remove controller  node
+     - Add/Remove controller node
      - Yes
      -
      -
-     - Removing a controller node will cause “Sanity tests-Check that
-       required services are running” fail. “Some nova services have not been
-       started.. Please refer to OpenStack logs for more details.”
+     -
    * - 11
      - Create mirror and update (setup) of core repos
      - Yes

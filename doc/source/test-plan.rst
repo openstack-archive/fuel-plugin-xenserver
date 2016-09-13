@@ -67,8 +67,8 @@ https://docs.mirantis.com/openstack/fuel/fuel-9.0/mos-planning-guide.html
 Product compatibility matrix
 ----------------------------
 
-The plugin is compatible with MOS 8.0 and XenServer versions 6.5 SP1
-and 7.0, with all hotfixes applied.
+The plugin is compatible with MOS 9.0 and XenServer versions 6.5 SP1
+(with hotfix XS65ESP013) and 7.0, with all hotfixes applied.
 
 
 Prerequirements
@@ -223,7 +223,7 @@ Create an OpenStack environment with XenServer Fuel Plugin
    * - Steps
      -
        #. Create new OpenStack environment Fuel Web UI and select
-          “Liberty on Ubuntu 14.04” in the OpenStack release
+          "Mitaka on Ubuntu 14.04” in the OpenStack release
           dropdown list
        #. Check off QEMU and check on XenServer, Network is default to “Neutron
           with VLAN segmentation” and Storage is default to Cinder. Other
@@ -307,9 +307,9 @@ Verify Fuel Health Checks
        #. Within the Fuel Master, select the appropriate environment
        #. Run all health checks and wait for completion
    * - Expected Result
-     - All health checks, except those requiring additional services
-       (e.g. Ceilometer) and those where the configuration has not been
-       changed from the defaults, pass
+     - "Update stack actions: inplace, replace and update whole template"
+       is failed because vif hot plug/unplug is not supported by the
+       XenServer driver in Mitaka.
 
 Mandatory Tests
 ===============
@@ -342,9 +342,9 @@ Modifying env with enabled plugin (removing/adding compute nodes)
        #. Redeploy cluster
        #. Run Health Check
    * - Expected Result
-     - Removing a compute node will cause “Sanity tests-Check that required
-       services are running” fail. “Some nova services have not been
-       started.. Please refer to OpenStack logs for more details.”
+     - "Update stack actions: inplace, replace and update whole template"
+       is failed because vif hot plug/unplug is not supported by the
+       XenServer driver in Mitaka.
 
 Modifying env with enabled plugin (removing/adding controller nodes)
 --------------------------------------------------------------------
@@ -369,10 +369,9 @@ Modifying env with enabled plugin (removing/adding controller nodes)
        #. Redeploy cluster
        #. Run Health Check
    * - Expected Result
-     - (Probably caused by previous test modify_env_compute_nodes)Removing a
-       compute node will cause “Sanity tests-Check that required services are
-       running” fail. “Some nova services have not been started.. Please
-       refer to OpenStack logs for more details.”
+     - "Update stack actions: inplace, replace and update whole template"
+       is failed because vif hot plug/unplug is not supported by the
+       XenServer driver in Mitaka.
 
 Create mirror and update (setup) of core repos
 ---------------------------------------------------
