@@ -67,8 +67,8 @@ https://docs.mirantis.com/openstack/fuel/fuel-9.0/mos-planning-guide.html
 Product compatibility matrix
 ----------------------------
 
-The plugin is compatible with MOS 8.0 and XenServer versions 6.5 SP1
-and 7.0, with all hotfixes applied.
+The plugin is compatible with MOS 9.0 and XenServer versions 6.5 SP1
+(with hotfix XS65ESP013) and 7.0, with all hotfixes applied.
 
 
 Prerequirements
@@ -223,7 +223,7 @@ Create an OpenStack environment with XenServer Fuel Plugin
    * - Steps
      -
        #. Create new OpenStack environment Fuel Web UI and select
-          “Liberty on Ubuntu 14.04” in the OpenStack release
+          "Mitaka on Ubuntu 14.04” in the OpenStack release
           dropdown list
        #. Check off QEMU and check on XenServer, Network is default to “Neutron
           with VLAN segmentation” and Storage is default to Cinder. Other

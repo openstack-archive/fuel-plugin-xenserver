@@ -158,7 +158,9 @@ Detailed test run results
      - Yes
      -
      -
-     -
+     - "Update stack actions: inplace, replace and update whole template"
+       is failed because vif hot plug/unplug is not supported by the
+       XenServer driver in Mitaka.
    * - 9
      - Add/Remove compute node
      - Yes
