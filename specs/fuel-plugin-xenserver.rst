@@ -6,7 +6,7 @@ Fuel Plugin for Xenserver
 The XenServer plugin provides the ability to use Xenserver as the
 hypervisor for Mirantis OpenStack.
 
-Compatible with Fuel version 8.0.
+Compatible with Fuel version 9.0.
 
 Problem description
 ===================
@@ -41,7 +41,7 @@ None.
 Upgrade impact
 --------------
 
-When upgrading the Fuel Master node to Fuel Version higher than 8.0,
+When upgrading the Fuel Master node to Fuel Version higher than 9.0,
 plugin compatibility should be checked, and a new plugin installed if
 necessary.
 
@@ -126,7 +126,7 @@ Other contributors:
 Work Items
 ----------
 
-* Upgrade the XenServer Fuel 7.0 plugin to work with Fuel 8.0.
+* Upgrade the XenServer Fuel 8.0 plugin to work with Fuel 9.0.
 
 * Test XenServer plugin.
 
@@ -135,7 +135,7 @@ Work Items
 Dependencies
 ============
 
-* Fuel 8.0
+* Fuel 9.0
 
 Testing
 =======
