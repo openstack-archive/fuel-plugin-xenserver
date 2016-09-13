@@ -67,8 +67,8 @@ https://docs.mirantis.com/openstack/fuel/fuel-9.0/mos-planning-guide.html
 Product compatibility matrix
 ----------------------------
 
-The plugin is compatible with MOS 8.0 and XenServer versions 6.5 SP1
-and 7.0, with all hotfixes applied.
+The plugin is compatible with MOS 9.0 and XenServer versions 6.5 SP1
+(with hotfix XS65ESP013) and 7.0, with all hotfixes applied.
 
 
 Prerequirements
@@ -223,13 +223,13 @@ Create an OpenStack environment with XenServer Fuel Plugin
    * - Steps
      -
        #. Create new OpenStack environment Fuel Web UI and select
-          “Liberty on Ubuntu 14.04” in the OpenStack release
+          Mitaka on Ubuntu 14.04” in the OpenStack release
           dropdown list
        #. Check off QEMU and check on XenServer, Network is default to “Neutron
-          with VLAN segmentation” and Storage is default to Cinder. Other
-          options are disabled.
-       #. In Nodes Tab, add all 3 Controller Nodes, 3 Compute Nodes and 1
-          Storage Node.
+          with VLAN segmentation” and Storage is default to Cinder. Check on Ceph
+          as Image Storage and Objects Storage. Other options are disabled.
+       #. In Nodes Tab, add all 3 Controller(with Ceph-OSD) Nodes, 3 Compute
+          Nodes and 1 Cinder Node.
        #. Select all Compute Nodes and click “Configure Interfaces”, drag
           Storage/Management network from default eth0 to eth1, Private
           network to eth2.  Leave PXE on eth0.  No networks should be

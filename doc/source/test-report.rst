@@ -56,16 +56,16 @@ verification. For other configuration settings, please see the test plan.
      - Disk
    * - Controller
      - 4
-     - 6GB
-     - 80GB
+     - 8GB
+     - 70GB
    * - Compute
-     - 4
+     - 2
      - 4GB
      - 60GB
    * - Storage
-     - 4
-     - 4GB
-     - 60GB
+     - 2
+     - 2GB
+     - 70GB
 
 Test coverage and metrics
 -------------------------
@@ -158,7 +158,8 @@ Detailed test run results
      - Yes
      -
      -
-     -
+     - "Update stack actions: inplace, replace and update whole template"
+       is failed because vif hot plug/unplug is not supported yet in Mitaka.
    * - 9
      - Add/Remove compute node
      - Yes
