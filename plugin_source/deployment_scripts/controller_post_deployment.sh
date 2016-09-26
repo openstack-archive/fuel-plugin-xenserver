@@ -50,6 +50,16 @@ EOF
 	service nova-consoleauth restart
 }
 
+function mod_ceilometer {
+    # modify ceilometer configuration per need.
+    if pcs resource show p_ceilometer-agent-central >/dev/null 2>&1; then
+        # exclude network.services.* to avoid NotFound: 404 service not found error.
+        sed  -i '/- "!storage.api.request"/a\            - "!network.services.*"' \
+            /etc/ceilometer/pipeline.yaml>>$LOG_FILE 2>&1
+        pcs resource restart  p_ceilometer-agent-central  >>$LOG_FILE 2>&1
+    fi
+}
+
 source /root/openrc admin
 
 echo "Before image replacement" >> $LOG_FILE
@@ -61,3 +71,5 @@ echo "After image replacement" >> $LOG_FILE
 glance image-list >> $LOG_FILE
 
 mod_novnc
+
+mod_ceilometer
