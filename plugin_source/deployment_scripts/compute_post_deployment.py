@@ -279,10 +279,14 @@ def patch_ceilometer():
 
     Order of patches applied:
         ceilometer-poll-cpu-util.patch
+        ceilometer-rates-always-zero.patch
+        ceilometer-support-network-bytes.patch
     """
     patchset_dir = sys.path[0]
     patchfile_list = [
         '%s/patchset/ceilometer-poll-cpu-util.patch' % patchset_dir,
+        '%s/patchset/ceilometer-rates-always-zero.patch' % patchset_dir,
+        '%s/patchset/ceilometer-support-network-bytes.patch' % patchset_dir,
     ]
     for patch_file in patchfile_list:
         utils.execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i',
