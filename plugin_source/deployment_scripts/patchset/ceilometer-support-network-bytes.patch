@@ -1,0 +1,123 @@
+diff --git a/ceilometer/compute/virt/xenapi/inspector.py b/ceilometer/compute/virt/xenapi/inspector.py
+index 9632cba..bbd5dc2 100644
+--- a/ceilometer/compute/virt/xenapi/inspector.py
++++ b/ceilometer/compute/virt/xenapi/inspector.py
+@@ -21,6 +21,11 @@ try:
+ except ImportError:
+     api = None
+ 
++try:
++    import cPickle as pickle
++except ImportError:
++    import pickle
++
+ from ceilometer.compute.pollsters import util
+ from ceilometer.compute.virt import inspector as virt_inspector
+ from ceilometer.i18n import _
+@@ -97,14 +102,29 @@ class XenapiInspector(virt_inspector.Inspector):
+     def __init__(self):
+         super(XenapiInspector, self).__init__()
+         self.session = get_api_session()
++        self.host_ref = self._get_host_ref()
++        self.host_uuid = self._get_host_uuid()
+ 
+     def _get_host_ref(self):
+         """Return the xenapi host on which nova-compute runs on."""
+         return self.session.xenapi.session.get_this_host(self.session.handle)
+ 
++    def _get_host_uuid(self):
++        return self.session.xenapi.host.get_uuid(self.host_ref)
++
+     def _call_xenapi(self, method, *args):
+         return self.session.xenapi_request(method, args)
+ 
++    def _call_plugin(self, plugin, fn, args):
++        args['host_uuid'] = self.host_uuid
++        return self.session.xenapi.host.call_plugin(
++            self.host_ref, plugin, fn, args)
++
++    def _call_plugin_serialized(self, plugin, fn, *args, **kwargs):
++        params = {'params': pickle.dumps(dict(args=args, kwargs=kwargs))}
++        rv = self._call_plugin(plugin, fn, params)
++        return pickle.loads(rv)
++
+     def _lookup_by_name(self, instance_name):
+         vm_refs = self._call_xenapi("VM.get_by_name_label", instance_name)
+         n = len(vm_refs)
+@@ -153,6 +173,31 @@ class XenapiInspector(virt_inspector.Inspector):
+         memory_usage = (total_mem - free_mem * units.Ki) / units.Mi
+         return virt_inspector.MemoryUsageStats(usage=memory_usage)
+ 
++    def inspect_vnics(self, instance):
++        instance_name = util.instance_name(instance)
++        vm_ref = self._lookup_by_name(instance_name)
++        dom_id = self._call_xenapi("VM.get_domid", vm_ref)
++        vif_refs = self._call_xenapi("VM.get_VIFs", vm_ref)
++        bw_all = self._call_plugin_serialized('bandwidth',
++                                              'fetch_all_bandwidth')
++        if vif_refs:
++            for vif_ref in vif_refs:
++                vif_rec = self._call_xenapi("VIF.get_record", vif_ref)
++
++                interface = virt_inspector.Interface(
++                    name=vif_rec['uuid'],
++                    mac=vif_rec['MAC'],
++                    fref=None,
++                    parameters=None)
++                bw_vif = bw_all[dom_id][vif_rec['device']]
++
++                # Todo <jianghuaw>: Currently the plugin can't support
++                # rx_packets and tx_packets, temporarily set them as -1.
++                stats = virt_inspector.InterfaceStats(
++                    rx_bytes=bw_vif['bw_in'], rx_packets='-1',
++                    tx_bytes=bw_vif['bw_out'], tx_packets='-1')
++                yield (interface, stats)
++
+     def inspect_vnic_rates(self, instance, duration=None):
+         instance_name = util.instance_name(instance)
+         vm_ref = self._lookup_by_name(instance_name)
+diff --git a/ceilometer/tests/unit/compute/virt/xenapi/test_inspector.py b/ceilometer/tests/unit/compute/virt/xenapi/test_inspector.py
+index caa1c93..fae1eef 100644
+--- a/ceilometer/tests/unit/compute/virt/xenapi/test_inspector.py
++++ b/ceilometer/tests/unit/compute/virt/xenapi/test_inspector.py
+@@ -138,6 +138,40 @@ class TestXenapiInspection(base.BaseTestCase):
+             memory_stat = self.inspector.inspect_memory_usage(fake_instance)
+             self.assertEqual(fake_stat, memory_stat)
+ 
++    def test_inspect_vnics(self):
++        fake_instance = {
++            'OS-EXT-SRV-ATTR:instance_name': 'fake_instance_name',
++            'id': 'fake_instance_id'}
++        vif_rec = {
++            'uuid': 'vif_uuid',
++            'MAC': 'vif_mac',
++            'device': '0',
++        }
++        request_returns = [['vm_ref'], '10', ['vif_ref'], vif_rec]
++        bandwidth_returns = [{
++            '10': {
++                '0': {
++                    'bw_in': 1024, 'bw_out': 2048
++                }
++            }
++        }]
++        session = self.inspector.session
++        with mock.patch.object(session, 'xenapi_request',
++                               side_effect=request_returns):
++            with mock.patch.object(self.inspector,
++                                   '_call_plugin_serialized',
++                                   side_effect=bandwidth_returns):
++
++                interfaces = list(
++                    self.inspector.inspect_vnics(fake_instance))
++
++                self.assertEqual(1, len(interfaces))
++                vnic0, info0 = interfaces[0]
++                self.assertEqual('vif_uuid', vnic0.name)
++                self.assertEqual('vif_mac', vnic0.mac)
++                self.assertEqual(1024, info0.rx_bytes)
++                self.assertEqual(2048, info0.tx_bytes)
++
+     def test_inspect_vnic_rates(self):
+         fake_instance = {'OS-EXT-SRV-ATTR:instance_name': 'fake_instance_name',
+                          'id': 'fake_instance_id'}

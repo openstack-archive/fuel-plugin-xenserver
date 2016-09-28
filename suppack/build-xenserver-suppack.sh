@@ -92,6 +92,8 @@ pushd nova
 git checkout -b mos_nova "$GITBRANCH"
 # patch xenhost as this file is not merged into this release
 cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/xenhost plugins/xenserver/xenapi/etc/xapi.d/plugins/
+# patch bandwidth as this file is not merged into this release
+cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/bandwidth plugins/xenserver/xenapi/etc/xapi.d/plugins/
 popd
 
 cp -r xenserver-nova-suppack-builder/plugins/xenserver/xenapi/* nova/plugins/xenserver/xenapi/
