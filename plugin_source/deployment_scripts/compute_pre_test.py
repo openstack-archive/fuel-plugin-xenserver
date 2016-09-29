@@ -50,7 +50,10 @@ def check_host_compatibility(himn, username):
                      'param-name=software-version param-key=product_version'))
     hotfixes = version_hotfixes.get(ver)
     if not hotfixes:
-        return
+        supported_versions = ', '.join(version_hotfixes.keys())
+        utils.reportError('@HYPERVISOR_NAME@ version %s is not supported.  '
+                          'The following versions are supported: %s' %
+                          (ver, supported_versions))
 
     for hotfix in hotfixes:
         if not hotfix:
