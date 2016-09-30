@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -eu
 
 LOG_ROOT="/var/log/@PLUGIN_NAME@/"
 mkdir -p $LOG_ROOT
@@ -18,7 +18,7 @@ function replace_test_image {
 
 	if [[ -n "$image_id" ]]; then
 		echo "Delete image $image_name" >> $LOG_FILE
-		glance image-delete $image_id &>> $LOG_FILE
+		glance image-delete $image_id 2>&1 &>> $LOG_FILE
 	fi
 
 	echo "Create image $image_name" >> $LOG_FILE
@@ -29,7 +29,7 @@ function replace_test_image {
 		--property vm_mode="$vm_mode" \
 		--visibility public \
 		--file "$image_file" \
-		&>> $LOG_FILE
+		2>&1 &>> $LOG_FILE
 }
 
 function mod_novnc {
@@ -53,11 +53,11 @@ EOF
 source /root/openrc admin
 
 echo "Before image replacement" >> $LOG_FILE
-glance image-list >> $LOG_FILE
+glance image-list 2>&1 >> $LOG_FILE
 
 replace_test_image "TestVM" "xen" cirros-0.3.4-x86_64-disk.vhd.tgz
 
 echo "After image replacement" >> $LOG_FILE
-glance image-list >> $LOG_FILE
+glance image-list 2>&1 >> $LOG_FILE
 
 mod_novnc
