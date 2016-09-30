@@ -36,7 +36,7 @@ XS_BUILD=${3:-"90233c"}
 XS_PLUGIN_VERSION=${4:-"2015.1"}
 
 # branch info
-GITBRANCH="origin/stable/$OS_RELEASE"
+GITBRANCH="stable/$OS_RELEASE"
 
 # repository info
 NOVA_GITREPO="https://git.openstack.org/openstack/nova"
@@ -78,18 +78,14 @@ which mkisofs || (echo "mkisofs not installed" && exit 1)
 # =============================================
 # Check out rpm packaging repo
 rm -rf xenserver-nova-suppack-builder
-git clone $RPM_BUILDER_REPO xenserver-nova-suppack-builder
-pushd xenserver-nova-suppack-builder
-git checkout -b mos_suppack_builder "$GITBRANCH"
-popd
+git clone -b $GITBRANCH --single-branch --depth 1 $RPM_BUILDER_REPO xenserver-nova-suppack-builder
 
 
 # =============================================
 # Create nova rpm file
 rm -rf nova
-git clone "$NOVA_GITREPO" nova
+git clone -b $GITBRANCH --single-branch --depth 1 "$NOVA_GITREPO" nova
 pushd nova
-git checkout -b mos_nova "$GITBRANCH"
 # patch xenhost as this file is not merged into this release
 cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/xenhost plugins/xenserver/xenapi/etc/xapi.d/plugins/
 popd
@@ -105,9 +101,8 @@ RPMFILE=$(find $FUELPLUG_UTILS_ROOT -name "openstack-xen-plugins-*.noarch.rpm" -
 # =============================================
 # Create neutron rpm file
 rm -rf neutron
-git clone "$NEUTRON_GITREPO" neutron
+git clone -b $GITBRANCH --single-branch --depth 1 "$NEUTRON_GITREPO" neutron
 pushd neutron
-git checkout -b mos_neutron "$GITBRANCH"
 cp $FUELPLUG_UTILS_ROOT/../plugin_source/deployment_scripts/patchset/netwrap neutron/plugins/ml2/drivers/openvswitch/agent/xenapi/etc/xapi.d/plugins/
 popd
 
