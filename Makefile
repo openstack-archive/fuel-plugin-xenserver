@@ -7,15 +7,18 @@ PLUGIN_VERSION:=$(shell ./get_plugin_version.sh ${BRANDING} | cut -d' ' -f1)
 PLUGIN_REVISION:=$(shell ./get_plugin_version.sh ${BRANDING} | cut -d' ' -f2)
 
 RPM_NAME=${PLUGIN_NAME}-${PLUGIN_VERSION}-${PLUGIN_VERSION}.${PLUGIN_REVISION}-1.noarch.rpm
+MD5_FILENAME=${PLUGIN_NAME}-${PLUGIN_VERSION}.${PLUGIN_REVISION}_md5.txt
 BUILDROOT=BUILD
 
 DOC_NAMES=user-guide ${PLUGIN_REVISION}-test-plan ${PLUGIN_REVISION}-test-report
 
 .SUFFIXES:
 
-build: rpm docs
+build: rpm docs md5
 
 rpm: output/${RPM_NAME}
+
+md5: output/${MD5_FILENAME}
 
 docs: $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
 
@@ -65,6 +68,9 @@ output/${PLUGIN_NAME}-${PLUGIN_VERSION}-${PLUGIN_REVISION}-%.pdf: ${BUILDROOT}/d
 output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf: ${BUILDROOT}/doc/build/latex/%.pdf
 	mkdir -p output
 	cp $^ $@
+
+output/${MD5_FILENAME}: output/${RPM_NAME}
+	md5sum $^ > $@
 
 clean:
 	rm -rf ${BUILDROOT} output suppack/xenapi-plugins-${OPENSTACK_RELEASE}* suppack/conntrack-tools.* suppack/build
