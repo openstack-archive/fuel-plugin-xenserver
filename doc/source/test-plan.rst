@@ -121,15 +121,11 @@ Install XenServer Fuel Plugin
        and the new OpenStack release is registered.
    * - Steps
      -
-       | ``fuel plugins --install /tmp/fuel-plugin-xenserver-4.0-4.0.0-1.noarch.rpm``
-       | ``fuel plugins``
-       | ``id | name                  | version | package_version``
-       | ``1  | fuel-plugin-xenserver | 4.0.0   | 4.0.0``
+       #. Run ``ls /tmp/fuel-plugin-xenserver-4.0-4.0.*-1.noarch.rpm`` to confirm the exact version of fuel plugin to be installed.
+       #. Run ``fuel plugins --install /tmp/<rpm filename>`` to install the plugin
+       #. Run ``fuel plugins`` to list the plugins installed
    * - Expected Result
-     -
-       | ``fuel plugins``
-       | ``id | name                  | version | package_version``
-       | ``1  | fuel-plugin-xenserver | 4.0.0   | 4.0.0``
+     - The table output by Fuel shows the version identified in the first step as installed
 
 Prepare Nodes
 -------------
@@ -411,7 +407,9 @@ Uninstall of plugin with deployed environment
      - Verify XenServer Fuel Plugin cannot be uninstalled before all
        dependant environments are removed.
    * - Steps
-     - ``fuel plugins --remove fuel-plugin-xenserver==4.0.0``
+     -
+       #. Run ``fuel plugins`` to identify the exact version of the plugin installed
+       #. Run ``fuel plugins --remove fuel-plugin-xenserver==<version>`` to remove the plugin
    * - Expected Result
      - 400 Client Error: Bad Request (Can't delete plugin which is enabled
        for some environment.)
@@ -430,8 +428,10 @@ Uninstall of plugin
      - Verify XenServer Fuel Plugin can be uninstalled as well as XenServer
        OpenStack release after all dependant environments are removed.
    * - Steps
-     - | ``fuel plugins --remove fuel-plugin-xenserver==4.0.0``
-       | ``fuel plugins``
+     -
+       #. Run ``fuel plugins`` to identify the exact version of the plugin installed
+       #. Run ``fuel plugins --remove fuel-plugin-xenserver==<version>`` to remove the plugin
+       #. Run ``fuel plugins``
    * - Expected Result
      - Plugin is removed.
 
