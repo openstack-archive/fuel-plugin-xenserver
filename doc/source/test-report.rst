@@ -39,7 +39,7 @@ Document purpose
 ================
 
 This document provides test run results for the XenServer Fuel Plugin version
-4.0.0 on Mirantis OpenStack 9.0.
+<Complete on branch> on Mirantis OpenStack 9.0.
 
 Test environment
 ================
@@ -67,6 +67,20 @@ verification. For other configuration settings, please see the test plan.
      - 4GB
      - 60GB
 
+Plugin's RPM
+------------
+
+======================= =========================
+RPM Name                 MD5 Checksum
+======================= =========================
+<Complete on branch>     <Complete on branch>
+======================= =========================
+
+
+Interoperability with other plugins
+-----------------------------------
+No other plugins were tested for interoperability.
+
 Test coverage and metrics
 -------------------------
 
@@ -76,9 +90,6 @@ Test coverage and metrics
 
 Test results summary
 ====================
-
-Type of testing
-===============
 
 System Testing
 --------------
@@ -160,7 +171,7 @@ Detailed test run results
      -
      - "Update stack actions: inplace, replace and update whole template"
        is failed because vif hot plug/unplug is not supported by the
-       XenServer driver in Mitaka.
+       XenServer driver.
    * - 9
      - Add/Remove compute node
      - Yes
