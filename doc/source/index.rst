@@ -1,5 +1,5 @@
 Intro
------
+=====
 
 This document will guide you through the steps of install, configure and use of the XenServer Plugin for Fuel
 
