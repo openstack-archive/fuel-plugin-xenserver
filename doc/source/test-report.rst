@@ -75,8 +75,8 @@ Plugin's RPM
    :header-rows: 1
 
    * - RPM Name
-     - @PLUGIN_NAME@-@PLUGIN_VERSION@-@PLUGIN_VERSION@.@PLUGIN_REVISION@-1.noarch.rpm
-   * - MD5 Checksup
+     - MD5 Checksum
+   * - @PLUGIN_NAME@-@PLUGIN_VERSION@-@PLUGIN_VERSION@.@PLUGIN_REVISION@-1.noarch.rpm
      - @PLUGIN_MD5@
 
 
