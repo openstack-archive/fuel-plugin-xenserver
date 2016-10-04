@@ -27,10 +27,7 @@ iso: suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso
 suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso: plugin_source/deployment_scripts/patchset/xenhost
 	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE}
 
-PLUGIN_SOURCES := $(wildcard plugin_source/*)
-PLUGIN_BRANDED_SOURCES := $(PLUGIN_SOURCES:%=${BUILDROOT}/${PLUGIN_NAME}/%)
-
-${BUILDROOT}/${PLUGIN_NAME}/%: ${BRANDING} iso
+${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso plugin_source
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}
 	cp -r plugin_source/* ${BUILDROOT}/${PLUGIN_NAME}
 	find ${BUILDROOT}/${PLUGIN_NAME} -type f -print0 | \
@@ -43,8 +40,9 @@ ${BUILDROOT}/${PLUGIN_NAME}/%: ${BRANDING} iso
 			-e s/@VERSION_HOTFIXES@/${VERSION_HOTFIXES}/g {}
 	cp suppack/xenapi-plugins-*.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
 	cp suppack/conntrack-tools.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
+	touch ${BUILDROOT}/${PLUGIN_NAME}/branded
 
-output/${RPM_NAME}: ${PLUGIN_BRANDED_SOURCES}
+output/${RPM_NAME}: ${BUILDROOT}/${PLUGIN_NAME}/branded
 	mkdir -p output
 	(cd ${BUILDROOT}; which flake8 > /dev/null && flake8 ${PLUGIN_NAME}/deployment_scripts --exclude=XenAPI.py)
 	(cd ${BUILDROOT}; fpb --check ${PLUGIN_NAME})
@@ -60,7 +58,7 @@ ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING} doc/Makefile doc/
 			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g \
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g \
 			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g \
-			-e s/@PLUGIN_MD5@/$(cat output/${MD5_FILENAME} | cut -d' ' -f1)/g {}
+			-e s/@PLUGIN_MD5@/`cat output/${MD5_FILENAME} | cut -d' ' -f1`/g {}
 
 ${BUILDROOT}/doc/build/latex/%.pdf: ${BUILDROOT}/doc/Makefile ${shell find ${BUILDROOT}/doc/source}
 	make -C ${BUILDROOT}/doc latexpdf
