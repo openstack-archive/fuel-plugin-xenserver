@@ -38,8 +38,9 @@ Revision history
 Document purpose
 ================
 
-This document provides test run results for the XenServer Fuel Plugin version
-<Complete on branch> on Mirantis OpenStack 9.0.
+This document provides test run results for the @HYPERVISOR_NAME@ Fuel
+Plugin version @PLUGIN_VERSION@.@PLUGIN_REVISION@ on Mirantis
+OpenStack 9.0.
 
 Test environment
 ================
@@ -70,11 +71,13 @@ verification. For other configuration settings, please see the test plan.
 Plugin's RPM
 ------------
 
-======================= =========================
-RPM Name                 MD5 Checksum
-======================= =========================
-<Complete on branch>     <Complete on branch>
-======================= =========================
+.. list-table::
+   :header-rows: 1
+
+   * - RPM Name
+     - @PLUGIN_NAME@-@PLUGIN_VERSION@-@PLUGIN_VERSION@.@PLUGIN_REVISION@-1.noarch.rpm
+   * - MD5 Checksup
+     - @PLUGIN_MD5@
 
 
 Interoperability with other plugins

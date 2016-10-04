@@ -20,43 +20,47 @@ rpm: output/${RPM_NAME}
 
 md5: output/${MD5_FILENAME}
 
-docs: $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
+docs: md5 $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
 
 iso: suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso
 
 suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso: plugin_source/deployment_scripts/patchset/xenhost
 	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE}
 
-${BUILDROOT}/${PLUGIN_NAME}: ${BRANDING} iso
+PLUGIN_SOURCES := $(wildcard plugin_source/*)
+PLUGIN_BRANDED_SOURCES := $(PLUGIN_SOURCES:%=${BUILDROOT}/${PLUGIN_NAME}/%)
+
+${BUILDROOT}/${PLUGIN_NAME}/%: ${BRANDING} iso
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}
 	cp -r plugin_source/* ${BUILDROOT}/${PLUGIN_NAME}
 	find ${BUILDROOT}/${PLUGIN_NAME} -type f -print0 | \
 		xargs -0 -i sed -i \
 			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
 			-e s/@HYPERVISOR_LOWER@/${HYPERVISOR_LOWER}/g \
-			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g {} \
-			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g {} \
-			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {} \
+			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g \
+			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g \
+			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g \
 			-e s/@VERSION_HOTFIXES@/${VERSION_HOTFIXES}/g {}
 	cp suppack/xenapi-plugins-*.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
 	cp suppack/conntrack-tools.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
 
-${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING}
-	mkdir -p ${BUILDROOT}/doc
-	cp -r doc/Makefile doc/source ${BUILDROOT}/doc
-	find ${BUILDROOT}/doc -type f -print0 | \
-		xargs -0 -i sed -i \
-			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
-			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g {} \
-			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g {} \
-			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g {}
-
-output/${RPM_NAME}: ${BUILDROOT}/${PLUGIN_NAME}
+output/${RPM_NAME}: ${PLUGIN_BRANDED_SOURCES}
 	mkdir -p output
 	(cd ${BUILDROOT}; which flake8 > /dev/null && flake8 ${PLUGIN_NAME}/deployment_scripts --exclude=XenAPI.py)
 	(cd ${BUILDROOT}; fpb --check ${PLUGIN_NAME})
 	(cd ${BUILDROOT}; fpb --build ${PLUGIN_NAME})
 	cp ${BUILDROOT}/${PLUGIN_NAME}/${RPM_NAME} $@
+
+${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING} doc/Makefile doc/source
+	mkdir -p ${BUILDROOT}/doc
+	cp -r doc/Makefile doc/source ${BUILDROOT}/doc
+	find ${BUILDROOT}/doc -type f -print0 | \
+		xargs -0 -i sed -i \
+			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
+			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g \
+			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g \
+			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g \
+			-e s/@PLUGIN_MD5@/$(cat output/${MD5_FILENAME} | cut -d' ' -f1)/g {}
 
 ${BUILDROOT}/doc/build/latex/%.pdf: ${BUILDROOT}/doc/Makefile ${shell find ${BUILDROOT}/doc/source}
 	make -C ${BUILDROOT}/doc latexpdf
