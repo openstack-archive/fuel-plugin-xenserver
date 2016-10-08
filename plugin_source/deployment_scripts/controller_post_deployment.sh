@@ -42,7 +42,7 @@ print astute['network_metadata']['vips']['public']['ipaddr']
 EOF
 )
 	cat > /etc/nova/nova-compute.conf <<EOF
-[DEFAULT]
+[vnc]
 novncproxy_host=0.0.0.0
 novncproxy_base_url=http://$public_ip:6080/vnc_auto.html
 EOF
