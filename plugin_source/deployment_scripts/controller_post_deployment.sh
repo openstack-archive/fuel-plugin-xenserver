@@ -32,24 +32,6 @@ function replace_test_image {
 		2>&1 &>> $LOG_FILE
 }
 
-function mod_novnc {
-	local public_ip
-	public_ip=$(python - <<EOF
-import sys
-import yaml
-astute=yaml.load(open('/etc/astute.yaml'))
-print astute['network_metadata']['vips']['public']['ipaddr']
-EOF
-)
-	cat > /etc/nova/nova-compute.conf <<EOF
-[DEFAULT]
-novncproxy_host=0.0.0.0
-novncproxy_base_url=http://$public_ip:6080/vnc_auto.html
-EOF
-	service nova-novncproxy restart
-	service nova-consoleauth restart
-}
-
 function mod_ceilometer {
     # modify ceilometer configuration per need.
     if pcs resource show p_ceilometer-agent-central >/dev/null 2>&1; then
@@ -69,7 +51,5 @@ replace_test_image "TestVM" "xen" cirros-0.3.4-x86_64-disk.vhd.tgz
 
 echo "After image replacement" >> $LOG_FILE
 glance image-list 2>&1 >> $LOG_FILE
-
-mod_novnc
 
 mod_ceilometer
