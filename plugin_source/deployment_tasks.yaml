@@ -28,4 +28,4 @@
   type: shell
   parameters:
     cmd: ./controller_post_deployment.sh
-    timeout: 300
+    timeout: 600
