@@ -50,12 +50,35 @@ EOF
 	service nova-consoleauth restart
 }
 
+function wait_ocf_resource_started {
+    # wait upto $TIMEOUT seconds until all ocf resources are started
+    TIMEOUT=600
+    INTERVAL=10
+    remain_time=$TIMEOUT
+    while [ ${remain_time} -gt 0 ]; do
+        if pcs resource show | grep ocf::fuel | grep -v Started >> $LOG_FILE; then
+            echo "$(date): wait for resources to start." >> $LOG_FILE
+            sleep $INTERVAL
+            remain_time=$((remain_time - $INTERVAL))
+        else
+            return 0
+        fi
+    done
+    echo "Error:  $(date): timeout for waiting resources to start." >> $LOG_FILE
+    echo "Error: $(date): timeout for waiting resources to start." >&2
+    exit 1
+}
+
 function mod_ceilometer {
     # modify ceilometer configuration per need.
     if pcs resource show p_ceilometer-agent-central >/dev/null 2>&1; then
         # exclude network.services.* to avoid NotFound: 404 service not found error.
         sed  -i '/- "!storage.api.request"/a\            - "!network.services.*"' \
             /etc/ceilometer/pipeline.yaml>>$LOG_FILE 2>&1
+        # wait until all ocf resources are started, otherwise there is risk for race
+        # condition: If two "resource restart" occur at the same time, it will result
+        # into timeout for both.
+        wait_ocf_resource_started
         pcs resource restart  p_ceilometer-agent-central  >>$LOG_FILE 2>&1
     fi
 }
