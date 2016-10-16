@@ -1,4 +1,5 @@
 - id: 'install-pv-tool'
+  version: 2.0.0
   role: ['compute']
   required_for: ['compute-pre-test']
   requires: ['network_configuration_end']
@@ -7,6 +8,7 @@
     cmd: 'dpkg -i ./xe-guest-utilities_6.5.0-1393_amd64.deb'
     timeout: 10
 - id: 'compute-pre-test'
+  version: 2.0.0
   role: ['compute']
   requires: ['install-pv-tool']
   type: shell
@@ -14,6 +16,7 @@
     cmd: ./compute_pre_test.py
     timeout: 120
 - id: 'compute-post-deployment'
+  version: 2.0.0
   role: ['compute']
   required_for: ['post_deployment_end']
   requires: ['post_deployment_start']
@@ -22,6 +25,7 @@
     cmd: ./compute_post_deployment.py
     timeout: 300
 - id: 'controller-post-deployment'
+  version: 2.0.0
   role: ['primary-controller']
   required_for: ['post_deployment_end']
   requires: ['post_deployment_start']
