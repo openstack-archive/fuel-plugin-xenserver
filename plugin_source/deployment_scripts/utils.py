@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from glanceclient import Client
+from keystoneauth1 import loading
+from keystoneauth1 import session
 import logging
 import netifaces
 import os
@@ -218,3 +221,48 @@ def init_eth():
 
     logging.info('himn_local: %s' % ip[0]['addr'])
     return eth, ip[0]['addr']
+
+
+def get_keystone_creds():
+    return {
+        'username': os.environ['OS_USERNAME'],
+        'password': os.environ['OS_PASSWORD'],
+        'auth_url': os.environ['OS_AUTH_URL'],
+        'tenant_name': os.environ['OS_TENANT_NAME'],
+    }
+
+
+def get_keystone_session():
+    loader = loading.get_plugin_loader('password')
+    creds = get_keystone_creds()
+    auth = loader.load_from_options(**creds)
+    sess = session.Session(auth=auth)
+    return sess
+
+
+def list_images(sess):
+    logging.info('Listing images:')
+    glance = Client('2', session=sess)
+    images = glance.images.list()
+    for image in images:
+        logging.info('+ {name}'.format(**image))
+
+
+def del_images(sess, image_name):
+    glance = Client('2', session=sess)
+    images = glance.images.list()
+    for image in images:
+        if image.name == image_name:
+            glance.images.delete(image.id)
+            logging.info('Image %s is delete' % image_name)
+
+
+def add_image(sess, image_name, vm_mode, image_file):
+    glance = Client('2', session=sess)
+    image = glance.images.create(name=image_name, container_format="ovf",
+                                 disk_format="vhd", visibility="public",
+                                 vm_mode=vm_mode)
+    with open(image_file, 'rb') as f:
+        glance.images.upload(image.id, f)
+    logging.info('Image %s (mode: %s, file: %s) is added' %
+                 (image_name, vm_mode, image_file))
