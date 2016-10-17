@@ -13,6 +13,9 @@ LOG_ROOT = '/var/log/@PLUGIN_NAME@'
 HIMN_IP = '169.254.0.1'
 
 
+LOG = logging.getLogger(ASTUTE_SECTION)
+
+
 class ExecutionError(Exception):
     pass
 
@@ -22,7 +25,7 @@ class FatalException(Exception):
 
 
 def reportError(err):
-    logging.error(err)
+    LOG.error(err)
     raise FatalException(err)
 
 
@@ -37,7 +40,7 @@ def detailed_execute(*cmd, **kwargs):
         env.update(_env)
     else:
         env = None
-    logging.info(env_prefix + ' '.join(cmd))
+    LOG.info(env_prefix + ' '.join(cmd))
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,  # nosec
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, env=env)
@@ -51,14 +54,14 @@ def detailed_execute(*cmd, **kwargs):
     if out:
         # Truncate "\n" if it is the last char
         out = out.strip()
-        logging.debug(out)
+        LOG.debug(out)
     if err:
-        logging.info(err)
+        LOG.info(err)
 
     if proc.returncode is not None and proc.returncode != 0:
         if proc.returncode in kwargs.get('allowed_return_codes', [0]):
-            logging.info('Swallowed acceptable return code of %d',
-                         proc.returncode)
+            LOG.info('Swallowed acceptable return code of %d',
+                     proc.returncode)
         else:
             raise ExecutionError(err)
 
@@ -106,6 +109,20 @@ def scp(host, username, target_path, filename):
                    '%s@%s:%s' % (username, host, target_path))
 
 
+def setup_logging(filename):
+    LOG_FILE = os.path.join(LOG_ROOT, filename)
+
+    if not os.path.exists(LOG_ROOT):
+        os.mkdir(LOG_ROOT)
+
+    logging.basicConfig(
+        filename=LOG_FILE, level=logging.WARNING,
+        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+
+    LOG.setLevel(logging.DEBUG)
+    return LOG
+
+
 def get_astute(astute_path=ASTUTE_PATH):
     """Return the root object read from astute.yaml"""
     if not os.path.exists(astute_path):
@@ -133,9 +150,9 @@ def get_options(astute, astute_section=ASTUTE_SECTION):
         reportError('%s not found' % astute_section)
 
     options = astute[astute_section]
-    logging.info('username: {username}'.format(**options))
-    logging.info('password: {password}'.format(**options))
-    logging.info('install_xapi: {install_xapi}'.format(**options))
+    LOG.info('username: {username}'.format(**options))
+    LOG.info('password: {password}'.format(**options))
+    LOG.info('install_xapi: {install_xapi}'.format(**options))
     return options['username'], options['password'], \
         options['install_xapi']
 
@@ -163,7 +180,7 @@ def find_eth_xenstore():
     himn_mac = execute(
         'xenstore-read',
         '/local/domain/%s/vm-data/himn_mac' % domid)
-    logging.info('himn_mac: %s' % himn_mac)
+    LOG.info('himn_mac: %s' % himn_mac)
 
     eths = [eth for eth in netifaces.interfaces()
             if eth_to_mac(eth) == himn_mac]
@@ -205,7 +222,7 @@ def init_eth():
         try:
             eth = find_eth_xenstore()
         except Exception:
-            logging.debug('Failed to find MAC through xenstore', exc_info=True)
+            LOG.debug('Failed to find MAC through xenstore', exc_info=True)
 
         if eth is None:
             eth = detect_eth_dhclient()
@@ -213,7 +230,7 @@ def init_eth():
         if eth is None:
             reportError('Failed to detect HIMN ethernet device')
 
-        logging.info('himn_eth: %s' % eth)
+        LOG.info('himn_eth: %s' % eth)
 
         execute('dhclient', eth)
         fname = '/etc/network/interfaces.d/ifcfg-' + eth
@@ -222,7 +239,7 @@ def init_eth():
              'post-up route del default dev {eth}').format(eth=eth)
         with open(fname, 'w') as f:
             f.write(s)
-        logging.info('%s created' % fname)
+        LOG.info('%s created' % fname)
         execute('ifdown', eth)
         execute('ifup', eth)
 
@@ -231,12 +248,12 @@ def init_eth():
         himn_xs = '.'.join(himn_local.split('.')[:-1] + ['1'])
         if HIMN_IP != himn_xs:
             # Not on the HIMN - we failed here.
-            logging.info('himn_local: DHCP returned incorrect IP %s' %
-                         ip[0]['addr'])
+            LOG.info('himn_local: DHCP returned incorrect IP %s' %
+                     ip[0]['addr'])
             ip = None
 
     if not ip:
         reportError('HIMN failed to get IP address from Hypervisor')
 
-    logging.info('himn_local: %s' % ip[0]['addr'])
+    LOG.info('himn_local: %s' % ip[0]['addr'])
     return eth, ip[0]['addr']
