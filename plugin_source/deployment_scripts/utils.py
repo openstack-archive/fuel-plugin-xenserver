@@ -51,8 +51,9 @@ def execute(*cmd, **kwargs):
         err = proc.stderr.readlines()
         (out, err) = map(' '.join, [out, err])
 
-    # Both if/else need to deal with "\n" scenario
-    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
+    if not (('raw' in kwargs) and kwargs.get('raw')):
+        # Both if/else need to deal with "\n" scenario
+        (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
 
     if out:
         logging.debug(out)
