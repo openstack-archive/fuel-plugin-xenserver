@@ -1,21 +1,16 @@
 #!/usr/bin/env python
 
 import json
-import logging
 import os
 import stat
 import utils
 from utils import HIMN_IP
 
 XS_RSA = '/root/.ssh/xs_rsa'
-LOG_FILE = os.path.join(utils.LOG_ROOT, 'compute_pre_deployment.log')
 VERSION_HOTFIXES = '@VERSION_HOTFIXES@'
 
-if not os.path.exists(utils.LOG_ROOT):
-    os.mkdir(utils.LOG_ROOT)
-
-logging.basicConfig(filename=LOG_FILE,
-                    level=logging.DEBUG)
+utils.setup_logging('compute_pre_test.log')
+LOG = utils.LOG
 
 
 def ssh_copy_id(host, username, password):
