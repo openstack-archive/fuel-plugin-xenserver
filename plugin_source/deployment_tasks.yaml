@@ -27,5 +27,5 @@
   requires: ['post_deployment_start']
   type: shell
   parameters:
-    cmd: ./controller_post_deployment.sh
+    cmd: ./controller_post_deployment.py
     timeout: 600
