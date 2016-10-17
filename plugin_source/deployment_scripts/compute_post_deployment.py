@@ -2,7 +2,6 @@
 
 import ConfigParser
 from distutils.version import LooseVersion
-import logging
 import netifaces
 import os
 import re
@@ -13,7 +12,6 @@ import utils
 from utils import HIMN_IP
 
 
-LOG_FILE = os.path.join(utils.LOG_ROOT, 'compute_post_deployment.log')
 INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenapi-plugins-mitaka.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
@@ -21,11 +19,7 @@ CONNTRACK_ISO = 'conntrack-tools.iso'
 CONNTRACK_CONF_SAMPLE =\
     '/usr/share/doc/conntrack-tools-1.4.2/doc/stats/conntrackd.conf'
 
-if not os.path.exists(utils.LOG_ROOT):
-    os.mkdir(utils.LOG_ROOT)
-
-logging.basicConfig(filename=LOG_FILE,
-                    level=logging.DEBUG)
+LOG = utils.setup_logging('compute_post_deployment.log')
 
 
 def get_endpoints(astute):
@@ -36,8 +30,8 @@ def get_endpoints(astute):
         endpoints[k]['IP'][0]
     ) for k in endpoints])
 
-    logging.info('storage network: {storage}'.format(**endpoints))
-    logging.info('mgmt network: {mgmt}'.format(**endpoints))
+    LOG.info('storage network: {storage}'.format(**endpoints))
+    LOG.info('mgmt network: {mgmt}'.format(**endpoints))
     return endpoints
 
 
@@ -78,7 +72,7 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
             cf.write(configfile)
     except Exception:
         utils.reportError('Cannot set configurations to %s' % filename)
-    logging.info('%s created' % filename)
+    LOG.info('%s created' % filename)
 
 
 def route_to_compute(endpoints, himn_xs, himn_local, username):
@@ -123,7 +117,7 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
             cmd = cmd.format(net=net, mask=mask, himn_local=himn_local)
             utils.ssh(himn_xs, username, cmd)
         else:
-            logging.info('%s network ip is missing' % endpoint_name)
+            LOG.info('%s network ip is missing' % endpoint_name)
     utils.ssh(himn_xs, username, 'chmod +x /etc/udev/scripts/reroute.sh')
     utils.ssh(himn_xs, username,
               ('echo \'SUBSYSTEM=="net" ACTION=="add" '
@@ -204,7 +198,7 @@ def modify_neutron_rootwrap_conf(himn, username, password):
             cf.write(configfile)
     except Exception:
         utils.reportError("Fail to modify file %s", filename)
-    logging.info('Modify file %s successfully', filename)
+    LOG.info('Modify file %s successfully', filename)
 
 
 def modify_neutron_ovs_agent_conf(int_br, br_mappings):
@@ -222,7 +216,7 @@ def modify_neutron_ovs_agent_conf(int_br, br_mappings):
             cf.write(configfile)
     except Exception:
         utils.reportError("Fail to modify %s", filename)
-    logging.info('Modify %s successfully', filename)
+    LOG.info('Modify %s successfully', filename)
 
 
 def get_private_network_ethX():
@@ -351,7 +345,7 @@ def check_and_setup_ceilometer(himn, username, password):
         cf.set('xenapi', 'connection_password', password)
         with open(filename, 'w') as configfile:
             cf.write(configfile)
-        logging.info('Modify file %s successfully', filename)
+        LOG.info('Modify file %s successfully', filename)
     except Exception:
         utils.reportError("Fail to modify file %s", filename)
         return
@@ -365,7 +359,7 @@ def enable_conntrack_service(himn, username):
                          'param-key=platform_version'))
     if LooseVersion(xcp_ver) < LooseVersion('2.1.0'):
         # Only support conntrack-tools since XS7.0(XCP2.1.0) and above
-        logging.info('No need to enable conntrack-tools with XCP %s' % xcp_ver)
+        LOG.info('No need to enable conntrack-tools with XCP %s' % xcp_ver)
         return
 
     conn_installed = utils.ssh(himn, username,
@@ -435,5 +429,5 @@ if __name__ == '__main__':
             if is_ceilometer_enabled:
                 check_and_setup_ceilometer(HIMN_IP, username, password)
             else:
-                logging.info('Skip ceilomter setup as this service is '
-                             'disabled.')
+                LOG.info('Skip ceilomter setup as this service is '
+                         'disabled.')
