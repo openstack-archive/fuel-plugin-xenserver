@@ -51,10 +51,10 @@ def execute(*cmd, **kwargs):
         err = proc.stderr.readlines()
         (out, err) = map(' '.join, [out, err])
 
-    # Both if/else need to deal with "\n" scenario
-    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
-
     if out:
+        # Truncate "\n" if it is the last char
+        if out[-1] == '\n':
+            out = out[0:-1]
         logging.debug(out)
     if err:
         logging.info(err)
@@ -82,6 +82,20 @@ def scp(host, username, target_path, filename):
     return execute('scp', '-i', XS_RSA,
                    '-o', 'StrictHostKeyChecking=no', filename,
                    '%s@%s:%s' % (username, host, target_path))
+
+
+def setup_logging(filename):
+    LOG_FILE = os.path.join(LOG_ROOT, filename)
+
+    if not os.path.exists(LOG_ROOT):
+        os.mkdir(LOG_ROOT)
+
+    logging.basicConfig(
+        filename=LOG_FILE, level=logging.WARNING,
+        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+    LOG = logging.getLogger(__name__)
+    LOG.setLevel(logging.DEBUG)
+    return LOG
 
 
 def get_astute(astute_path=ASTUTE_PATH):
