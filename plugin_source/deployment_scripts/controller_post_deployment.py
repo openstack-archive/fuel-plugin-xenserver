@@ -8,6 +8,7 @@ import logging
 import os
 from time import sleep
 import utils
+import shutil
 import yaml
 
 
@@ -67,14 +68,19 @@ def wait_ocf_resource_started(timeout, interval):
 def mod_novnc():
     astute = utils.get_astute()
     if astute:
-        public_ip = utils.astute_get(
-            astute, ('network_metadata', 'vips', 'public', 'ipaddr'))
-        filename = '/etc/nova/nova-compute.conf'
+        filename = '/etc/nova/nova.conf'
+        orig_filename = filename + ".orig"
+        if not os.path.exists(orig_filename):
+            shutil.copyfile(filename, orig_filename)
         cf = ConfigParser.ConfigParser()
         try:
-            cf.set('DEFAULT', 'novncproxy_base_url',
-                   'http://%s:6080/vnc_auto.html' % public_ip)
-            cf.set('DEFAULT', 'novncproxy_host', "0.0.0.0")
+            cf.read(orig_filename)
+            if not cf.has_section('cache'):
+                cf.add_section('cache')
+            cf.set('cache', 'enable', 'True')
+            memcached_servers = cf.get('keystone', 'memcached_servers')
+            cf.set('cache', 'memcached_servers', memcached_servers)
+            cf.set('DEFAULT', 'memcached_servers', memcached_servers)
             with open(filename, 'w') as configfile:
                 cf.write(configfile)
         except Exception:
