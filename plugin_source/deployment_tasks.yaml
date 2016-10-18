@@ -26,10 +26,19 @@
     timeout: 300
 - id: 'controller-post-deployment'
   version: 2.0.0
-  role: ['primary-controller']
-  required_for: ['post_deployment_end']
+  role: ['primary-controller', 'controller']
+  required_for: ['primary-controller-post-deployment']
   requires: ['post_deployment_start']
   type: shell
   parameters:
-    cmd: source /root/openrc && ./controller_post_deployment.py
+    cmd: ./controller_post_deployment.py
+    timeout: 600
+- id: 'primary-controller-post-deployment'
+  version: 2.0.0
+  role: ['primary-controller']
+  required_for: ['post_deployment_end']
+  requires: ['controller-post-deployment']
+  type: shell
+  parameters:
+    cmd: source /root/openrc && ./primary_controller_post_deployment.py
     timeout: 600
