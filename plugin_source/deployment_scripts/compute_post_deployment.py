@@ -61,10 +61,14 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
         cf.read(filename)
         cf.set('DEFAULT', 'compute_driver', 'xenapi.XenAPIDriver')
         cf.set('DEFAULT', 'force_config_drive', 'True')
+
+        if not cf.has_section('vnc'):
+            cf.add_section('vnc')
         scheme = "https" if services_ssl else "http"
-        cf.set('DEFAULT', 'novncproxy_base_url',
+        cf.set('vnc', 'novncproxy_base_url',
                '%s://%s:6080/vnc_auto.html' % (scheme, public_ip))
-        cf.set('DEFAULT', 'vncserver_proxyclient_address', mgmt_ip)
+        cf.set('vnc', 'vncserver_proxyclient_address', mgmt_ip)
+
         if not cf.has_section('xenserver'):
             cf.add_section('xenserver')
         cf.set('xenserver', 'connection_url', 'http://%s' % himn)
