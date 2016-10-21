@@ -14,7 +14,7 @@ function replace_test_image {
 	local image_file
 	image_file="$3"
 
-	image_id=$(glance image-list | grep "$image_name" | awk -F "|" '{print $2}' | grep -v '^$')
+	image_id=$(glance image-list | awk -F "|" '/'$image_name'/ {print $2}')
 
 	if [[ -n "$image_id" ]]; then
 		echo "Delete image $image_name" >> $LOG_FILE
