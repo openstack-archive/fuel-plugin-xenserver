@@ -26,7 +26,7 @@ def reportError(err):
     raise FatalException(err)
 
 
-def execute(*cmd, **kwargs):
+def detailed_execute(*cmd, **kwargs):
     cmd = map(str, cmd)
     _env = kwargs.get('env')
     env_prefix = ''
@@ -42,19 +42,15 @@ def execute(*cmd, **kwargs):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, env=env)
 
-    if 'prompt' in kwargs:
-        prompt = kwargs.get('prompt')
-        proc.stdout.flush()
+    prompt = kwargs.get('prompt')
+    if prompt:
         (out, err) = proc.communicate(prompt)
     else:
-        out = proc.stdout.readlines()
-        err = proc.stderr.readlines()
-        (out, err) = map(' '.join, [out, err])
-
-    # Both if/else need to deal with "\n" scenario
-    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
+        (out, err) = proc.communicate()
 
     if out:
+        # Truncate "\n" if it is the last char
+        out = out.strip()
         logging.debug(out)
     if err:
         logging.info(err)
@@ -66,7 +62,33 @@ def execute(*cmd, **kwargs):
         else:
             raise ExecutionError(err)
 
+    return proc.returncode, out, err
+
+
+def execute(*cmd, **kwargs):
+    _, out, _ = detailed_execute(*cmd, **kwargs)
     return out
+
+
+def patch(directory, patch_file, level):
+    cwd = os.getcwd()
+    patchset_dir = os.path.join(cwd, "patchset")
+
+    patches_applied = os.path.join(patchset_dir, "patches_applied")
+
+    patched = False
+    if os.path.exists(patches_applied):
+        with open(patches_applied) as f:
+            patches = f.read().split('\n')
+        patched = (patch_file) in patches
+
+    if not patched:
+        execute('patch', '-d', directory, '-p%s' % level, '-i',
+                os.path.join(patchset_dir, patch_file))
+        with open(patches_applied, "a") as f:
+            f.write(patch_file + "\n")
+    else:
+        logging.info(patch_file + " is already applied - skipping")
 
 
 def ssh(host, username, *cmd, **kwargs):
