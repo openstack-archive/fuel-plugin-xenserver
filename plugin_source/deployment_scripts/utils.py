@@ -26,7 +26,7 @@ def reportError(err):
     raise FatalException(err)
 
 
-def execute(*cmd, **kwargs):
+def detailed_execute(*cmd, **kwargs):
     cmd = map(str, cmd)
     _env = kwargs.get('env')
     env_prefix = ''
@@ -42,19 +42,15 @@ def execute(*cmd, **kwargs):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, env=env)
 
-    if 'prompt' in kwargs:
-        prompt = kwargs.get('prompt')
-        proc.stdout.flush()
-        (out, err) = proc.communicate(prompt)
+    prompt = kwargs.get('prompt')
+    if prompt:
+        (out, err) = proc.communicate(kwargs.get('prompt'))
     else:
-        out = proc.stdout.readlines()
-        err = proc.stderr.readlines()
-        (out, err) = map(' '.join, [out, err])
-
-    # Both if/else need to deal with "\n" scenario
-    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
+        (out, err) = proc.communicate()
 
     if out:
+        # Truncate "\n" if it is the last char
+        out = out.strip()
         logging.debug(out)
     if err:
         logging.info(err)
@@ -66,7 +62,24 @@ def execute(*cmd, **kwargs):
         else:
             raise ExecutionError(err)
 
+    return proc.returncode, out, err
+
+
+def execute(*cmd, **kwargs):
+    _, out, _ = detailed_execute(*cmd, **kwargs)
     return out
+
+
+def patch(directory, patch_file, level):
+    rc, _, _ = detailed_execute('patch', '-d', directory, '-p%s' % level,
+                                '-i', patch_file, '--dry-run', '-R',
+                                allowed_return_codes=[0, 1])
+    # Test if the patch can be reversely applied. Return code 0 means
+    # it can be reversed, it also means the patch has been applied before
+
+    if rc == 1:
+        execute('patch', '-d', directory, '-p%s' % level, '-i', patch_file,
+                allowed_return_codes=[0, 1])
 
 
 def ssh(host, username, *cmd, **kwargs):

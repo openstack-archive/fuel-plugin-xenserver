@@ -289,8 +289,7 @@ def patch_ceilometer():
         '%s/patchset/ceilometer-support-network-bytes.patch' % patchset_dir,
     ]
     for patch_file in patchfile_list:
-        utils.execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i',
-                      patch_file)
+        utils.patch(DIST_PACKAGES_DIR, patch_file, 1)
 
 
 def patch_compute_xenapi():
@@ -309,8 +308,7 @@ def patch_compute_xenapi():
         '%s/patchset/ovs-interim-bridge.patch' % patchset_dir,
         '%s/patchset/neutron-security-group.patch' % patchset_dir]
     for patch_file in patchfile_list:
-        utils.execute('patch', '-d', DIST_PACKAGES_DIR, '-p1', '-i',
-                      patch_file)
+        utils.patch(DIST_PACKAGES_DIR, patch_file, 1)
 
 
 def patch_neutron_ovs_agent():
@@ -320,7 +318,7 @@ def patch_neutron_ovs_agent():
     """
     patchset_dir = sys.path[0]
     patch_file = '%s/patchset/fix-xenapi-returncode.patch' % patchset_dir
-    utils.execute('patch', '-d', '/usr/bin', '-p2', '-i', patch_file)
+    utils.patch('/usr/bin', patch_file, 2)
 
 
 def reconfig_multipath():
