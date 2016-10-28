@@ -26,7 +26,7 @@ def reportError(err):
     raise FatalException(err)
 
 
-def execute(*cmd, **kwargs):
+def detailed_execute(*cmd, **kwargs):
     cmd = map(str, cmd)
     _env = kwargs.get('env')
     env_prefix = ''
@@ -42,19 +42,15 @@ def execute(*cmd, **kwargs):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, env=env)
 
-    if 'prompt' in kwargs:
-        prompt = kwargs.get('prompt')
-        proc.stdout.flush()
-        (out, err) = proc.communicate(prompt)
+    prompt = kwargs.get('prompt')
+    if prompt:
+        (out, err) = proc.communicate(kwargs.get('prompt'))
     else:
-        out = proc.stdout.readlines()
-        err = proc.stderr.readlines()
-        (out, err) = map(' '.join, [out, err])
-
-    # Both if/else need to deal with "\n" scenario
-    (out, err) = (out.replace('\n', ''), err.replace('\n', ''))
+        (out, err) = proc.communicate()
 
     if out:
+        # Truncate "\n" if it is the last char
+        out = out.strip()
         logging.debug(out)
     if err:
         logging.info(err)
@@ -66,7 +62,33 @@ def execute(*cmd, **kwargs):
         else:
             raise ExecutionError(err)
 
+    return proc.returncode, out, err
+
+
+def execute(*cmd, **kwargs):
+    _, out, _ = detailed_execute(*cmd, **kwargs)
     return out
+
+
+def patch(directory, patch_file, level):
+    cwd = os.getcwd()
+    patchset_dir = os.path.join(cwd, "patchset")
+
+    patch_history = os.path.join(patchset_dir, "patch_history")
+
+    patched = False
+    if os.path.exists(patch_history):
+        with open(patch_history) as f:
+            patch_history_lines = f.readlines()
+        patched = (patch_file + "\n") in patch_history_lines
+
+    if not patched:
+        execute('patch', '-d', directory, '-p%s' % level, '-i',
+                os.path.join(patchset_dir, patch_file))
+        with open(patch_history, "a") as f:
+            f.write(patch_file + "\n")
+    else:
+        logging.info(patch_file + " is skipped")
 
 
 def ssh(host, username, *cmd, **kwargs):
