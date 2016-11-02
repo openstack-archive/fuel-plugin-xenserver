@@ -9,6 +9,7 @@ import yaml
 XS_RSA = '/root/.ssh/xs_rsa'
 ASTUTE_PATH = '/etc/astute.yaml'
 ASTUTE_SECTION = '@PLUGIN_NAME@'
+PLUGIN_NAME = '@PLUGIN_NAME@'
 LOG_ROOT = '/var/log/@PLUGIN_NAME@'
 HIMN_IP = '169.254.0.1'
 
