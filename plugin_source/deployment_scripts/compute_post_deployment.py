@@ -321,9 +321,11 @@ def reconfig_multipath():
 
     Change devnode rule from "^hd[a-z]" to "^(hd|xvd)[a-z]"
     """
-    utils.execute('sed', '-i', r's/"\^hd\[a-z\]"/"^(hd|xvd)[a-z]"/',
-                  '/etc/multipath.conf')
-    utils.execute('service', 'multipath-tools', 'restart')
+    multipath_conf = '/etc/multipath.conf'
+    if os.path.exists(multipath_conf):
+        utils.execute('sed', '-i', r's/"\^hd\[a-z\]"/"^(hd|xvd)[a-z]"/',
+                      multipath_conf)
+        utils.execute('service', 'multipath-tools', 'restart')
 
 
 def check_and_setup_ceilometer(himn, username, password):
