@@ -185,7 +185,7 @@ def install_logrotate_script(himn, username):
     utils.scp(himn, username, '/root/', 'rotate_xen_guest_logs.sh')
     utils.ssh(himn, username, 'mkdir -p /var/log/xen/guest')
     utils.ssh(himn, username, '''crontab - << CRONTAB
-* * * * * /root/rotate_xen_guest_logs.sh
+* * * * * /root/rotate_xen_guest_logs.sh >/dev/null 2>&1
 CRONTAB''')
 
 
