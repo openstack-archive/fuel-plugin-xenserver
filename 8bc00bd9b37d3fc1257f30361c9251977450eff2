@@ -1,0 +1,10 @@
+Verified+1: Citrix XenServer CI
+Code-Review+2: Jianghua Wang <jianghua.wang@citrix.com>
+Workflow+1: Jianghua Wang <jianghua.wang@citrix.com>
+Code-Review+2: John Hua <john.hua@citrix.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 10 Nov 2016 09:49:28 +0000
+Reviewed-on: https://review.openstack.org/395544
+Project: openstack/fuel-plugin-xenserver
+Branch: refs/heads/9.0
