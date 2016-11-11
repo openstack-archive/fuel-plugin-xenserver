@@ -28,12 +28,11 @@ mkdir -p $BUILDROOT && cd $BUILDROOT
 # OpenStack release
 OS_RELEASE=${1:-"mitaka"}
 
-# xenserver version info
-PLATFORM_VERSION=${2:-"1.9"}
-XS_BUILD=${3:-"90233c"}
+HYPERVISOR_NAME=${2:-"XenServer"}
+PLATFORM_VERSION=${3:-"1.9"}
 
 # nova and neutron xenserver dom0 plugin version
-XS_PLUGIN_VERSION=${4:-"2015.1"}
+XS_PLUGIN_VERSION=${4:-"13.0.0"}
 
 # branch info
 GITBRANCH="origin/stable/$OS_RELEASE"
@@ -144,18 +143,19 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('--pdn', dest="product_name")
 parser.add_option('--pdv', dest="product_version")
+parser.add_option('--hvn', dest="hypervisor_name")
 parser.add_option('--desc', dest="description")
 parser.add_option('--bld', dest="build")
 parser.add_option('--out', dest="outdir")
 (options, args) = parser.parse_args()
 
 xcp = Requires(originator='xcp', name='main', test='ge',
-               product='XenServer', version=options.product_version,
+               product=options.hypervisor_name, version=options.product_version,
                build=options.build)
 
 
-setup(originator='xcp', name=options.product_name, product='XenServer',
-      version=options.product_version, build=options.build, vendor='Citrix Systems, Inc.',
+setup(originator='xcp', name=options.product_name, product=options.hypervisor_name,
+      version=options.product_version, build=options.build, vendor='',
       description=options.description, packages=args, requires=[xcp],
       outdir=options.outdir, output=['iso'])
 EOF
@@ -163,7 +163,8 @@ EOF
 python buildscript.py \
 --pdn=xenapi-plugins-$OS_RELEASE \
 --pdv=$PLATFORM_VERSION \
---desc="OpenStack XenServer Plugins" \
+--hvn="$HYPERVISOR_NAME" \
+--desc="OpenStack Plugins" \
 --bld=0 \
 --out=$FUELPLUG_UTILS_ROOT \
 $RPMFILE \
@@ -172,7 +173,8 @@ $NEUTRON_RPMFILE
 python buildscript.py \
 --pdn=conntrack-tools \
 --pdv=$PLATFORM_VERSION \
---desc="XenServer Dom0 conntrack-tools" \
+--hvn="$HYPERVISOR_NAME" \
+--desc="Dom0 conntrack-tools" \
 --bld=0 \
 --out=$FUELPLUG_UTILS_ROOT \
 $EXTRA_RPMS
