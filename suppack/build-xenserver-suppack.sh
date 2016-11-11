@@ -28,12 +28,12 @@ mkdir -p $BUILDROOT && cd $BUILDROOT
 # OpenStack release
 OS_RELEASE=${1:-"mitaka"}
 
-# xenserver version info
-PLATFORM_VERSION=${2:-"1.9"}
-XS_BUILD=${3:-"90233c"}
+HOST_PRODUCT=${2:-"XenServer"}
+PLATFORM_VERSION=${3:-"1.9"}
+XS_BUILD=${4:-"90233c"}
 
 # nova and neutron xenserver dom0 plugin version
-XS_PLUGIN_VERSION=${4:-"2015.1"}
+XS_PLUGIN_VERSION=${5:-"2015.1"}
 
 # branch info
 GITBRANCH="stable/$OS_RELEASE"
@@ -145,12 +145,12 @@ parser.add_option('--out', dest="outdir")
 (options, args) = parser.parse_args()
 
 xcp = Requires(originator='xcp', name='main', test='ge',
-               product='XenServer', version=options.product_version,
+               product='$HOST_PRODUCT', version=options.product_version,
                build=options.build)
 
 
-setup(originator='xcp', name=options.product_name, product='XenServer',
-      version=options.product_version, build=options.build, vendor='Citrix Systems, Inc.',
+setup(originator='xcp', name=options.product_name, product='$HOST_PRODUCT',
+      version=options.product_version, build=options.build, vendor='',
       description=options.description, packages=args, requires=[xcp],
       outdir=options.outdir, output=['iso'])
 EOF
