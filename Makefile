@@ -25,7 +25,7 @@ docs: md5 $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
 iso: suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso
 
 suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso: plugin_source/deployment_scripts/patchset/xenhost
-	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE}
+	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE} ${HYPERVISOR_NAME}
 
 ${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso plugin_source
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}
