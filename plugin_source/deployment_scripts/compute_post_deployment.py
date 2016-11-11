@@ -133,8 +133,9 @@ def install_suppack(himn, username, package):
     """Install xapi driver supplemental pack. """
     tmp = utils.ssh(himn, username, 'mktemp', '-d')
     utils.scp(himn, username, tmp, package)
+    # Different production of Xen may platform need two Y's.
     utils.ssh(himn, username, 'xe-install-supplemental-pack',
-              tmp + '/' + package, prompt='Y\n')
+              tmp + '/' + package, prompt='Y\nY\n')
     utils.ssh(himn, username, 'rm', tmp, '-rf')
 
 
