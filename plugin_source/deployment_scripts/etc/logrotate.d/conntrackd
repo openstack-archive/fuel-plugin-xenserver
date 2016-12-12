@@ -1,0 +1,6 @@
+/var/log/conntrackd*.log {
+    daily
+    rotate 7
+    copytruncate
+    missingok
+}
