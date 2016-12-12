@@ -4,6 +4,7 @@ import logging
 import netifaces
 import os
 import subprocess
+import tempfile
 import yaml
 
 XS_RSA = '/root/.ssh/xs_rsa'
@@ -256,3 +257,25 @@ def init_eth():
 
     LOG.info('himn_local: %s' % ip[0]['addr'])
     return eth, ip[0]['addr']
+
+
+def add_cron_job(user, job_entry):
+    crontab_cmd = 'crontab'
+    out = execute(crontab_cmd, '-l', '-u', user)
+    entries = []
+    if out is not None:
+        entries = out.split('\n')
+        if job_entry not in entries:
+            # avoid duplicated entries
+            entries.append(job_entry)
+    else:
+        entries = [job_entry]
+    entries_str = '\n'.join(entries)
+    # the ending '\n' is mandatory for crontab.
+    entries_str += '\n'
+    temp_fd, temp_path = tempfile.mkstemp()
+    with open(temp_path, 'w') as tmp_file:
+            tmp_file.write(entries_str)
+    execute(crontab_cmd, '-u', user, temp_path)
+    os.close(temp_fd)
+    os.remove(temp_path)
