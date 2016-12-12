@@ -1,0 +1,7 @@
+/var/log/conntrackd*.log {
+    daily
+    maxsize 50M
+    rotate 7
+    copytruncate
+    missingok
+}
