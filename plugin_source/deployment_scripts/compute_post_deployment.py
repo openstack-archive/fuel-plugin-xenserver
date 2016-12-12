@@ -5,7 +5,9 @@ from distutils.version import LooseVersion
 import netifaces
 import os
 import re
+import shutil
 from socket import inet_ntoa
+import stat
 from struct import pack
 import utils
 from utils import HIMN_IP
@@ -71,7 +73,7 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
         cf.set('xenserver', 'vif_driver',
                'nova.virt.xenapi.vif.XenAPIOpenVswitchDriver')
         cf.set('xenserver', 'ovs_integration_bridge', INT_BRIDGE)
-        cf.set('xenserver', 'cache_images', 'none')
+        cf.set('xenserver', 'cache_images', 'all')
         with open(filename, 'w') as configfile:
             cf.write(configfile)
     except Exception:
@@ -187,6 +189,28 @@ def install_logrotate_script(himn, username):
     utils.ssh(himn, username, '''crontab - << CRONTAB
 * * * * * /root/rotate_xen_guest_logs.sh >/dev/null 2>&1
 CRONTAB''')
+
+
+def install_image_cache_cleanup():
+    tool_path = '/usr/bin/destroy_cached_images'
+    tool_conf = '/etc/nova/nova-compute.conf'
+    # install this tool.
+    try:
+        src_file = 'tools/destroy_cached_images.py'
+        target_file = tool_path
+        shutil.copy(src_file, target_file)
+        os.chown(target_file, 0, 0)
+        os.chmod(target_file, stat.S_IRWXU)
+    except Exception:
+        utils.reportError("Failed to install file %s" % target_file)
+
+    # create a daily clean-up cron job
+    cron_entry = '5 3 * * * {} --config-file={} >/dev/null 2>&1'.format(
+                 tool_path,
+                 tool_conf)
+    user = 'root'
+    utils.add_cron_job(user, cron_entry)
+    LOG.info('Added crontab successfully: %s' % cron_entry)
 
 
 def modify_neutron_rootwrap_conf(himn, username, password):
@@ -440,3 +464,5 @@ if __name__ == '__main__':
             else:
                 LOG.info('Skip ceilomter setup as this service is '
                          'disabled.')
+
+            install_image_cache_cleanup()
