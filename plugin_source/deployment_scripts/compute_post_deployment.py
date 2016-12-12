@@ -5,8 +5,10 @@ from distutils.version import LooseVersion
 import netifaces
 import os
 import re
+import shutil
 from socket import inet_ntoa
 from struct import pack
+import tempfile
 import utils
 from utils import HIMN_IP
 
@@ -71,7 +73,7 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
         cf.set('xenserver', 'vif_driver',
                'nova.virt.xenapi.vif.XenAPIOpenVswitchDriver')
         cf.set('xenserver', 'ovs_integration_bridge', INT_BRIDGE)
-        cf.set('xenserver', 'cache_images', 'none')
+        cf.set('xenserver', 'cache_images', 'all')
         with open(filename, 'w') as configfile:
             cf.write(configfile)
     except Exception:
@@ -187,6 +189,37 @@ def install_logrotate_script(himn, username):
     utils.ssh(himn, username, '''crontab - << CRONTAB
 * * * * * /root/rotate_xen_guest_logs.sh >/dev/null 2>&1
 CRONTAB''')
+
+
+def install_image_cache_cleanup():
+    # install this tool.
+    try:
+        src_file = 'tools/destroy_cached_images.py'
+        target_file = '/usr/bin/destroy_cached_images'
+        shutil.copy(src_file, target_file)
+        os.chown(target_file, 0, 0)
+        os.chmod(target_file, 0554)
+    except Exception:
+        utils.reportError("Fail to install file %s" % target_file)
+
+    # create a daily clean-up cron job
+    cron_file_path = '/var/spool/cron/crontabs/root'
+    try:
+        cron_entry = '5 3 * * * /usr/bin/destroy_cached_images '
+        cron_entry += '--config-file=/etc/nova/nova-compute.conf '
+        cron_entry += '>> /var/log/destroy_cached_images.log 2>&1'
+        cron_entry += '\n'
+        fd, temp_path = tempfile.mkstemp()
+        with open(cron_file_path, 'r') as cron_file:
+            with open(temp_path, 'w') as new_cron_file:
+                new_cron_file.writelines([line for line in cron_file \
+                    if 'destroy_cached_images' not in line])
+                new_cron_file.write(cron_entry)
+        os.close(fd)
+        shutil.copy(temp_path, cron_file_path)
+        os.remove(temp_path)
+    except Exception:
+        utils.reportError("Fail to add cron job for cached images clean-up.")
 
 
 def modify_neutron_rootwrap_conf(himn, username, password):
@@ -436,3 +469,5 @@ if __name__ == '__main__':
             else:
                 LOG.info('Skip ceilomter setup as this service is '
                          'disabled.')
+
+            install_image_cache_cleanup()
