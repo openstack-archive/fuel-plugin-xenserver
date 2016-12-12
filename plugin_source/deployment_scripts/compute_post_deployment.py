@@ -71,7 +71,7 @@ def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
         cf.set('xenserver', 'vif_driver',
                'nova.virt.xenapi.vif.XenAPIOpenVswitchDriver')
         cf.set('xenserver', 'ovs_integration_bridge', INT_BRIDGE)
-        cf.set('xenserver', 'cache_images', 'none')
+        cf.set('xenserver', 'cache_images', 'all')
         with open(filename, 'w') as configfile:
             cf.write(configfile)
     except Exception:
@@ -187,6 +187,17 @@ def install_logrotate_script(himn, username):
     utils.ssh(himn, username, '''crontab - << CRONTAB
 * * * * * /root/rotate_xen_guest_logs.sh >/dev/null 2>&1
 CRONTAB''')
+
+
+def install_image_cache_cleanup():
+    # install this tool.
+    utils.execute('cp', 'tools/destroy_cached_images.py',
+                  '/usr/bin/destroy_cached_images')
+    # create a daily clean-up cron job
+    cron_entry = '5 3 * * * /usr/bin/troy_cached_images '
+    cron_entry += '--config-file=/etc/nova/nova-compute.conf '
+    cron_entry += '>> /var/log/destroy_cached_images.log 2>&1'
+    utils.execute('echo', cron_entry, '>>', '/var/spool/cron/crontabs/root')
 
 
 def modify_neutron_rootwrap_conf(himn, username, password):
@@ -436,3 +447,5 @@ if __name__ == '__main__':
             else:
                 LOG.info('Skip ceilomter setup as this service is '
                          'disabled.')
+
+            install_image_cache_cleanup()
