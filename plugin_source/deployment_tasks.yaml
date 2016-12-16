@@ -2,7 +2,7 @@
   version: 2.0.0
   role: ['compute']
   required_for: ['compute-pre-test']
-  requires: ['network_configuration_end']
+  requires: ['pre_deployment_start']
   type: shell
   parameters:
     cmd: 'dpkg -i ./xe-guest-utilities_6.5.0-1393_amd64.deb'
@@ -11,6 +11,7 @@
   version: 2.0.0
   role: ['compute']
   requires: ['install-pv-tool']
+  required_for: ['pre_deployment_end']
   type: shell
   parameters:
     cmd: ./compute_pre_test.py
