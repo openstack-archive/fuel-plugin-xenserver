@@ -6,7 +6,7 @@
   type: shell
   parameters:
     cmd: 'dpkg -i ./xe-guest-utilities_6.5.0-1393_amd64.deb'
-    timeout: 10
+    timeout: 60
 - id: 'compute-pre-test'
   version: 2.0.0
   role: ['compute']
