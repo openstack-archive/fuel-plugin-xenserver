@@ -381,6 +381,10 @@ def enable_conntrack_service(himn, username):
                   CONNTRACK_CONF_SAMPLE,
                   '/etc/conntrackd/conntrackd.conf')
 
+    # Rotate log file for conntrack
+    utils.scp(himn, username,
+              '/etc/logrotate.d', 'etc/logrotate.d/conntrackd')
+
     # Restart conntrackd service
     utils.ssh(himn, username, 'service', 'conntrackd', 'restart')
 
