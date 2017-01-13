@@ -1,0 +1,14 @@
+[Unit]
+Description=Configure Mirantis OpenStack mesh bridge
+Requires=xcp-networkd.service openvswitch-xapi-sync.service
+After=xcp-networkd.service openvswitch-xapi-sync.service
+AssertPathExists=/etc/sysconfig/network-scripts/
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash /etc/sysconfig/network-scripts/fuel-xs-vxlan.sh start MESH_INFO
+ExecStop=/bin/bash /etc/sysconfig/network-scripts/fuel-xs-vxlan.sh stop
+
+[Install]
+WantedBy=multi-user.target
