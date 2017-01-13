@@ -1,0 +1,12 @@
+[Unit]
+Description=Configure Mirantis OpenStack br-mesh
+After=syslog.target
+AssertPathExists=/etc/xapi.d/plugins/
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash /etc/xapi.d/plugins/fuel-xs-vxlan.sh
+
+[Install]
+WantedBy=multi-user.target
