@@ -61,6 +61,7 @@ def detailed_execute(*cmd, **kwargs):
         LOG.info(err)
 
     if proc.returncode is not None and proc.returncode != 0:
+        LOG.debug('proc.returncode: %s', proc.returncode)
         if proc.returncode in kwargs.get('allowed_return_codes', [0]):
             LOG.info('Swallowed acceptable return code of %d',
                      proc.returncode)
@@ -101,8 +102,15 @@ def ssh(host, username, *cmd, **kwargs):
 
     return execute('ssh', '-i', XS_RSA,
                    '-o', 'StrictHostKeyChecking=no',
-                   '%s@%s' % (username, host), *cmd,
-                   prompt=kwargs.get('prompt'))
+                   '%s@%s' % (username, host), *cmd, **kwargs)
+
+
+def detailed_ssh(host, username, *cmd, **kwargs):
+    cmd = map(str, cmd)
+
+    return detailed_execute('ssh', '-i', XS_RSA,
+                            '-o', 'StrictHostKeyChecking=no',
+                            '%s@%s' % (username, host), *cmd, **kwargs)
 
 
 def scp(host, username, target_path, filename):
