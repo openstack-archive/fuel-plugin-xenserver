@@ -1,0 +1,13 @@
+[Unit]
+Description=Configure Mirantis OpenStack br-mesh
+Requires=xcp-networkd.service openvswitch-xapi-sync.service
+After=xcp-networkd.service openvswitch-xapi-sync.service
+AssertPathExists=/etc/xapi.d/plugins/
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash /etc/xapi.d/plugins/fuel-xs-vxlan.sh
+
+[Install]
+WantedBy=multi-user.target
