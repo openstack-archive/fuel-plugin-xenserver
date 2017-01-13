@@ -6,8 +6,6 @@
       description: ''
     - name: 'hypervisor:qemu'
       description: ''
-    - name: 'network:neutron:ml2:tun'
-      description: ''
     - name: 'additional_service:sahara'
       description: ''
     - name: 'additional_service:murano'
