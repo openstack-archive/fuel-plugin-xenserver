@@ -67,6 +67,7 @@ def detailed_execute(*cmd, **kwargs):
             LOG.info('Swallowed acceptable return code of %d',
                      proc.returncode)
         else:
+            LOG.warn('proc.returncode: %s', proc.returncode)
             raise ExecutionError(err)
 
     return proc.returncode, out, err
