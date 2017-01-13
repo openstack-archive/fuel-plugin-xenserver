@@ -264,7 +264,7 @@ def modify_neutron_rootwrap_conf(himn, username, password):
     LOG.info('Modify file %s successfully', filename)
 
 
-def modify_neutron_ovs_agent_conf(int_br, br_mappings):
+def modify_neutron_ovs_agent_conf(int_br, br_mappings=None, local_ip=None):
     filename = '/etc/neutron/plugins/ml2/openvswitch_agent.ini'
     cf = ConfigParser.ConfigParser()
     try:
@@ -274,7 +274,10 @@ def modify_neutron_ovs_agent_conf(int_br, br_mappings):
         cf.set('agent', 'root_helper_daemon', '')
         cf.set('agent', 'minimize_polling', False)
         cf.set('ovs', 'integration_bridge', int_br)
-        cf.set('ovs', 'bridge_mappings', br_mappings)
+        if br_mappings:
+            cf.set('ovs', 'bridge_mappings', br_mappings)
+        if local_ip:
+            cf.set('ovs', 'local_ip', local_ip)
         with open(filename, 'w') as configfile:
             cf.write(configfile)
     except Exception:
@@ -282,13 +285,13 @@ def modify_neutron_ovs_agent_conf(int_br, br_mappings):
     LOG.info('Modify %s successfully', filename)
 
 
-def get_private_network_ethX():
+def get_private_network_ethX(bridge_name):
     # find out ethX in DomU which connect to private network
     # br-aux is the auxiliary bridge and in normal case there will be a patch
     # between br-prv and br-aux
     values = astute['network_scheme']['transformations']
     for item in values:
-        if item['action'] == 'add-port' and item['bridge'] == 'br-aux':
+        if item['action'] == 'add-port' and item['bridge'] == bridge_name:
             return item['name']
     # If cannot find br-aux, the network topo should be public and private
     # connect to the same network and "Assign public network to all nodes"
@@ -298,8 +301,26 @@ def get_private_network_ethX():
             return item['name']
 
 
+# TODO(huanxie): Need refactor if it works as expected
+def find_dom0_private_bridge(himn, username):
+    ethX = get_private_network_ethX('br-mesh')
+    if not ethX:
+        utils.reportError("Cannot find eth used for private network")
+
+    # find the ethX mac in /sys/class/net/ethX/address
+    with open('/sys/class/net/%s/address' % ethX, 'r') as fo:
+        mac = fo.readline()
+    network_uuid = utils.ssh(himn, username,
+                             ('xe vif-list params=network-uuid '
+                              'minimal=true MAC=%s') % mac)
+    bridge = utils.ssh(himn, username,
+                       ('xe network-param-get param-name=bridge '
+                        'uuid=%s') % network_uuid)
+    return bridge
+
+
 def find_bridge_mappings(astute, himn, username):
-    ethX = get_private_network_ethX()
+    ethX = get_private_network_ethX('br-aux')
     if not ethX:
         utils.reportError("Cannot find eth used for private network")
 
@@ -471,6 +492,80 @@ def get_xcp_version(himn, username):
     return xcp_ver
 
 
+def configure_dom0_iptables(himn, username):
+    xs_chain = 'XenServer-Neutron-INPUT'
+
+    # Check XenServer specific chain, create if not exist
+    exitcode, _, _ = utils.ssh_detailed(
+        himn, username, 'iptables -t filter -L %s' % xs_chain,
+        allowed_return_codes=[0, 1])
+    if exitcode == 1:
+        LOG.info('Create iptables chain %s', xs_chain)
+        utils.ssh(himn, username, 'iptables -t filter --new %s' % xs_chain)
+        utils.ssh(himn, username,
+                  'iptables -t filter -I INPUT -j %s' % xs_chain)
+
+    # Check XenServer rule for ovs native mode, create if not exist
+    exitcode, _, _ = utils.ssh_detailed(
+        himn, username,
+        'iptables -t filter -C %s -p tcp -m tcp --dport 6640 -j ACCEPT'
+        % xs_chain,
+        allowed_return_codes=[0, 1])
+    if exitcode == 1:
+        LOG.info('Create iptables rule for neutron ovs native mode')
+        utils.ssh(himn, username,
+                  'iptables -t filter -I %s -p tcp --dport 6640 -j ACCEPT'
+                  % xs_chain)
+
+    # Check XenServer rule for vxlan, create if not exist
+    exitcode, _, _ = utils.ssh_detailed(
+        himn, username,
+        'iptables -t filter -C %s -p udp -m multiport --dports 4789 -j ACCEPT'
+        % xs_chain,
+        allowed_return_codes=[0, 1])
+    if exitcode == 1:
+        LOG.info('Create iptables rule for neutron VxLAN')
+        utils.ssh(himn, username,
+                  'iptables -t filter -I %s -p udp -m multiport --dport 4789'
+                  ' -j ACCEPT' % xs_chain)
+
+
+def create_mesh_bridge(himn, username, ovs_bridge, ip):
+    br_mesh = 'br-mesh'
+    ovs_port = 'mesh_ovs'
+    linux_port = 'mesh_linux'
+    exitcode, _, _ = utils.ssh_detailed(himn, username,
+                                        'ip', 'link', 'show', br_mesh,
+                                        allowed_return_codes=[0, 1])
+    # Create br-mesh and veth pair if not exist
+    if exitcode == 0:
+        # create linux bridge br-mesh in dom0
+        utils.ssh(himn, username, 'brctl', 'addbr', br_mesh)
+        utils.ssh(himn, username, 'brctl', 'setfd', br_mesh, '0')
+        utils.ssh(himn, username, 'brctl', 'stp', br_mesh, 'off')
+
+        # add veth pair to ovs bridge
+        utils.ssh(himn, username,
+                  'ip', 'link', 'add', ovs_port, 'type', 'veth',
+                  'peer', 'name', linux_port)
+        utils.ssh(himn, username, 'ip', 'link', 'set', ovs_port, 'up')
+        utils.ssh(himn, username,
+                  'ip', 'link', 'set', ovs_port, 'promisc', 'on')
+        utils.ssh(himn, username, 'ip', 'link', 'set', linux_port, 'up')
+        utils.ssh(himn, username,
+                  'ip', 'link', 'set', linux_port, 'promisc', 'on')
+        utils.ssh(himn, username, 'brctl', 'addif', br_mesh, ovs_port)
+
+        # move ip from br-mesh in compute node to br-mesh in dom0
+        # TODO(huan): Need persistant and netmask, not only ifconfig
+        utils.execute('ifconfig', br_mesh, '0.0.0.0')
+        utils.ssh(himn, username, 'ifconfig', br_mesh, ip)
+
+    # Create port in ovs
+    utils.ssh(himn, username, 'ovs-vsctl', '--', '--if-exists', 'del-port',
+              ovs_port, '--', 'add-port', ovs_bridge, ovs_port)
+
+
 if __name__ == '__main__':
     install_xenapi_sdk()
     astute = utils.get_astute()
@@ -506,10 +601,31 @@ if __name__ == '__main__':
             # enable conntrackd service in Dom0
             enable_conntrack_service(HIMN_IP, username, xcp_version)
 
+            # configure iptables in Dom0 to support ovs native mode and VxLAN
+            configure_dom0_iptables(HIMN_IP, username)
+
             # neutron-l2-agent in compute node
             modify_neutron_rootwrap_conf(HIMN_IP, username, password)
-            br_mappings = find_bridge_mappings(astute, HIMN_IP, username)
-            modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings)
+            l2_net_type = astute['quantum_settings']['predefined_networks'][
+                'admin_internal_net']['L2']['network_type']
+            br_mappings = None
+            if l2_net_type == 'vlan':
+                br_mappings = find_bridge_mappings(astute, HIMN_IP, username)
+            local_ip = None
+            if l2_net_type == 'tun':
+                # finb br-mesh in compute node and its IP
+                mesh_if = netifaces.ifaddresses('br-mesh')
+                if mesh_if and mesh_if.get(netifaces.AF_INET) \
+                        and mesh_if.get(netifaces.AF_INET)[0]['addr']:
+                    local_ip = mesh_if.get(netifaces.AF_INET)[0]['addr']
+                else:
+                    utils.reportError('Cannot get IP Address on mesh network')
+
+                dom0_priv_bridge = find_dom0_private_bridge(HIMN_IP, username)
+                create_mesh_bridge(HIMN_IP, username, dom0_priv_bridge,
+                                   local_ip)
+            modify_neutron_ovs_agent_conf(INT_BRIDGE, br_mappings=br_mappings,
+                                          local_ip=local_ip)
             patch_neutron_ovs_agent()
             restart_services('neutron-openvswitch-agent')
 
