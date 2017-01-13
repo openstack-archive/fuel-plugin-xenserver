@@ -63,6 +63,7 @@ def detailed_execute(*cmd, **kwargs):
         LOG.info(err)
 
     if proc.returncode is not None and proc.returncode != 0:
+        LOG.debug('proc.returncode: %s', proc.returncode)
         if proc.returncode in kwargs.get('allowed_return_codes', [0]):
             LOG.info('Swallowed acceptable return code of %d',
                      proc.returncode)
