@@ -22,12 +22,10 @@ md5: output/${MD5_FILENAME}
 
 docs: md5 $(DOC_NAMES:%=output/${PLUGIN_NAME}-${PLUGIN_VERSION}-%.pdf)
 
-iso: suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso
-
-suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso: plugin_source/deployment_scripts/patchset/xenhost
+iso: plugin_source/deployment_scripts/patchset/*
 	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE} ${HYPERVISOR_NAME}
 
-${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} suppack/xenapi-plugins-${OPENSTACK_RELEASE}.iso plugin_source
+${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} iso plugin_source
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}
 	cp -r plugin_source/* ${BUILDROOT}/${PLUGIN_NAME}
 	find ${BUILDROOT}/${PLUGIN_NAME} -type f -print0 | \
@@ -38,8 +36,7 @@ ${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} suppack/xenapi-plugins-${OPENST
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g \
 			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g \
 			-e s/@VERSION_HOTFIXES@/${VERSION_HOTFIXES}/g {}
-	cp suppack/xenapi-plugins-*.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
-	cp suppack/conntrack-tools.iso ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
+	cp -r suppack/xcp_* ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
 	touch ${BUILDROOT}/${PLUGIN_NAME}/branded
 
 output/${RPM_NAME}: ${BUILDROOT}/${PLUGIN_NAME}/branded
@@ -75,4 +72,4 @@ output/${MD5_FILENAME}: output/${RPM_NAME}
 	md5sum $^ > $@
 
 clean:
-	rm -rf ${BUILDROOT} output suppack/xenapi-plugins-${OPENSTACK_RELEASE}* suppack/conntrack-tools.* suppack/build
+	rm -rf ${BUILDROOT} output suppack/xcp_* suppack/build
