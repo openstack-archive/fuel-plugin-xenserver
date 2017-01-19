@@ -14,7 +14,6 @@ from utils import HIMN_IP
 INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenapi-plugins-mitaka.iso'
 DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
-CONNTRACK_ISO = 'conntrack-tools.iso'
 CONNTRACK_CONF_SAMPLE =\
     '/usr/share/doc/conntrack-tools-1.4.2/doc/stats/conntrackd.conf'
 
@@ -129,10 +128,13 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
                '> /etc/udev/rules.d/90-reroute.rules'))
 
 
-def install_suppack(himn, username, package):
+def install_suppack(himn, username, package, xcp_version):
     """Install xapi driver supplemental pack. """
     tmp = utils.ssh(himn, username, 'mktemp', '-d')
-    utils.scp(himn, username, tmp, package)
+    real_pack = "xcp_%s/%s" % (xcp_version, package)
+    if not os.path.exists(real_pack):
+	utils.reportError('Package folder %s not exist' % real_pack)
+    utils.scp(himn, username, tmp, real_pack)
     utils.ssh(himn, username, 'xe-install-supplemental-pack',
               tmp + '/' + package, prompt='Y\n')
     utils.ssh(himn, username, 'rm', tmp, '-rf')
@@ -357,29 +359,23 @@ def check_and_setup_ceilometer(himn, username, password):
     restart_services('ceilometer-polling')
 
 
-def enable_conntrack_service(himn, username):
-    xcp_ver = utils.ssh(himn, username,
-                        ('xe host-param-get uuid=$(xe host-list --minimal) '
-                         'param-name=software-version '
-                         'param-key=platform_version'))
-    if LooseVersion(xcp_ver) < LooseVersion('2.1.0'):
+def enable_conntrack_service(himn, username, xcp_version):
+    if LooseVersion(xcp_version) < LooseVersion('2.1.0'):
         # Only support conntrack-tools since XS7.0(XCP2.1.0) and above
-        LOG.info('No need to enable conntrack-tools with XCP %s' % xcp_ver)
+        LOG.info('No need to enable conntrack-tools with XCP %s' % xcp_version)
         return
 
-    conn_installed = utils.ssh(himn, username,
-                               'find', '/usr/sbin', '-name', 'conntrackd')
-    if not conn_installed:
-        install_suppack(himn, username, CONNTRACK_ISO)
-        # use conntrack statistic mode, so change conntrackd.conf
-        utils.ssh(himn, username,
-                  'mv',
-                  '/etc/conntrackd/conntrackd.conf',
-                  '/etc/conntrackd/conntrackd.conf.back')
-        utils.ssh(himn, username,
-                  'cp',
-                  CONNTRACK_CONF_SAMPLE,
-                  '/etc/conntrackd/conntrackd.conf')
+    # use conntrack statistic mode, so change conntrackd.conf
+    utils.ssh(himn, username,
+              'rm', '-f', '/etc/conntrackd/conntrackd.conf.back')
+    utils.ssh(himn, username,
+              'mv',
+              '/etc/conntrackd/conntrackd.conf',
+              '/etc/conntrackd/conntrackd.conf.back')
+    utils.ssh(himn, username,
+              'cp',
+              CONNTRACK_CONF_SAMPLE,
+              '/etc/conntrackd/conntrackd.conf')
 
     # Rotate log file for conntrack
     utils.scp(himn, username,
@@ -387,6 +383,14 @@ def enable_conntrack_service(himn, username):
 
     # Restart conntrackd service
     utils.ssh(himn, username, 'service', 'conntrackd', 'restart')
+
+
+def get_xcp_version(himn, username):
+    xcp_ver = utils.ssh(himn, username,
+                        ('xe host-param-get uuid=$(xe host-list --minimal) '
+                         'param-name=software-version '
+                         'param-key=platform_version'))
+    return xcp_ver
 
 
 if __name__ == '__main__':
@@ -405,8 +409,9 @@ if __name__ == '__main__':
 
         if username and password and endpoints and himn_local:
             route_to_compute(endpoints, HIMN_IP, himn_local, username)
+            xcp_version = get_xcp_version(HIMN_IP, username)
             if install_xapi:
-                install_suppack(HIMN_IP, username, XS_PLUGIN_ISO)
+                install_suppack(HIMN_IP, username, XS_PLUGIN_ISO, xcp_version)
             enable_linux_bridge(HIMN_IP, username)
             forward_from_himn(himn_eth)
 
@@ -421,7 +426,7 @@ if __name__ == '__main__':
             install_logrotate_script(HIMN_IP, username)
 
             # enable conntrackd service in Dom0
-            enable_conntrack_service(HIMN_IP, username)
+            enable_conntrack_service(HIMN_IP, username, xcp_version)
 
             # neutron-l2-agent in compute node
             modify_neutron_rootwrap_conf(HIMN_IP, username, password)
