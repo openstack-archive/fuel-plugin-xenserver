@@ -4,21 +4,39 @@ set -eux
 
 # =============================================
 # Usage of this script:
-# ./build-xenserver-suppack.sh xs-version xs-build git-branch plugin-version
-# or
+# ./build-xenserver-suppack.sh os-release hypervisor-name xs-plugin-version key
+# Or
 # ./build-xenserver-suppack.sh
 #
 # You can provide explict input parameters or you can use the default ones:
-#   XenServer version
-#   XenServer build
-#   OpenStack release branch
+#   OpenStack release
+#   Hypervisor name
 #   XenServer OpenStack plugin version
+#   Key for building supplemental packages
+#   Keyfile for building supplemental packages
+#
+# Prerequisite:
+#   For Dundee:
+#     No
+#   For Ely:
+#     1. Secret key is imported to the VM which is use for building suppack
+#     2. Public keyfile is downloaded to this folder in the building VM
+#     3. Below packages should be installed in advance:
+#          expect-5.45-14.el7_1.x86_64
+#          libarchive-3.1.2-7.el7.x86_64
+#          rpm-sign-4.11.3-17.el7.x86_64
 
 
 THIS_FILE=$(readlink -f $0)
 FUELPLUG_UTILS_ROOT=$(dirname $THIS_FILE)
 BUILDROOT=${FUELPLUG_UTILS_ROOT}/build
-rm -rf $BUILDROOT
+SUPPACK_CREEDENCE=${FUELPLUG_UTILS_ROOT}/xcp_1.9.0
+SUPPACK_DUNDEE=${FUELPLUG_UTILS_ROOT}/xcp_2.1.0
+SUPPACK_ELY=${FUELPLUG_UTILS_ROOT}/xcp_2.2.0
+rm -rf $BUILDROOT $SUPPACK_CREEDENCE $SUPPACK_DUNDEE $SUPPACK_ELY
+mkdir -p $SUPPACK_CREEDENCE
+mkdir -p $SUPPACK_DUNDEE
+mkdir -p $SUPPACK_ELY
 mkdir -p $BUILDROOT && cd $BUILDROOT
 
 
@@ -29,10 +47,15 @@ mkdir -p $BUILDROOT && cd $BUILDROOT
 OS_RELEASE=${1:-"mitaka"}
 
 HYPERVISOR_NAME=${2:-"XenServer"}
-PLATFORM_VERSION=${3:-"1.9"}
 
 # nova and neutron xenserver dom0 plugin version
-XS_PLUGIN_VERSION=${4:-"13.0.0"}
+XS_PLUGIN_VERSION=${3:-"13.0.0"}
+
+# key of the public/secret OpenStack GPG key
+SUPPACK_KEY=${4:-"Citrix OpenStack (XenServer Updates) <openstack@citrix.com>"}
+
+# keyfile
+SUPPACK_KEYFILE=${5:-"RPM-GPG-KEY-XS-OPENSTACK"}
 
 # branch info
 GITBRANCH="stable/$OS_RELEASE"
@@ -46,7 +69,7 @@ RPM_BUILDER_REPO="https://github.com/citrix-openstack/xenserver-nova-suppack-bui
 export DEBIAN_FRONTEND=noninteractive
 
 # =============================================
-# Install suppack builder
+# Install suppack builder for Dundee (XCP 2.1.0)
 RPM_ROOT=http://coltrane.uk.xensource.com/usr/groups/release/XenServer-7.x/XS-7.0/RTM-125380/binary-packages/RPMS/domain0/RPMS/noarch
 wget $RPM_ROOT/supp-pack-build-2.1.0-xs55.noarch.rpm -O supp-pack-build.rpm
 wget $RPM_ROOT/xcp-python-libs-1.9.0-159.noarch.rpm -O xcp-python-libs.rpm
@@ -54,6 +77,16 @@ wget $RPM_ROOT/xcp-python-libs-1.9.0-159.noarch.rpm -O xcp-python-libs.rpm
 # Don't install the RPM as we may not have root.
 rpm2cpio supp-pack-build.rpm | cpio -idm
 rpm2cpio xcp-python-libs.rpm | cpio -idm
+
+# ==============================================
+# Install suppack builder for Ely (XCP 2.2.0)
+RPM_ROOT=http://coltrane.uk.xensource.com/release/XenServer-7.x/XS-7.1/RC/137005.signed/binary-packages/RPMS/domain0/RPMS/noarch/
+wget $RPM_ROOT/python-libarchive-c-2.5-1.el7.centos.noarch.rpm -O python-libarchive.rpm
+wget $RPM_ROOT/update-package-1.1.2-1.noarch.rpm -O update-package.rpm
+
+rpm2cpio python-libarchive.rpm | cpio -idm
+rpm2cpio update-package.rpm | cpio -idm
+
 # Work around dodgy requirements for xcp.supplementalpack.setup function
 # Note that either root or a virtual env is needed here. venvs are better :)
 cp -f usr/bin/* .
@@ -125,9 +158,7 @@ EXTRA_RPMS="$EXTRA_RPMS $(find $FUELPLUG_UTILS_ROOT -name "libnetfilter_queue-*.
 
 
 # =============================================
-# Create Supplemental pack
-#rm -rf suppack
-#mkdir -p suppack
+# Create Supplemental pack for Creedence and Dundee
 
 tee buildscript.py << EOF
 import sys
@@ -157,19 +188,51 @@ EOF
 
 python buildscript.py \
 --pdn=xenapi-plugins-$OS_RELEASE \
---pdv=$PLATFORM_VERSION \
+--pdv="1.9.0" \
 --hvn="$HYPERVISOR_NAME" \
 --desc="OpenStack Plugins" \
 --bld=0 \
---out=$FUELPLUG_UTILS_ROOT \
+--out=$SUPPACK_CREEDENCE \
 $RPMFILE \
 $NEUTRON_RPMFILE
 
 python buildscript.py \
---pdn=conntrack-tools \
---pdv=$PLATFORM_VERSION \
+--pdn=xenapi-plugins-$OS_RELEASE \
+--pdv="2.1.0" \
 --hvn="$HYPERVISOR_NAME" \
---desc="Dom0 conntrack-tools" \
+--desc="OpenStack Plugins" \
 --bld=0 \
---out=$FUELPLUG_UTILS_ROOT \
+--out=$SUPPACK_DUNDEE \
+$RPMFILE \
+$NEUTRON_RPMFILE \
 $EXTRA_RPMS
+
+
+# =============================================
+# Create Supplemental pack for Ely
+
+# KEY for building supplemental pack
+SUPPACK_KEY="Citrix OpenStack (XenServer Updates) <openstack@citrix.com>"
+CONNTRACK_UUID=`uuidgen`
+XENAPI_PLUGIN_UUID=`uuidgen`
+
+tee buildscript_ely.py << EOF
+import sys
+sys.path.append('$BUILDROOT/usr/lib/python2.7/site-packages')
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('update-package', 'console_scripts', 'build-update')()
+    )
+EOF
+
+python buildscript_ely.py \
+--uuid $XENAPI_PLUGIN_UUID \
+-l "openstack-xenapi-plugins" \
+-v 1.0 \
+-d "OpenStack plugins supplemental pack" \
+-o $SUPPACK_ELY/xenapi-plugins-$OS_RELEASE.iso \
+-k "$SUPPACK_KEY" \
+--keyfile "$FUELPLUG_UTILS_ROOT/$SUPPACK_KEYFILE" --no-passphrase \
+$RPMFILE $NEUTRON_RPMFILE $EXTRA_RPMS
