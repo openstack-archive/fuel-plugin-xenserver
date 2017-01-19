@@ -2,7 +2,7 @@
 set -eu
 
 # Source the branding file
-. ${1}
+source <(sed -e 's/\(.*\)=\(.*\)/\1="\2"/' ${1})
 
 # Find shortest delta
 my_merge_base=$(git merge-base HEAD origin/master)
