@@ -1,0 +1,223 @@
+diff --git a/nova/virt/xenapi/driver.py b/nova/virt/xenapi/driver.py
+index 77483fa..899c083 100644
+--- a/nova/virt/xenapi/driver.py
++++ b/nova/virt/xenapi/driver.py
+@@ -104,6 +104,13 @@ OVERHEAD_PER_VCPU = 1.5
+ 
+ class XenAPIDriver(driver.ComputeDriver):
+     """A connection to XenServer or Xen Cloud Platform."""
++    capabilities = {
++        "has_imagecache": False,
++        "supports_recreate": False,
++        "supports_migrate_to_same_host": False,
++        "supports_attach_interface": True,
++        "supports_device_tagging": False,
++    }
+ 
+     def __init__(self, virtapi, read_only=False):
+         super(XenAPIDriver, self).__init__(virtapi)
+@@ -681,3 +688,39 @@ class XenAPIDriver(driver.ComputeDriver):
+         :returns: dict of  nova uuid => dict of usage info
+         """
+         return self._vmops.get_per_instance_usage()
++
++    def attach_interface(self, context, instance, image_meta, vif):
++        """Use hotplug to add a network interface to a running instance.
++
++        The counter action to this is :func:`detach_interface`.
++
++        :param context: The request context.
++        :param nova.objects.instance.Instance instance:
++            The instance which will get an additional network interface.
++        :param nova.objects.ImageMeta image_meta:
++            The metadata of the image of the instance.
++        :param nova.network.model.VIF vif:
++            The object which has the information about the interface to attach.
++
++        :raise nova.exception.NovaException: If the attach fails.
++
++        :return: None
++        """
++        self._vmops.attach_interface(instance, vif)
++
++    def detach_interface(self, context, instance, vif):
++        """Use hotunplug to remove a network interface from a running instance.
++
++        The counter action to this is :func:`attach_interface`.
++
++        :param context: The request context.
++        :param nova.objects.instance.Instance instance:
++            The instance which gets a network interface removed.
++        :param nova.network.model.VIF vif:
++            The object which has the information about the interface to detach.
++
++        :raise nova.exception.NovaException: If the detach fails.
++
++        :return: None
++        """
++        self._vmops.detach_interface(instance, vif)
+diff --git a/nova/virt/xenapi/vif.py b/nova/virt/xenapi/vif.py
+index a474d23..b56a619 100644
+--- a/nova/virt/xenapi/vif.py
++++ b/nova/virt/xenapi/vif.py
+@@ -77,6 +77,8 @@ class XenVIFDriver(object):
+                 LOG.debug("vif didn't exist, no need to unplug vif %s",
+                         vif, instance=instance)
+                 return
++            # hot unplug the VIF first
++            self.hot_unplug(vif, instance, vm_ref, vif_ref)
+             self._session.call_xenapi('VIF.destroy', vif_ref)
+         except Exception as e:
+             LOG.warn(
+@@ -85,6 +87,44 @@ class XenVIFDriver(object):
+             raise exception.NovaException(
+                 reason=_("Failed to unplug vif %s") % vif)
+ 
++    def hot_plug(self, vif, instance, vm_ref, vif_ref):
++        """hotplug virtual interface to running instance.
++        :param nova.network.model.VIF vif:
++            The object which has the information about the interface to attach.
++        :param nova.objects.instance.Instance instance:
++            The instance which will get an additional network interface.
++        :param string vm_ref:
++            The instance's reference from hypervisor's point of view.
++        :param string vif_ref:
++            The interface's reference from hypervisor's point of view.
++        :return: None
++        """
++        pass
++
++    def hot_unplug(self, vif, instance, vm_ref, vif_ref):
++        """hot unplug virtual interface from running instance.
++        :param nova.network.model.VIF vif:
++            The object which has the information about the interface to detach.
++        :param nova.objects.instance.Instance instance:
++            The instance which will remove additional network interface.
++        :param string vm_ref:
++            The instance's reference from hypervisor's point of view.
++        :param string vif_ref:
++            The interface's reference from hypervisor's point of view.
++        :return: None
++        """
++        pass
++
++    def post_start_actions(self, instance, vif_ref):
++        """post actions when the instance is power on.
++        :param nova.objects.instance.Instance instance:
++            The instance which will execute extra actions after power on
++        :param string vif_ref:
++            The interface's reference from hypervisor's point of view.
++        :return: None
++        """
++        pass
++
+ 
+ class XenAPIBridgeDriver(XenVIFDriver):
+     """VIF Driver for XenAPI that uses XenAPI to create Networks."""
+@@ -186,10 +226,6 @@ class XenAPIBridgeDriver(XenVIFDriver):
+     def unplug(self, instance, vif, vm_ref):
+         super(XenAPIBridgeDriver, self).unplug(instance, vif, vm_ref)
+ 
+-    def post_start_actions(self, instance, vif_ref):
+-        """no further actions needed for this driver type"""
+-        pass
+-
+ 
+ class XenAPIOpenVswitchDriver(XenVIFDriver):
+     """VIF driver for Open vSwitch with XenAPI."""
+@@ -226,7 +262,12 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+         # OVS on the hypervisor monitors this key and uses it to
+         # set the iface-id attribute
+         vif_rec['other_config'] = {'nicira-iface-id': vif['id']}
+-        return self._create_vif(vif, vif_rec, vm_ref)
++        vif_ref = self._create_vif(vif, vif_rec, vm_ref)
++
++        # call XenAPI to plug vif
++        self.hot_plug(vif, instance, vm_ref, vif_ref)
++
++        return vif_ref
+ 
+     def unplug(self, instance, vif, vm_ref):
+         """unplug vif:
+@@ -294,6 +335,29 @@ class XenAPIOpenVswitchDriver(XenVIFDriver):
+             raise exception.VirtualInterfaceUnplugException(
+                 reason=_("Failed to delete bridge"))
+ 
++    def hot_plug(self, vif, instance, vm_ref, vif_ref):
++        # hot plug vif only when VM's power state is running
++        LOG.debug("Hot plug vif, vif: %s", vif, instance=instance)
++        state = vm_utils.get_power_state(self._session, vm_ref)
++        if state != power_state.RUNNING:
++            LOG.debug("Skip hot plug VIF, VM is not running, vif: %s", vif,
++                      instance=instance)
++            return
++
++        self._session.VIF.plug(vif_ref)
++        self.post_start_actions(instance, vif_ref)
++
++    def hot_unplug(self, vif, instance, vm_ref, vif_ref):
++        # hot unplug vif only when VM's power state is running
++        LOG.debug("Hot unplug vif, vif: %s", vif, instance=instance)
++        state = vm_utils.get_power_state(self._session, vm_ref)
++        if state != power_state.RUNNING:
++            LOG.debug("Skip hot unplug VIF, VM is not running, vif: %s", vif,
++                      instance=instance)
++            return
++
++        self._session.VIF.unplug(vif_ref)
++
+     def _get_qbr_name(self, iface_id):
+         return ("qbr" + iface_id)[:network_model.NIC_NAME_LEN]
+ 
+diff --git a/nova/virt/xenapi/vmops.py b/nova/virt/xenapi/vmops.py
+index 1c93eac..182873f 100644
+--- a/nova/virt/xenapi/vmops.py
++++ b/nova/virt/xenapi/vmops.py
+@@ -2522,3 +2522,47 @@ class VMOps(object):
+                     volume_utils.forget_sr(self._session, sr_uuid_map[sr_ref])
+ 
+         return sr_uuid_map
++
++    def attach_interface(self, instance, vif):
++        LOG.debug("Attach interface, vif info: %s", vif, instance=instance)
++        vm_ref = self._get_vm_opaque_ref(instance)
++
++        @utils.synchronized('xenapi-vif-' + vm_ref)
++        def _attach_interface(instance, vm_ref, vif):
++            # find device for use with XenAPI
++            allowed_devices = self._session.VM.get_allowed_VIF_devices(vm_ref)
++            if allowed_devices is None or len(allowed_devices) == 0:
++                raise exception.InterfaceAttachFailed(
++                    _('attach network interface %(vif_id)s to instance '
++                      '%(instance_uuid)s failed, no allowed devices.'),
++                    vif_id=vif['id'], instance_uuid=instance.uuid)
++            device = allowed_devices[0]
++            try:
++                # plug VIF
++                self.vif_driver.plug(instance, vif, vm_ref=vm_ref,
++                                     device=device)
++                # set firewall filtering
++                self.firewall_driver.setup_basic_filtering(instance, [vif])
++            except exception.NovaException:
++                with excutils.save_and_reraise_exception():
++                    LOG.exception(_LE('attach network interface %s failed.'),
++                                  vif['id'], instance=instance)
++                    try:
++                        self.vif_driver.unplug(instance, vif, vm_ref)
++                    except exception.NovaException:
++                        # if unplug failed, no need to raise exception
++                        LOG.warning(_LW('Unplug VIF %s failed.'),
++                                    vif['id'], instance=instance)
++
++        _attach_interface(instance, vm_ref, vif)
++
++    def detach_interface(self, instance, vif):
++        LOG.debug("Detach interface, vif info: %s", vif, instance=instance)
++
++        try:
++            vm_ref = self._get_vm_opaque_ref(instance)
++            self.vif_driver.unplug(instance, vif, vm_ref)
++        except exception.NovaException:
++            with excutils.save_and_reraise_exception():
++                LOG.exception(_LE('detach network interface %s failed.'),
++                              vif['id'], instance=instance)
