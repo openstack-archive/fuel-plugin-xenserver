@@ -15,7 +15,6 @@ from utils import HIMN_IP
 
 INT_BRIDGE = 'br-int'
 XS_PLUGIN_ISO = 'xenapi-plugins-mitaka.iso'
-DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
 CONNTRACK_CONF_SAMPLE =\
     '/usr/share/doc/conntrack-tools-1.4.2/doc/stats/conntrackd.conf'
 
@@ -38,7 +37,7 @@ def get_endpoints(astute):
 
 def install_xenapi_sdk():
     """Install XenAPI Python SDK"""
-    utils.execute('cp', 'XenAPI.py', DIST_PACKAGES_DIR)
+    utils.execute('cp', 'XenAPI.py', utils.DIST_PACKAGES_DIR)
 
 
 def create_novacompute_conf(himn, username, password, public_ip, services_ssl):
@@ -314,7 +313,7 @@ def patch_ceilometer():
         'ceilometer-add-purge_inspection_cache.patch',
     ]
     for patch_file in patchfile_list:
-        utils.patch(DIST_PACKAGES_DIR, patch_file, 1)
+        utils.patch(utils.DIST_PACKAGES_DIR, patch_file, 1)
 
 
 def patch_compute_xenapi():
@@ -325,15 +324,35 @@ def patch_compute_xenapi():
         speed-up-config-drive.patch
         ovs-interim-bridge.patch
         neutron-security-group.patch
+        live-migration-iscsi.patch
+        support-vif-hotplug.patch
+        fix-rescue-vm.patch
+        live-migration-vifmapping.patch
     """
     patchfile_list = [
+        # Change-Id: I5ebff2c1f7534b06233a4d41d7f5f2e5e3b60b5a
         'support-disable-image-cache.patch',
+        # Change-Id: I359e17d6d5838f4028df0bd47e4825de420eb383
         'speed-up-config-drive.patch',
+        # Change-Id: I0cfc0284e1fcd1a6169d31a7ad410716037e5cc2
         'ovs-interim-bridge.patch',
+        # Change-Id: Id9b39aa86558a9f7099caedabd2d517bf8ad3d68
         'neutron-security-group.patch',
+        # Change-Id: I88d1d384ab7587c428e517d184258bb517dfb4ab
+        'live-migration-iscsi.patch',
+        # Change-Id: I22f3fe52d07100592015007653c7f8c47c25d22c
+        'support-vif-hotplug.patch',
+        # Change-Id: I32c66733330bc9877caea7e2a2290c02b3906708
+        'fix-rescue-vm.patch',
+        # Change-Id: If0fb5d764011521916fbbe15224f524a220052f3
+        'live-migration-vifmapping.patch',
+        # TODO(huanxie): below patch isn't merged into upstream yet,
+        # it only affects XS7.1 and later
+        # Change-Id: I31850b25e2f32eb65a00fbb824b08646c9ed340a
+        'assert_can_migrated.patch',
     ]
     for patch_file in patchfile_list:
-        utils.patch(DIST_PACKAGES_DIR, patch_file, 1)
+        utils.patch(utils.DIST_PACKAGES_DIR, patch_file, 1)
 
 
 def patch_neutron_ovs_agent():
