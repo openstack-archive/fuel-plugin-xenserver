@@ -12,6 +12,7 @@ ASTUTE_SECTION = '@PLUGIN_NAME@'
 PLUGIN_NAME = '@PLUGIN_NAME@'
 LOG_ROOT = '/var/log/@PLUGIN_NAME@'
 HIMN_IP = '169.254.0.1'
+DIST_PACKAGES_DIR = '/usr/lib/python2.7/dist-packages/'
 
 
 LOG = logging.getLogger('@PLUGIN_NAME@')
