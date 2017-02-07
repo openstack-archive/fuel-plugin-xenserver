@@ -36,5 +36,23 @@ def mod_novnc():
             utils.reportError('Cannot set configurations to %s' % filename)
 
 
+def patch_nova_conductor():
+    """Add patches which are not merged to upstream
+
+    Order of patches applied:
+        live-migration-vifmapping-controller.patch
+    """
+    patchfile_list = [
+        # Change-Id: If0fb5d764011521916fbbe15224f524a220052f3
+        'live-migration-vifmapping-controller.patch',
+    ]
+    for patch_file in patchfile_list:
+        utils.patch(utils.DIST_PACKAGES_DIR, patch_file, 1)
+
+    # Restart related service
+    utils.execute('service', 'nova-conductor', 'restart')
+
+
 if __name__ == '__main__':
+    patch_nova_conductor()
     mod_novnc()
