@@ -297,12 +297,20 @@ def patch_compute_xenapi():
         speed-up-config-drive.patch
         ovs-interim-bridge.patch
         neutron-security-group.patch
+        live-migration-iscsi.patch
+        support-vif-hotplug.patch
+        fix-rescue-vm.patch
+        live-migration-vifmapping.patch
     """
     patchfile_list = [
         'support-disable-image-cache.patch',
         'speed-up-config-drive.patch',
         'ovs-interim-bridge.patch',
         'neutron-security-group.patch',
+        'live-migration-iscsi.patch',
+        'support-vif-hotplug.patch',
+        'fix-rescue-vm.patch',
+        'live-migration-vifmapping.patch',
     ]
     for patch_file in patchfile_list:
         utils.patch(DIST_PACKAGES_DIR, patch_file, 1)
