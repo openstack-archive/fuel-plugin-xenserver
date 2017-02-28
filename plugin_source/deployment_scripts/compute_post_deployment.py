@@ -303,11 +303,13 @@ def patch_ceilometer():
         ceilometer-poll-cpu-util.patch
         ceilometer-rates-always-zero.patch
         ceilometer-support-network-bytes.patch
+        ceilometer-add-purge_inspection_cache.patch
     """
     patchfile_list = [
         'ceilometer-poll-cpu-util.patch',
         'ceilometer-rates-always-zero.patch',
         'ceilometer-support-network-bytes.patch',
+        'ceilometer-add-purge_inspection_cache.patch',
     ]
     for patch_file in patchfile_list:
         utils.patch(DIST_PACKAGES_DIR, patch_file, 1)
