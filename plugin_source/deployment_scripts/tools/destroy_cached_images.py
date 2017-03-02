@@ -1,31 +1,18 @@
-#!/usr/bin/python
-
-#  Licensed under the Apache License, Version 2.0 (the "License"); you may
-#  not use this file except in compliance with the License. You may obtain
-#  a copy of the License at
+#!/usr/bin/env python
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#  License for the specific language governing permissions and limitations
-#  under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
-"""
-destroy_cached_images.py
+"""This tool is used to clean up Glance images that are cached in the SR."""
 
-This script is used to clean up Glance images that are cached in the SR. By
-default, this script will only cleanup unused cached images.
-
-Options:
-
-    --dry_run - Don't actually destroy the VDIs
-    --all_cached - Destroy all cached images instead of just unused cached
-                   images.
-"""
-import eventlet
-eventlet.monkey_patch()
 
 import sys
 
@@ -52,6 +39,14 @@ CONF.register_cli_opts(destroy_opts)
 
 
 def main():
+    """By default, this script will only cleanup unused cached images.
+
+    Options:
+
+    --all_cached - Destroy all cached images instead of just unused cached
+                   images.
+    --dry_run    - Don't actually destroy the VDIs.
+    """
     config.parse_args(sys.argv)
     utils.monkey_patch()
 
