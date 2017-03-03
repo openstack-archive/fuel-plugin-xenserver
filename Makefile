@@ -33,7 +33,7 @@ ${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} ${REQUIRED_ISOS} plugin_source
 	cp -r plugin_source/* ${BUILDROOT}/${PLUGIN_NAME}
 	find ${BUILDROOT}/${PLUGIN_NAME} -type f -print0 | \
 		xargs -0 -i sed -i \
-			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
+			-e s/@HYPERVISOR_NAME@/"${HYPERVISOR_NAME}"/g \
 			-e s/@HYPERVISOR_LOWER@/${HYPERVISOR_LOWER}/g \
 			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g \
 			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g \
