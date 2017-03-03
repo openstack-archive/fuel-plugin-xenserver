@@ -26,19 +26,19 @@ REQUIRED_ISOS=$(PLATFORMS:%=suppack/xcp_%/xenapi-plugins-${OPENSTACK_RELEASE}.is
 iso: $(REQUIRED_ISOS)
 
 $(REQUIRED_ISOS): plugin_source/deployment_scripts/patchset/xenhost
-	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE} ${HYPERVISOR_NAME}
+	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE} "${HYPERVISOR_NAME}"
 
 ${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} ${REQUIRED_ISOS} plugin_source
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}
 	cp -r plugin_source/* ${BUILDROOT}/${PLUGIN_NAME}
 	find ${BUILDROOT}/${PLUGIN_NAME} -type f -print0 | \
 		xargs -0 -i sed -i \
-			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
-			-e s/@HYPERVISOR_LOWER@/${HYPERVISOR_LOWER}/g \
-			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g \
-			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g \
-			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g \
-			-e s/@VERSION_HOTFIXES@/${VERSION_HOTFIXES}/g {}
+			-e "s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g" \
+			-e "s/@HYPERVISOR_LOWER@/${HYPERVISOR_LOWER}/g" \
+			-e "s/@PLUGIN_NAME@/${PLUGIN_NAME}/g" \
+			-e "s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g" \
+			-e "s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g" \
+			-e s/@VERSION_HOTFIXES@/'${VERSION_HOTFIXES}'/g {}
 	cp -r suppack/xcp_* ${BUILDROOT}/${PLUGIN_NAME}/deployment_scripts/
 	touch ${BUILDROOT}/${PLUGIN_NAME}/branded
 
@@ -54,11 +54,11 @@ ${BUILDROOT}/doc/source ${BUILDROOT}/doc/Makefile: ${BRANDING} doc/Makefile doc/
 	cp -r doc/Makefile doc/source ${BUILDROOT}/doc
 	find ${BUILDROOT}/doc -type f -print0 | \
 		xargs -0 -i sed -i \
-			-e s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g \
-			-e s/@PLUGIN_NAME@/${PLUGIN_NAME}/g \
-			-e s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g \
-			-e s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g \
-			-e s/@PLUGIN_MD5@/`cat output/${MD5_FILENAME} | cut -d' ' -f1`/g {}
+			-e "s/@HYPERVISOR_NAME@/${HYPERVISOR_NAME}/g" \
+			-e "s/@PLUGIN_NAME@/${PLUGIN_NAME}/g" \
+			-e "s/@PLUGIN_VERSION@/${PLUGIN_VERSION}/g" \
+			-e "s/@PLUGIN_REVISION@/${PLUGIN_REVISION}/g" \
+			-e "s/@PLUGIN_MD5@/`cat output/${MD5_FILENAME} | cut -d' ' -f1`/g" {}
 
 ${BUILDROOT}/doc/build/latex/%.pdf: ${BUILDROOT}/doc/Makefile ${shell find ${BUILDROOT}/doc/source}
 	make -C ${BUILDROOT}/doc latexpdf
