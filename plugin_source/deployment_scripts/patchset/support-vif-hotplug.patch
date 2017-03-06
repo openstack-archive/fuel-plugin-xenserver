@@ -21,7 +21,7 @@ index 77483fa..899c083 100644
          """
          return self._vmops.get_per_instance_usage()
 +
-+    def attach_interface(self, context, instance, image_meta, vif):
++    def attach_interface(self, instance, image_meta, vif):
 +        """Use hotplug to add a network interface to a running instance.
 +
 +        The counter action to this is :func:`detach_interface`.
@@ -40,7 +40,7 @@ index 77483fa..899c083 100644
 +        """
 +        self._vmops.attach_interface(instance, vif)
 +
-+    def detach_interface(self, context, instance, vif):
++    def detach_interface(self, instance, vif):
 +        """Use hotunplug to remove a network interface from a running instance.
 +
 +        The counter action to this is :func:`attach_interface`.
