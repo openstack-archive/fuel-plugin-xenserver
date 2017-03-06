@@ -1,0 +1,29 @@
+diff --git a/nova/virt/xenapi/vmops.py b/nova/virt/xenapi/vmops.py
+index 82a9aef..d5048cd 100644
+--- a/nova/virt/xenapi/vmops.py
++++ b/nova/virt/xenapi/vmops.py
+@@ -2278,10 +2278,11 @@ class VMOps(object):
+                 self._call_live_migrate_command(
+                     "VM.assert_can_migrate", vm_ref, dest_check_data)
+             except self._session.XenAPI.Failure as exc:
+-                reason = exc.details[0]
+-                msg = _('assert_can_migrate failed because: %s') % reason
+-                LOG.debug(msg, exc_info=True)
+-                raise exception.MigrationPreCheckError(reason=msg)
++                reason = '%s' % exc.details[0]
++                if reason.strip().upper() != "VIF_NOT_IN_MAP":
++                    msg = _('assert_can_migrate failed because: %s') % reason
++                    LOG.debug(msg, exc_info=True)
++                    raise exception.MigrationPreCheckError(reason=msg)
+         return dest_check_data
+ 
+     def _ensure_pv_driver_info_for_live_migration(self, instance, vm_ref):
+@@ -2500,6 +2501,8 @@ class VMOps(object):
+     def post_live_migration_at_destination(self, context, instance,
+                                            network_info, block_migration,
+                                            block_device_info):
++        # Hook interim bridge with ovs bridge
++        self._post_start_actions(instance)
+         # FIXME(johngarbutt): we should block all traffic until we have
+         # applied security groups, however this requires changes to XenServer
+         self._prepare_instance_filter(instance, network_info)
