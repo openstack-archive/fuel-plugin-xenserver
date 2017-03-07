@@ -143,9 +143,11 @@ def install_suppack(himn, username, package, xcp_version):
 
 def forward_from_himn(eth):
     """Forward packets from HIMN to storage/mgmt network. """
+    # make change to be persistent
     utils.execute('sed', '-i', 's/#net.ipv4.ip_forward/net.ipv4.ip_forward/g',
                   '/etc/sysctl.conf')
-    utils.execute('sysctl', '-p', '/etc/sysctl.conf')
+    # make it to take effective now.
+    utils.execute('sysctl', 'net.ipv4.ip_forward=1')
 
     endpoint_names = ['br-storage', 'br-mgmt']
     for endpoint_name in endpoint_names:
