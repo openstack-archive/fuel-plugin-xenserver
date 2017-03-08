@@ -18,7 +18,7 @@ Prepare infrastructure
 
    - Other service nodes (e.g. storage node) can also be created as virtual machines, but this is not required
 
-2. Download and install XenServer 6.5/7.0 and HIMN tool, a XenServer plugin, as install guide mentioned. Use it for future VM creation and network configuration.
+2. Download and install XenServer and HIMN tool, a XenServer plugin, as install guide mentioned. Use it for future VM creation and network configuration.
 
 3. While many networking setups are expected to work, the following setup is known to work:
 
