@@ -34,6 +34,10 @@ Revision history
      - 12.08.2016
      - John Hua(john.hua@citrix.com)
      - Revised for Mirantis Fuel 9.0
+   * - 4.0
+     - 03.08.2017
+     - Huan Xie (huan.xie@citrix.com)
+     - Revised for Mirantis Fuel 9.2
 
 Document purpose
 ================
@@ -172,9 +176,7 @@ Detailed test run results
      - Yes
      -
      -
-     - "Update stack actions: inplace, replace and update whole template"
-       is failed because vif hot plug/unplug is not supported by the
-       XenServer driver.
+     -
    * - 9
      - Add/Remove compute node
      - Yes

@@ -5,6 +5,8 @@ Version 4.0
 -------------
 
 * Works with Fuel 9.0
+* Add vif hot plug support
+* Add live migration support
 
 Version 3.1
 -------------
