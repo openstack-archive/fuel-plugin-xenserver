@@ -8,7 +8,7 @@ Requirements
 Requirement               Version/Comment
 ========================= ============================
 Fuel                      9.0
-XenServer                 6.5+XS65ESP013 and 7.0
+XenServer                 6.5+XS65ESP013, 7.0 and 7.1
 XenServer plugin for Fuel @PLUGIN_VERSION@
 ========================= ============================
 
