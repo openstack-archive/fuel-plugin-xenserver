@@ -137,7 +137,7 @@ def install_suppack(himn, username, package, xcp_version):
         utils.reportError('Package folder %s not exist' % real_pack)
     utils.scp(himn, username, tmp, real_pack)
     utils.ssh(himn, username, 'xe-install-supplemental-pack',
-              tmp + '/' + package, prompt='Y\n')
+              tmp + '/' + package, prompt='Y\n', allowed_return_codes=[0, 1])
     utils.ssh(himn, username, 'rm', tmp, '-rf')
 
 
