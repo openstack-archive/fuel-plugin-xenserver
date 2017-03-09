@@ -103,8 +103,15 @@ def ssh(host, username, *cmd, **kwargs):
 
     return execute('ssh', '-i', XS_RSA,
                    '-o', 'StrictHostKeyChecking=no',
-                   '%s@%s' % (username, host), *cmd,
-                   prompt=kwargs.get('prompt'))
+                   '%s@%s' % (username, host), *cmd, **kwargs)
+
+
+def ssh_detailed(host, username, *cmd, **kwargs):
+    cmd = map(str, cmd)
+
+    return detailed_execute('ssh', '-i', XS_RSA,
+                            '-o', 'StrictHostKeyChecking=no',
+                            '%s@%s' % (username, host), *cmd, **kwargs)
 
 
 def scp(host, username, target_path, filename):

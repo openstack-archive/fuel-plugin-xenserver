@@ -129,6 +129,15 @@ def route_to_compute(endpoints, himn_xs, himn_local, username):
                '> /etc/udev/rules.d/90-reroute.rules'))
 
 
+def parse_uuid(output):
+    uuid = None
+    index = output.strip().find('uuid:')
+    if index >= 0:
+        start = index + len('uuid:')
+        uuid = output[start:].strip()
+    return uuid
+
+
 def install_suppack(himn, username, package, xcp_version):
     """Install xapi driver supplemental pack. """
     tmp = utils.ssh(himn, username, 'mktemp', '-d')
@@ -136,8 +145,30 @@ def install_suppack(himn, username, package, xcp_version):
     if not os.path.exists(real_pack):
         utils.reportError('Package folder %s not exist' % real_pack)
     utils.scp(himn, username, tmp, real_pack)
-    utils.ssh(himn, username, 'xe-install-supplemental-pack',
-              tmp + '/' + package, prompt='Y\n')
+    if LooseVersion(xcp_version) < LooseVersion('2.2.0'):
+        utils.ssh(himn, username, 'xe-install-supplemental-pack',
+                  tmp + '/' + package, prompt='Y\n')
+    else:
+        errcode, uuid, errmsg = \
+            utils.ssh_detailed(himn, username, 'xe', 'update-upload',
+                               'file-name=' + tmp + '/' + package,
+                               allowed_return_codes=[0, 1])
+        if errcode == 0:
+            utils.ssh(himn, username, 'xe', 'update-apply',
+                      'uuid=' + uuid.strip())
+        else:
+            LOG.debug("Install supplemental pack failed, err: %s", errmsg)
+            if "The uploaded update already exists" in errmsg:
+                uuid = parse_uuid(errmsg)
+                if uuid is None:
+                    raise utils.ExecutionError(errmsg)
+                # Check current update is applied already
+                out = utils.ssh(himn, username, 'xe', 'update-list',
+                                'uuid=' + uuid, '--minimal')
+                # Apply this update if cannot find it with uuid
+                if not out:
+                    utils.ssh(himn, username, 'xe', 'update-apply',
+                              'uuid=' + uuid)
     utils.ssh(himn, username, 'rm', tmp, '-rf')
 
 
