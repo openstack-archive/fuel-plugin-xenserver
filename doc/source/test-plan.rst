@@ -68,7 +68,7 @@ Product compatibility matrix
 ----------------------------
 
 The plugin is compatible with MOS 9.0 and XenServer versions 6.5 SP1
-(with hotfix XS65ESP013) and 7.0, with all hotfixes applied.
+(with hotfix XS65ESP013), 7.0 and 7.1, with all hotfixes applied.
 
 
 Prerequirements
@@ -254,14 +254,14 @@ Verify hypervisor type
    * - Test Case ID
      - verify_hypervisor
    * - Description
-     - Verify that all hypervisors are identified by OpenStack as ‘xen’.
+     - Verify that all hypervisors are identified by OpenStack as "XenServer".
    * - Steps
      -
        #. Login to Horizon with admin user when OpenStack deployment is
           finished.
        #. Enter into Admin->Hypervisors
    * - Expected Result
-     - The Type column should show xen for all hypervisors.
+     - The Type column should show XenServer for all hypervisors.
 
 Create guest instances
 ----------------------
@@ -303,9 +303,7 @@ Verify Fuel Health Checks
        #. Within the Fuel Master, select the appropriate environment
        #. Run all health checks and wait for completion
    * - Expected Result
-     - "Update stack actions: inplace, replace and update whole template"
-       is failed because vif hot plug/unplug is not supported by the
-       XenServer driver in Mitaka.
+     - All pass
 
 Mandatory Tests
 ===============
@@ -338,9 +336,7 @@ Modifying env with enabled plugin (removing/adding compute nodes)
        #. Redeploy cluster
        #. Run Health Check
    * - Expected Result
-     - "Update stack actions: inplace, replace and update whole template"
-       is failed because vif hot plug/unplug is not supported by the
-       XenServer driver in Mitaka.
+     - All pass
 
 Modifying env with enabled plugin (removing/adding controller nodes)
 --------------------------------------------------------------------
@@ -365,9 +361,7 @@ Modifying env with enabled plugin (removing/adding controller nodes)
        #. Redeploy cluster
        #. Run Health Check
    * - Expected Result
-     - "Update stack actions: inplace, replace and update whole template"
-       is failed because vif hot plug/unplug is not supported by the
-       XenServer driver in Mitaka.
+     - All pass
 
 Create mirror and update (setup) of core repos
 ---------------------------------------------------
@@ -472,3 +466,7 @@ Revision history
      - 12.08.2016
      - John Hua (john.hua@citrix.com)
      - Revised for Fuel 9.0
+   * -
+     - 03.08.2017
+     - Huan Xie (huan.xie@citrix.com)
+     - Revised for Mirantis Fuel 9.2
