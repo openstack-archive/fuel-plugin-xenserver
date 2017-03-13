@@ -4,7 +4,13 @@ Release Notes
 Version 4.0
 -------------
 
-* Works with Fuel 9.0
+* Works with Fuel 9.2
+* Add Ceph as backend for Glance
+* Add image caching clean up script
+* Add Ceilometer support
+* Add vif hot plug support
+* Add live migration support
+* Add Conntrack support
 
 Version 3.1
 -------------
