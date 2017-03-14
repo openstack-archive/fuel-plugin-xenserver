@@ -26,7 +26,7 @@ REQUIRED_ISOS=$(PLATFORMS:%=suppack/xcp_%/xenapi-plugins-${OPENSTACK_RELEASE}.is
 iso: $(REQUIRED_ISOS)
 
 $(REQUIRED_ISOS): plugin_source/deployment_scripts/patchset/xenhost
-	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE} "${HYPERVISOR_NAME}"
+	suppack/build-xenserver-suppack.sh ${OPENSTACK_RELEASE}
 
 ${BUILDROOT}/${PLUGIN_NAME}/branded: ${BRANDING} ${REQUIRED_ISOS} plugin_source
 	mkdir -p ${BUILDROOT}/${PLUGIN_NAME}

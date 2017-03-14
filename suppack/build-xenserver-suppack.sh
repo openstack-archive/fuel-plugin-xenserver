@@ -4,13 +4,12 @@ set -eux
 
 # =============================================
 # Usage of this script:
-# ./build-xenserver-suppack.sh os-release hypervisor-name xs-plugin-version key
+# ./build-xenserver-suppack.sh os-release xs-plugin-version key
 # Or
 # ./build-xenserver-suppack.sh
 #
 # You can provide explict input parameters or you can use the default ones:
 #   OpenStack release
-#   Hypervisor name
 #   XenServer OpenStack plugin version
 #   Key for building supplemental packages
 #   Keyfile for building supplemental packages
@@ -46,16 +45,14 @@ mkdir -p $BUILDROOT && cd $BUILDROOT
 # OpenStack release
 OS_RELEASE=${1:-"mitaka"}
 
-HYPERVISOR_NAME=${2:-"XenServer"}
-
 # nova and neutron xenserver dom0 plugin version
-XS_PLUGIN_VERSION=${3:-"13.0.0"}
+XS_PLUGIN_VERSION=${2:-"13.0.0"}
 
 # key of the public/secret OpenStack GPG key
-SUPPACK_KEY=${4:-"Citrix OpenStack (XenServer Updates) <openstack@citrix.com>"}
+SUPPACK_KEY=${3:-"Citrix OpenStack (XenServer Updates) <openstack@citrix.com>"}
 
 # keyfile
-SUPPACK_KEYFILE=${5:-"RPM-GPG-KEY-XS-OPENSTACK"}
+SUPPACK_KEYFILE=${4:-"RPM-GPG-KEY-XS-OPENSTACK"}
 
 # branch info
 GITBRANCH="stable/$OS_RELEASE"
@@ -189,7 +186,7 @@ EOF
 python buildscript.py \
 --pdn=xenapi-plugins-$OS_RELEASE \
 --pdv="1.9.0" \
---hvn="$HYPERVISOR_NAME" \
+--hvn="XCP" \
 --desc="OpenStack Plugins" \
 --bld=0 \
 --out=$SUPPACK_CREEDENCE \
@@ -199,7 +196,7 @@ $NEUTRON_RPMFILE
 python buildscript.py \
 --pdn=xenapi-plugins-$OS_RELEASE \
 --pdv="2.1.0" \
---hvn="$HYPERVISOR_NAME" \
+--hvn="XCP" \
 --desc="OpenStack Plugins" \
 --bld=0 \
 --out=$SUPPACK_DUNDEE \
