@@ -287,3 +287,11 @@ def add_cron_job(user, job_entry):
     execute(crontab_cmd, '-u', user, temp_path)
     os.close(temp_fd)
     os.remove(temp_path)
+
+
+def get_xcp_version(himn, username):
+    xcp_ver = ssh(himn, username,
+                  ('xe host-param-get uuid=$(xe host-list --minimal) '
+                   'param-name=software-version '
+                   'param-key=platform_version'))
+    return xcp_ver
