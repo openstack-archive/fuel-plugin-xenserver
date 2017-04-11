@@ -15,7 +15,7 @@ can also be downloaded directly from `citrix.com
 Citrix account.
 
 Documentation for XenServer can be found on `docs.vmd.citrix.com
-<http://docs.vmd.citrix.com/XenServer/6.5.0/1.0/en_gb/>`_ and for how
+<http://docs.citrix.com/en-us/xenserver/xenserver-7-0.html>`_ and for how
 XenServer works within OpenStack at docs.openstack.org in the
 `OpenStack Configuration Reference
 <http://docs.openstack.org/juno/config-reference/content/introduction-to-xen.html>`_

@@ -5,7 +5,7 @@
   requires: ['network_configuration_end']
   type: shell
   parameters:
-    cmd: 'dpkg -i ./xe-guest-utilities_6.5.0-1393_amd64.deb'
+    cmd: 'dpkg -i ./xe-guest-utilities_7.0.0-24_all.deb'
     timeout: 60
 - id: 'compute-pre-test'
   version: 2.0.0
