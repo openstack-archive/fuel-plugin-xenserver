@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from distutils.version import LooseVersion
 import json
 import os
 import stat
@@ -8,6 +9,7 @@ from utils import HIMN_IP
 
 XS_RSA = '/root/.ssh/xs_rsa'
 VERSION_HOTFIXES = '@VERSION_HOTFIXES@'
+MIN_XCP_VERSION = '2.1.0'
 
 utils.setup_logging('compute_pre_test.log')
 LOG = utils.LOG
@@ -38,6 +40,12 @@ def ssh_copy_id(host, username, password):
 
 
 def check_host_compatibility(himn, username):
+    xcp_version = utils.get_xcp_version(himn, username)
+    if LooseVersion(xcp_version) < LooseVersion(MIN_XCP_VERSION):
+        utils.reportError('Platform version %s should equal or greater than %s'
+                          % (xcp_version, MIN_XCP_VERSION))
+        return
+
     version_hotfixes = json.loads(VERSION_HOTFIXES)
 
     ver = utils.ssh(himn, username,
