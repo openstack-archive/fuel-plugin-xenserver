@@ -90,12 +90,28 @@ def patch(directory, patch_file, level):
         patched = (patch_file) in patches
 
     if not patched:
-        execute('patch', '-d', directory, '-p%s' % level, '-i',
-                os.path.join(patchset_dir, patch_file))
+        # use '--forward' to ignore patches that seem to be reversed or
+        # already applied.
+        ret_code, out, err = detailed_execute(
+            'patch', '--forward', '-d', directory, '-p%s' % level,
+            '-i', os.path.join(patchset_dir, patch_file),
+            allowed_return_codes=[0, 1])
+
+        if ret_code == 1:
+            skip_reason = 'Reversed (or previously applied) patch detected!'
+            ret_msg = out + '\n\n' + err
+            if skip_reason in ret_msg:
+                LOG.info('Skipping patching %s: not needed anymore.'
+                         % patch_file)
+            else:
+                raise ExecutionError('Failed patching %s' % patch_file)
+        else:
+            LOG.info(patch_file + 'is applied successfully.')
+
         with open(patches_applied, "a") as f:
             f.write(patch_file + "\n")
     else:
-        logging.info(patch_file + " is already applied - skipping")
+        LOG.info(patch_file + " is already applied - skipping")
 
 
 def ssh(host, username, *cmd, **kwargs):
