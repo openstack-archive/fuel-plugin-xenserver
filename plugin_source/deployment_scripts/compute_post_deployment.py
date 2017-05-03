@@ -456,7 +456,11 @@ def check_and_setup_ceilometer(himn, username, password):
 
 def enable_conntrack_service(himn, username):
     # use conntrack statistic mode, so change conntrackd.conf
-    if not os.path.exists('/etc/conntrackd/conntrackd.conf.back'):
+    errcode, out, err = utils.ssh_detailed(
+        himn, username, 'ls', '/etc/conntrackd/conntrackd.conf.back',
+        allowed_return_codes=[0, 2])
+    if errcode == 2:
+        # Only make conntrackd.conf.back if it doesn't exist
         utils.ssh(himn, username,
                   'mv',
                   '/etc/conntrackd/conntrackd.conf',
