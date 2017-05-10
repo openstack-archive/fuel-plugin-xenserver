@@ -1,0 +1,10 @@
+Code-Review+2: Jianghua Wang <jianghua.wang@citrix.com>
+Verified+1: Citrix XenServer CI
+Code-Review+2: Bob Ball <bob.ball@citrix.com>
+Workflow+1: Bob Ball <bob.ball@citrix.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 10 May 2017 10:19:34 +0000
+Reviewed-on: https://review.openstack.org/462079
+Project: openstack/fuel-plugin-xenserver
+Branch: refs/heads/master
