@@ -1,9 +1,0 @@
-.tox
-.build
-*.pyc
-*.rpm
-*.sublime-workspace
-BUILD/*
-output
-suppack/xenserver-suppack
-*~
